@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Listo — Upload COI</title>
+  <meta name="description" content="Upload your Certificate of Insurance (COI) and record its expiration date." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body data-page="coi" data-requires-auth="true">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Listo Home">
+        <span class="brand-mark" aria-hidden="true">L</span>
+        <span class="brand-name">Listo</span>
+      </a>
+
+      <nav class="nav" aria-label="Primary navigation">
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="navMenu">
+          <span class="sr-only" data-i18n="nav.menu">Menu</span>
+          <span class="hamburger" aria-hidden="true"></span>
+        </button>
+
+        <div class="nav-menu" id="navMenu">
+          <a class="nav-link" href="index.html" data-i18n="nav.home">Home</a>
+          <a class="nav-link" href="prequal.html" data-i18n="nav.prequal">Pre-Qualification</a>
+          <a class="nav-link" href="payroll.html" data-i18n="nav.payroll">Payroll</a>
+          <a class="nav-link" href="audit.html" data-i18n="nav.audit">Insurance Audit Help</a>
+          <a class="nav-link" href="directory.html" data-i18n="nav.directory">Directory</a>
+        </div>
+      </nav>
+
+      <div class="header-actions">
+        <div class="lang-switch" role="group" aria-label="Language toggle">
+          <button type="button" class="chip" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" class="chip" data-lang="es" aria-pressed="false">ES</button>
+        </div>
+
+        <button id="logoutBtn" class="btn small ghost" type="button" hidden data-i18n="auth.logout">
+          Log out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <h1 class="page-title" data-i18n="coi.title">Certificate of Insurance (COI)</h1>
+          <p class="muted" data-i18n="coi.subtitle">
+            Upload your most recent COI and enter the expiration date.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <!-- Upload Card -->
+          <div class="card pad">
+            <h2 class="h2" data-i18n="coi.uploadTitle">Upload COI</h2>
+
+            <form id="coiForm" class="form-grid">
+              <label class="field">
+                <span class="field-label" data-i18n="coi.fileLabel">COI File (PDF preferred)</span>
+                <input id="coiFile" type="file" accept=".pdf,.png,.jpg,.jpeg" required />
+                <span class="muted small" data-i18n="coi.fileHint">Accepted: PDF, PNG, JPG</span>
+              </label>
+
+              <label class="field">
+                <span class="field-label" data-i18n="coi.expLabel">Expiration date</span>
+                <input id="coiExpires" type="date" required />
+              </label>
+
+              <button class="btn primary" type="submit" id="coiUploadBtn" data-i18n="coi.uploadBtn">
+                Upload & Save
+              </button>
+
+              <p id="coiMsg" class="muted small" role="status" aria-live="polite"></p>
+              <p id="coiErr" class="form-error" role="alert" aria-live="polite"></p>
+            </form>
+          </div>
+
+          <!-- Current COI Card -->
+          <div class="card pad">
+            <div class="row-between">
+              <h2 class="h2" data-i18n="coi.currentTitle">Current COI on file</h2>
+              <a id="coiDownloadLink" class="mini-link" href="#" target="_blank" rel="noopener" hidden
+                 data-i18n="coi.download">Download</a>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="kv">
+              <div class="kv-row">
+                <div class="muted" data-i18n="coi.currentFile">File</div>
+                <div id="coiCurrentFile" class="kv-val">—</div>
+              </div>
+              <div class="kv-row">
+                <div class="muted" data-i18n="coi.currentExp">Expires</div>
+                <div id="coiCurrentExp" class="kv-val">—</div>
+              </div>
+              <div class="kv-row">
+                <div class="muted" data-i18n="coi.currentUploaded">Uploaded</div>
+                <div id="coiCurrentUploaded" class="kv-val">—</div>
+              </div>
+            </div>
+
+            <div class="note warn" id="coiExpiryNote" hidden></div>
+
+            <div class="row">
+              <a class="btn small" href="prequal.html" data-i18n="coi.backPrequal">Back to Pre-Qualification</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pad mt">
+          <h3 class="h3" data-i18n="coi.tipTitle">What makes a COI “active”?</h3>
+          <p class="muted" data-i18n="coi.tipBody">
+            A COI is considered active when the expiration date is in the future. If your policy renews, upload the updated COI.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <div class="brand footer-brand">
+            <span class="brand-mark" aria-hidden="true">L</span>
+            <span class="brand-name">Listo</span>
+          </div>
+          <p class="muted" data-i18n="footer.note">
+            Built to help subcontractors look sharp, stay compliant, and win more work.
+          </p>
+        </div>
+
+        <div class="footer-links">
+          <a href="prequal.html" data-i18n="nav.prequal">Pre-Qualification</a>
+          <a href="payroll.html" data-i18n="nav.payroll">Payroll</a>
+          <a href="audit.html" data-i18n="nav.audit">Insurance Audit Help</a>
+          <a href="directory.html" data-i18n="nav.directory">Directory</a>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <span class="muted">© <span id="year"></span> Listo</span>
+      </div>
+    </footer>
+  </main>
+
+  <script type="module" src="scripts.js"></script>
+</body>
+</html>
