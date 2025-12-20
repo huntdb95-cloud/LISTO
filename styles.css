@@ -591,6 +591,107 @@ input:focus{ border-color: rgba(127,195,20,0.45); box-shadow: 0 0 0 3px rgba(127
 
 
 
+
+
+/* ===== Payroll Page ===== */
+/* Add class="payroll-page" on <body> of payroll.html for these styles */
+.payroll-page .page { padding: 24px 0; }
+
+.payroll-page .panel{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(222,236,214,0.18);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.payroll-page .form{
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.payroll-page .form label{ display: grid; gap: 6px; font-weight: 650; }
+
+.payroll-page .form input,
+.payroll-page input[type="date"],
+.payroll-page input[type="number"],
+.payroll-page input[type="text"]{
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.22);
+  color: rgba(233,238,245,0.95);
+}
+
+.payroll-page .form-note{ margin-top: 6px; font-weight: 650; min-height: 1.2em; }
+
+.payroll-page .divider{
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  margin: 18px 0;
+  height: auto;
+  background: transparent;
+}
+
+.payroll-page .table-wrap{ overflow: auto; }
+.payroll-page .table{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+.payroll-page .table th,
+.payroll-page .table td{
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.payroll-page .table thead th{
+  text-align: left;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+.payroll-page .right{ text-align: right; }
+
+.payroll-page .totals-meta,
+.payroll-page .report-meta{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.payroll-page .report-head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.payroll-page .report-controls{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.payroll-page label.inline{ display: grid; gap: 6px; font-weight: 750; }
+
+.payroll-page .btn-secondary{
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.20);
+}
+.payroll-page .btn-secondary:hover{ filter: brightness(1.08); }
+
+.payroll-page .table .btn-link{
+  background: transparent;
+  border: none;
+  color: rgba(233,238,245,0.92);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 750;
+  padding: 6px 0;
+}
+.payroll-page .table .btn-link:hover{ opacity: 0.9; }
+
+
+
 /* ========== Responsive ========== */
 @media (max-width: 940px){
   .hero-grid{ grid-template-columns: 1fr; }
