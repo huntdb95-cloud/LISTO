@@ -1,8 +1,8 @@
 // payroll.js
-// Professional Payroll Tracker (Firestore)
-// Data model:
-// - employees/{employeeId}: { name, nameLower, createdAt }
-// - payments/{paymentId}: { employeeId, employeeName, employeeNameLower, payDate, amount, method, createdAt }
+// Professional Payroll Tracker (Firestore) - PER USER
+// Data model (per logged-in user):
+// - /users/{uid}/employees/{employeeId}: { name, nameLower, createdAt }
+// - /users/{uid}/payrollEntries/{entryId}: { employeeId, employeeName, employeeNameLower, payDate, amount, method, createdAt }
 
 import {
   collection,
@@ -10,19 +10,19 @@ import {
   getDocs,
   query,
   orderBy,
-  where,
   limit,
   serverTimestamp,
   doc,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-// ✅ Adjust this import to match YOUR config.js
-// Option A (recommended): your config.js exports db = getFirestore(app)
-import { db } from "./config.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-// If your config.js exports firebaseConfig instead, your config.js should initialize Firestore and export db.
-// (Don’t duplicate initialization here unless you want to rewrite config.js.)
+// ✅ Adjust this import to match YOUR config.js
+import { db } from "./config.js";
 
 /* -----------------------------
    Helpers
@@ -60,6 +60,7 @@ function normalizeName(name) {
 ------------------------------ */
 let employees = []; // {id, name, nameLower}
 let payments = [];  // {id, ...}
+let currentUid = null;
 
 /* -----------------------------
    UI elements
@@ -90,10 +91,28 @@ const clearFiltersBtn = $("clearFiltersBtn");
 const exportCsvBtn = $("exportCsvBtn");
 
 /* -----------------------------
+   Path helpers (THIS is the “addDoc path” part)
+------------------------------ */
+function employeesCol(uid) {
+  // /users/{uid}/employees
+  return collection(db, "users", uid, "employees");
+}
+
+function payrollEntriesCol(uid) {
+  // /users/{uid}/payrollEntries
+  return collection(db, "users", uid, "payrollEntries");
+}
+
+function payrollEntryDoc(uid, entryId) {
+  // /users/{uid}/payrollEntries/{entryId}
+  return doc(db, "users", uid, "payrollEntries", entryId);
+}
+
+/* -----------------------------
    Loaders
 ------------------------------ */
 async function loadEmployees() {
-  const q = query(collection(db, "employees"), orderBy("nameLower"));
+  const q = query(employeesCol(currentUid), orderBy("nameLower"));
   const snap = await getDocs(q);
 
   employees = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -101,7 +120,7 @@ async function loadEmployees() {
 }
 
 async function loadPayments() {
-  const q = query(collection(db, "payments"), orderBy("payDate", "desc"), limit(500));
+  const q = query(payrollEntriesCol(currentUid), orderBy("payDate", "desc"), limit(500));
   const snap = await getDocs(q);
 
   payments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -217,8 +236,8 @@ async function ensureEmployee(name) {
   const existing = employees.find(e => e.nameLower === lower);
   if (existing) return existing;
 
-  // Otherwise create
-  const ref = await addDoc(collection(db, "employees"), {
+  // Otherwise create under /users/{uid}/employees
+  const ref = await addDoc(employeesCol(currentUid), {
     name: clean,
     nameLower: lower,
     createdAt: serverTimestamp(),
@@ -235,6 +254,8 @@ async function onSubmitPayment(e) {
   e.preventDefault();
 
   try {
+    if (!currentUid) throw new Error("You must be logged in to save payroll.");
+
     saveBtn.disabled = true;
     setFormMessage("", "");
 
@@ -252,11 +273,13 @@ async function onSubmitPayment(e) {
 
     const emp = await ensureEmployee(empName);
 
-    await addDoc(collection(db, "payments"), {
+    // ✅ This is the new “addDoc path”:
+    // /users/{uid}/payrollEntries
+    await addDoc(payrollEntriesCol(currentUid), {
       employeeId: emp.id,
       employeeName: emp.name,
       employeeNameLower: emp.nameLower,
-      payDate: date,          // store as YYYY-MM-DD (simple + sortable)
+      payDate: date,
       amount: Number(amt.toFixed(2)),
       method: meth,
       createdAt: serverTimestamp(),
@@ -288,7 +311,11 @@ async function onDeletePayment(paymentId, empName, date) {
 
   try {
     statusText.textContent = "Deleting…";
-    await deleteDoc(doc(db, "payments", paymentId));
+
+    // ✅ This is the new “doc path”:
+    // /users/{uid}/payrollEntries/{paymentId}
+    await deleteDoc(payrollEntryDoc(currentUid, paymentId));
+
     payments = payments.filter(p => p.id !== paymentId);
     renderPaymentsTable();
     renderStats();
@@ -346,7 +373,6 @@ function exportCsv() {
 
 function csvCell(v) {
   const s = String(v ?? "");
-  // escape quotes and wrap in quotes if needed
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
@@ -354,23 +380,44 @@ function csvCell(v) {
 /* -----------------------------
    Init
 ------------------------------ */
-async function init() {
-  try {
-    statusText.textContent = "Loading…";
-    payDate.value = todayISO();
+async function initForUser(uid) {
+  currentUid = uid;
 
-    // Optional convenience default: set "from" to month start
-    // fromDate.value = monthStartISO();
+  statusText.textContent = "Loading…";
+  payDate.value = todayISO();
 
-    await loadEmployees();
-    await loadPayments();
+  await loadEmployees();
+  await loadPayments();
 
-    statusText.textContent = "Ready";
-  } catch (err) {
-    console.error(err);
-    statusText.textContent = "Error";
-    formMsg.innerHTML = `<span class="danger">Firebase not ready. Check config.js export (db) and Firestore rules.</span>`;
-  }
+  statusText.textContent = "Ready";
+}
+
+function init() {
+  payDate.value = todayISO();
+
+  const auth = getAuth();
+  onAuthStateChanged(auth, async (user) => {
+    try {
+      if (!user) {
+        currentUid = null;
+        statusText.textContent = "Please log in to use Payroll.";
+        employees = [];
+        payments = [];
+        renderEmployeeDatalist();
+        paymentsTbody.innerHTML = `<tr><td colspan="5" class="muted">Log in to view payroll entries.</td></tr>`;
+        monthCount.textContent = "—";
+        monthTotal.textContent = "—";
+        allTotal.textContent = "—";
+        return;
+      }
+
+      await initForUser(user.uid);
+    } catch (err) {
+      console.error(err);
+      statusText.textContent = "Error";
+      formMsg.innerHTML = `<span class="danger">Firebase not ready. Check config.js export (db) and Firestore rules.</span>`;
+    }
+  });
 }
 
 $("paymentForm").addEventListener("submit", onSubmitPayment);
