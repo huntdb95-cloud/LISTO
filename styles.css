@@ -372,6 +372,83 @@ input:focus{ border-color: rgba(94,234,212,0.38); box-shadow: 0 0 0 3px rgba(94,
   .auth-grid{ grid-template-columns: 1fr; }
 }
 
+/* ===== Prequal + COI helpers ===== */
+.page-title { margin: 0 0 8px; font-size: clamp(1.7rem, 2.4vw, 2.2rem); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pad { padding: 18px; }
+.mt { margin-top: 16px; }
+
+.row-between { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.divider { height: 1px; background: rgba(255,255,255,0.08); margin: 14px 0; }
+
+.h2 { margin: 0 0 6px; font-size: 1.25rem; }
+.h3 { margin: 0 0 8px; font-size: 1.1rem; }
+
+.small { font-size: 0.95rem; }
+
+.status-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.status-item {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.status-title { font-weight: 750; }
+.status-text { display: grid; gap: 2px; }
+
+.dot { width: 12px; height: 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); }
+.dot-off { background: rgba(255,255,255,0.06); }
+.dot-on  { background: rgba(94,234,212,0.32); border-color: rgba(94,234,212,0.45); }
+
+.badge {
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  font-weight: 750;
+}
+.badge-ok {
+  border-color: rgba(94,234,212,0.45);
+  background: rgba(94,234,212,0.14);
+}
+.badge-wip {
+  border-color: rgba(255,255,255,0.14);
+}
+.badge-warn {
+  border-color: rgba(255,200,120,0.40);
+  background: rgba(255,200,120,0.10);
+}
+
+.form-grid { display: grid; gap: 12px; }
+
+.kv { display: grid; gap: 10px; }
+.kv-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: baseline; }
+.kv-val { font-weight: 700; color: rgba(233,238,245,0.92); }
+
+.note {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+.note.warn {
+  border-color: rgba(255,200,120,0.35);
+  background: rgba(255,200,120,0.10);
+}
+
+@media (max-width: 940px){
+  .grid-2 { grid-template-columns: 1fr; }
+  .kv-row { grid-template-columns: 1fr; }
+}
+
+
 
 /* ========== Responsive ========== */
 @media (max-width: 940px){
