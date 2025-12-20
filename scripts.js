@@ -587,6 +587,95 @@ async function initCoiPage(user) {
   });
 }
 
+async function getAgreementDocRef(uid) {
+  return doc(db, "users", uid, "private", "agreement");
+}
+
+function collectAgreementData() {
+  return {
+    subcontractorName: (document.getElementById("agreementSubName")?.value || "").trim(),
+    initials: (document.getElementById("agreementInitials")?.value || "").trim().toUpperCase(),
+    title: (document.getElementById("agreementTitle")?.value || "").trim(),
+    signature: (document.getElementById("agreementSignature")?.value || "").trim(),
+    date: (document.getElementById("agreementDate")?.value || "").trim(),
+    accepted: !!document.getElementById("agreementAccept")?.checked,
+
+    // Helps you prove which doc version was signed:
+    agreementFile: "subagreement.pdf",
+    agreementVersion: "v1"
+  };
+}
+
+async function loadAgreement(user) {
+  const refDoc = await getAgreementDocRef(user.uid);
+  const snap = await getDoc(refDoc);
+  return snap.exists() ? snap.data() : null;
+}
+
+async function saveAgreement(user, data) {
+  const refDoc = await getAgreementDocRef(user.uid);
+  await setDoc(refDoc, {
+    ...data,
+    signedAt: serverTimestamp()
+  }, { merge: true });
+
+  // mark prequal complete
+  const prequalRef = await getPrequalDocRef(user.uid);
+  await setDoc(prequalRef, {
+    agreementCompleted: true,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+async function initAgreementPage(user) {
+  const form = document.getElementById("agreementForm");
+  if (!form) return;
+
+  const msg = document.getElementById("agreementMsg");
+  const err = document.getElementById("agreementErr");
+  const btn = document.getElementById("agreementSignBtn");
+
+  // preload if previously signed
+  const existing = await loadAgreement(user);
+  if (existing) {
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+    setVal("agreementSubName", existing.subcontractorName);
+    setVal("agreementInitials", existing.initials);
+    setVal("agreementTitle", existing.title);
+    setVal("agreementSignature", existing.signature);
+    setVal("agreementDate", existing.date);
+    const accept = document.getElementById("agreementAccept");
+    if (accept) accept.checked = !!existing.accepted;
+    if (msg && existing.signedAt?.toDate) msg.textContent = `Loaded prior signature: ${existing.signedAt.toDate().toLocaleString()}`;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (msg) msg.textContent = "";
+    if (err) err.textContent = "";
+
+    const data = collectAgreementData();
+    if (!data.subcontractorName) { if (err) err.textContent = "Subcontractor name is required."; return; }
+    if (!data.initials) { if (err) err.textContent = "Initials are required."; return; }
+    if (!data.signature) { if (err) err.textContent = "Signature is required."; return; }
+    if (!data.date) { if (err) err.textContent = "Date is required."; return; }
+    if (!data.accepted) { if (err) err.textContent = "Please check the agreement box to proceed."; return; }
+
+    try {
+      if (btn) btn.disabled = true;
+      if (msg) msg.textContent = "Saving…";
+      await saveAgreement(user, data);
+      if (msg) msg.textContent = "Saved. Your agreement is now signed and stored in your account.";
+    } catch (e2) {
+      console.error(e2);
+      if (err) err.textContent = "Save failed. Please try again.";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+
 /* ========= W-9 data model =========
    Firestore doc: users/{uid}/private/w9
    Also updates users/{uid}/private/prequal { w9Completed: true }
