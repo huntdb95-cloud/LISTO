@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body>
+<body data-page="home" data-requires-auth="true">
   <!-- Skip link for accessibility -->
   <a class="skip-link" href="#main">Skip to content</a>
 
@@ -40,6 +40,11 @@
           <button type="button" class="chip" data-lang="en" aria-pressed="true">EN</button>
           <button type="button" class="chip" data-lang="es" aria-pressed="false">ES</button>
         </div>
+
+        <!-- Shows only when logged in (scripts.js toggles this) -->
+        <button id="logoutBtn" class="btn small ghost" type="button" hidden data-i18n="auth.logout">
+          Log out
+        </button>
       </div>
     </div>
   </header>
@@ -190,6 +195,7 @@
     </footer>
   </main>
 
-  <script src="scripts.js"></script>
+  <!-- IMPORTANT: module is required for Firebase imports -->
+  <script type="module" src="scripts.js"></script>
 </body>
 </html>
