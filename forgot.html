@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reset Password</title>
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body class="auth-page">
+  <main class="auth-center">
+    <!-- Large logo above the card -->
+    <a href="index.html" class="auth-logo-wrap" aria-label="Go to home">
+      <img src="images/logo.png" alt="Listo" class="auth-logo" />
+    </a>
+
+    <section class="card auth-card" aria-label="Reset password">
+      <div class="card-header">
+        <h1 class="auth-title">Reset password</h1>
+        <p class="muted" style="margin: 0;">
+          Enter your email and we’ll send you a link to reset your password.
+        </p>
+      </div>
+
+      <form id="forgotForm" class="auth-form" autocomplete="on">
+        <div class="field">
+          <label class="field-label" for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@company.com"
+          />
+        </div>
+
+        <p id="forgotMsg" class="form-error" aria-live="polite"></p>
+
+        <button class="btn primary" type="submit">Send reset link</button>
+
+        <div class="auth-links">
+          <a class="mini-link" href="login.html">Back to login</a>
+          <a class="mini-link" href="signup.html">Create account</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="./forgot.js"></script>
+</body>
+</html>
