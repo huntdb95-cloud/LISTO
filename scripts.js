@@ -15,7 +15,6 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
@@ -340,11 +339,6 @@ function initAuthUI() {
       const email = document.getElementById("signupEmail")?.value?.trim();
       const password = document.getElementById("signupPassword")?.value;
       try {
-        await createUserWithEmailAndEmailAndPasswordFix(auth, email, password);
-      } catch (e) {
-        // fallback if typo fixed below
-      }
-      try {
         await createUserWithEmailAndPassword(auth, email, password);
         window.location.href = "index.html";
       } catch (error) {
@@ -353,9 +347,6 @@ function initAuthUI() {
     });
   }
 }
-
-// (no-op helper in case a browser caches a bad bundle; safe to ignore)
-async function createUserWithEmailAndEmailAndPasswordFix() { return; }
 
 function readableAuthError(error) {
   const code = error?.code || "";
@@ -369,7 +360,7 @@ function readableAuthError(error) {
 }
 
 /* ========= Prequal + COI data model =========
-   Firestore doc: users/{uid}/prequal (single doc)
+   Firestore doc: users/{uid}/private/prequal
    Fields:
    - w9Completed: boolean
    - coiCompleted: boolean
@@ -377,8 +368,7 @@ function readableAuthError(error) {
    - coi: { fileName, filePath, expiresOn: "YYYY-MM-DD", uploadedAtMs: number }
    - updatedAt: serverTimestamp()
 */
-
-async function getPrequalDocRef(uid) {
+function getPrequalDocRef(uid) {
   return doc(db, "users", uid, "private", "prequal");
 }
 
@@ -392,18 +382,17 @@ function daysUntil(yyyyMmDd) {
   const [y, m, d] = yyyyMmDd.split("-").map(Number);
   const target = new Date(y, m - 1, d);
   const now = new Date();
-  target.setHours(0,0,0,0);
-  now.setHours(0,0,0,0);
+  target.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
   const diffMs = target - now;
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 async function loadPrequalStatus(uid) {
-  const refDoc = await getPrequalDocRef(uid);
+  const refDoc = getPrequalDocRef(uid);
   const snap = await getDoc(refDoc);
 
   if (!snap.exists()) {
-    // Initialize defaults
     await setDoc(refDoc, {
       w9Completed: false,
       coiCompleted: false,
@@ -433,29 +422,26 @@ function updatePrequalUI(data) {
   const coi = !!data.coiCompleted;
   const agr = !!data.agreementCompleted;
 
-  // Update dots
   list.querySelectorAll(".status-item").forEach(li => {
     const key = li.getAttribute("data-key");
     const dot = li.querySelector(".dot");
-    const isOn = (key === "w9Completed" && w9) || (key === "coiCompleted" && coi) || (key === "agreementCompleted" && agr);
+    const isOn =
+      (key === "w9Completed" && w9) ||
+      (key === "coiCompleted" && coi) ||
+      (key === "agreementCompleted" && agr);
+
     dot?.classList.toggle("dot-on", isOn);
     dot?.classList.toggle("dot-off", !isOn);
   });
 
-  // COI meta line (expires)
   const expiresOn = data?.coi?.expiresOn;
-  if (coiMetaText) {
-    if (expiresOn) {
-      const lang = document.documentElement.lang || "en";
-      const label = (I18N[lang]?.["prequal.coiExpires"] || "Expires");
-      coiMetaText.textContent = `${label}: ${formatDate(expiresOn)}`;
-    } else {
-      // fallback translation already in HTML via data-i18n; leave it
-    }
+  if (coiMetaText && expiresOn) {
+    const lang = document.documentElement.lang || "en";
+    const label = (I18N[lang]?.["prequal.coiExpires"] || "Expires");
+    coiMetaText.textContent = `${label}: ${formatDate(expiresOn)}`;
   }
 
   const allDone = w9 && coi && agr;
-
   if (badge) {
     badge.classList.remove("badge-ok", "badge-warn", "badge-wip");
     if (allDone) {
@@ -485,8 +471,7 @@ async function initPrequalPage(user) {
 
 /* ========= COI page logic ========= */
 async function renderCoiCurrent(user) {
-  const refDoc = await getPrequalDocRef(user.uid);
-  const snap = await getDoc(refDoc);
+  const snap = await getDoc(getPrequalDocRef(user.uid));
   const data = snap.exists() ? (snap.data() || {}) : {};
   const coi = data.coi || null;
 
@@ -509,7 +494,6 @@ async function renderCoiCurrent(user) {
   if (expEl) expEl.textContent = formatDate(coi.expiresOn);
   if (upEl) upEl.textContent = coi.uploadedAtMs ? new Date(coi.uploadedAtMs).toLocaleString() : "—";
 
-  // Download link: generate URL from storage path
   if (link && coi.filePath) {
     try {
       const url = await getDownloadURL(ref(storage, coi.filePath));
@@ -520,7 +504,82 @@ async function renderCoiCurrent(user) {
     }
   }
 
-  async function getW9DocRef(uid) {
+  const until = daysUntil(coi.expiresOn);
+  if (note && until !== null) {
+    const lang = document.documentElement.lang || "en";
+    if (until < 0) {
+      note.textContent = I18N[lang]?.["coi.expired"] || I18N.en["coi.expired"];
+      note.hidden = false;
+    } else if (until <= 14) {
+      note.textContent = I18N[lang]?.["coi.expiringSoon"] || I18N.en["coi.expiringSoon"];
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+  }
+}
+
+async function initCoiPage(user) {
+  await renderCoiCurrent(user);
+
+  const form = document.getElementById("coiForm");
+  if (!form) return;
+
+  const fileInput = document.getElementById("coiFile");
+  const expInput = document.getElementById("coiExpires");
+  const msg = document.getElementById("coiMsg");
+  const err = document.getElementById("coiErr");
+  const btn = document.getElementById("coiUploadBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (msg) msg.textContent = "";
+    if (err) err.textContent = "";
+
+    const file = fileInput?.files?.[0];
+    const expiresOn = expInput?.value;
+
+    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+    if (!expiresOn) { if (err) err.textContent = "Please choose an expiration date."; return; }
+
+    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+    const path = `users/${user.uid}/coi/${Date.now()}_${safeName}`;
+    const storageRef = ref(storage, path);
+
+    try {
+      if (btn) btn.disabled = true;
+      if (msg) msg.textContent = "Uploading…";
+
+      await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+
+      await setDoc(getPrequalDocRef(user.uid), {
+        coiCompleted: true,
+        coi: {
+          fileName: file.name,
+          filePath: path,
+          expiresOn,
+          uploadedAtMs: Date.now()
+        },
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      if (msg) msg.textContent = "Saved. Your COI is now on file.";
+      form.reset();
+      await renderCoiCurrent(user);
+    } catch (e2) {
+      console.error(e2);
+      if (err) err.textContent = "Upload failed. Please try again.";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+/* ========= W-9 data model =========
+   Firestore doc: users/{uid}/private/w9
+   Also updates users/{uid}/private/prequal { w9Completed: true }
+*/
+function getW9DocRef(uid) {
   return doc(db, "users", uid, "private", "w9");
 }
 
@@ -566,12 +625,10 @@ function fillW9Form(data) {
   setVal("w9_signature", data.signature);
   setVal("w9_date", data.date);
 
-  // tax class radios
   if (data.taxClass) {
     const r = document.querySelector(`input[name="taxClass"][value="${data.taxClass}"]`);
     if (r) r.checked = true;
   }
-  // tin type radios
   if (data.tinType) {
     const t = document.querySelector(`input[name="tinType"][value="${data.tinType}"]`);
     if (t) t.checked = true;
@@ -579,23 +636,17 @@ function fillW9Form(data) {
 }
 
 function updateW9Preview(data) {
-  // text fields
   document.querySelectorAll(".w9-txt[data-bind]").forEach(el => {
     const key = el.getAttribute("data-bind");
-    let val = data[key] ?? "";
-    // simple date formatting for preview
-    if (key === "date" && val) val = val;
-    el.textContent = val;
+    el.textContent = data?.[key] ?? "";
   });
 
-  // checkbox selection
   const selected = data.taxClass || "";
   document.querySelectorAll(".w9-check[data-check]").forEach(box => {
     const key = box.getAttribute("data-check");
     box.classList.toggle("on", key === selected);
   });
 
-  // show/hide LLC/Other helper inputs on the form
   const llcWrap = document.getElementById("llcTypeWrap");
   const otherWrap = document.getElementById("otherTypeWrap");
   if (llcWrap) llcWrap.style.display = (selected === "llc") ? "block" : "none";
@@ -603,23 +654,17 @@ function updateW9Preview(data) {
 }
 
 async function loadW9(user) {
-  const w9Ref = await getW9DocRef(user.uid);
-  const snap = await getDoc(w9Ref);
-  if (!snap.exists()) return null;
-  return snap.data();
+  const snap = await getDoc(getW9DocRef(user.uid));
+  return snap.exists() ? (snap.data() || null) : null;
 }
 
 async function saveW9(user, w9Data) {
-  const w9Ref = await getW9DocRef(user.uid);
-
-  await setDoc(w9Ref, {
+  await setDoc(getW9DocRef(user.uid), {
     ...w9Data,
     updatedAt: serverTimestamp()
   }, { merge: true });
 
-  // Mark prequal item complete
-  const prequalRef = await getPrequalDocRef(user.uid);
-  await setDoc(prequalRef, {
+  await setDoc(getPrequalDocRef(user.uid), {
     w9Completed: true,
     updatedAt: serverTimestamp()
   }, { merge: true });
@@ -630,14 +675,10 @@ function attachW9LivePreview() {
   if (!form) return;
 
   const handler = () => updateW9Preview(collectW9FormData());
-
   form.addEventListener("input", handler);
   form.addEventListener("change", handler);
 
-  const refreshBtn = document.getElementById("w9RefreshBtn");
-  refreshBtn?.addEventListener("click", handler);
-
-  // initial render
+  document.getElementById("w9RefreshBtn")?.addEventListener("click", handler);
   handler();
 }
 
@@ -647,13 +688,11 @@ async function initW9Page(user) {
   const btn = document.getElementById("w9SaveBtn");
   const meta = document.getElementById("w9LoadedMeta");
 
-  // Ensure helper fields are hidden until needed
   const llcWrap = document.getElementById("llcTypeWrap");
   const otherWrap = document.getElementById("otherTypeWrap");
   if (llcWrap) llcWrap.style.display = "none";
   if (otherWrap) otherWrap.style.display = "none";
 
-  // Load existing
   const existing = await loadW9(user);
   if (existing) {
     fillW9Form(existing);
@@ -665,7 +704,6 @@ async function initW9Page(user) {
 
   attachW9LivePreview();
 
-  // Submit handler
   document.getElementById("w9Form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (msg) msg.textContent = "";
@@ -678,91 +716,11 @@ async function initW9Page(user) {
     try {
       if (btn) btn.disabled = true;
       if (msg) msg.textContent = "Saving…";
-
       await saveW9(user, data);
-
       if (msg) msg.textContent = "Saved. Your W-9 is stored in your account.";
     } catch (e2) {
       console.error(e2);
       if (err) err.textContent = "Save failed. Please try again.";
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  });
-}
-
-
-  // Expiry note
-  const until = daysUntil(coi.expiresOn);
-  if (note && until !== null) {
-    const lang = document.documentElement.lang || "en";
-    if (until < 0) {
-      note.textContent = I18N[lang]?.["coi.expired"] || I18N.en["coi.expired"];
-      note.hidden = false;
-    } else if (until <= 14) {
-      note.textContent = I18N[lang]?.["coi.expiringSoon"] || I18N.en["coi.expiringSoon"];
-      note.hidden = false;
-    } else {
-      note.hidden = true;
-    }
-  }
-}
-
-async function initCoiPage(user) {
-  await renderCoiCurrent(user);
-
-  const form = document.getElementById("coiForm");
-  if (!form) return;
-
-  const fileInput = document.getElementById("coiFile");
-  const expInput = document.getElementById("coiExpires");
-  const msg = document.getElementById("coiMsg");
-  const err = document.getElementById("coiErr");
-  const btn = document.getElementById("coiUploadBtn");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (msg) msg.textContent = "";
-    if (err) err.textContent = "";
-
-    const file = fileInput?.files?.[0];
-    const expiresOn = expInput?.value;
-
-    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
-    if (!expiresOn) { if (err) err.textContent = "Please choose an expiration date."; return; }
-
-    // Upload path: users/{uid}/coi/{timestamp}_{filename}
-    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-    const path = `users/${user.uid}/coi/${Date.now()}_${safeName}`;
-    const storageRef = ref(storage, path);
-
-    try {
-      if (btn) btn.disabled = true;
-      if (msg) msg.textContent = "Uploading…";
-
-      await uploadBytes(storageRef, file, {
-        contentType: file.type || "application/octet-stream"
-      });
-
-      // Update Firestore prequal doc
-      const prequalRef = await getPrequalDocRef(user.uid);
-      await setDoc(prequalRef, {
-        coiCompleted: true,
-        coi: {
-          fileName: file.name,
-          filePath: path,
-          expiresOn,
-          uploadedAtMs: Date.now()
-        },
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-
-      if (msg) msg.textContent = "Saved. Your COI is now on file.";
-      form.reset();
-      await renderCoiCurrent(user);
-    } catch (e2) {
-      console.error(e2);
-      if (err) err.textContent = "Upload failed. Please try again.";
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -819,6 +777,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       if (page === "prequal") await initPrequalPage(user);
       if (page === "coi") await initCoiPage(user);
+      if (page === "w9") await initW9Page(user);
     } catch (e) {
       console.error(e);
     }
