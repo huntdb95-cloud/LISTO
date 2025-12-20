@@ -1,1 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Listo — Create Account</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body data-page="signup">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Listo Home">
+        <span class="brand-mark" aria-hidden="true">L</span>
+        <span class="brand-name">Listo</span>
+      </a>
+
+      <div class="header-actions">
+        <div class="lang-switch" role="group" aria-label="Language toggle">
+          <button type="button" class="chip" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" class="chip" data-lang="es" aria-pressed="false">ES</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="auth-wrap">
+    <section class="container auth-grid">
+      <div class="card auth-card">
+        <div class="card-header">
+          <h1 class="auth-title" data-i18n="auth.signupTitle">Create your account</h1>
+          <p class="muted" data-i18n="auth.signupSubtitle">Use email + password to get started.</p>
+        </div>
+
+        <form id="signupForm" class="auth-form">
+          <label class="field">
+            <span class="field-label" data-i18n="auth.email">Email</span>
+            <input id="signupEmail" type="email" autocomplete="email" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label" data-i18n="auth.password">Password</span>
+            <input id="signupPassword" type="password" autocomplete="new-password" minlength="6" required />
+          </label>
+
+          <button class="btn primary" type="submit" data-i18n="auth.createBtn">Create Account</button>
+
+          <p class="muted tiny">
+            <span data-i18n="auth.haveAccount">Already have an account?</span>
+            <a class="mini-link inline" href="login.html" data-i18n="auth.goLogin">Log in</a>
+          </p>
+
+          <p id="signupError" class="form-error" role="alert" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div class="auth-side">
+        <h2 data-i18n="auth.sideTitle">Private. Secure. Built for onboarding.</h2>
+        <p class="muted" data-i18n="auth.sideBody">
+          Your documents and uploads are protected behind your login.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="scripts.js"></script>
+</body>
+</html>
 
