@@ -1,351 +1,387 @@
-// payroll.js (ES module)
+// payroll.js
+// Professional Payroll Tracker (Firestore)
+// Data model:
+// - employees/{employeeId}: { name, nameLower, createdAt }
+// - payments/{paymentId}: { employeeId, employeeName, employeeNameLower, payDate, amount, method, createdAt }
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import {
-  getFirestore,
   collection,
   addDoc,
-  deleteDoc,
-  doc,
-  query,
-  where,
-  orderBy,
   getDocs,
+  query,
+  orderBy,
+  where,
+  limit,
   serverTimestamp,
-  Timestamp
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+  doc,
+  deleteDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-// ✅ Paste your existing Firebase config here:
-const firebaseConfig = {
-    apiKey: "AIzaSyBr6b0E8GN3svOILHgO2agCkW2VsJQIrdM",
-    authDomain: "listo-c6a60.firebaseapp.com",
-    projectId: "listo-c6a60",
-    storageBucket: "listo-c6a60.firebasestorage.app",
-    messagingSenderId: "646269984812",
-    appId: "1:646269984812:web:6053f752c0d3c74f653189",
-    measurementId: "G-HGZS09TX8G"
-};
+// ✅ Adjust this import to match YOUR config.js
+// Option A (recommended): your config.js exports db = getFirestore(app)
+import { db } from "./config.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// If your config.js exports firebaseConfig instead, your config.js should initialize Firestore and export db.
+// (Don’t duplicate initialization here unless you want to rewrite config.js.)
 
-// DOM
-const payrollForm = document.getElementById("payrollForm");
-const paymentDateEl = document.getElementById("paymentDate");
-const laborerNameEl = document.getElementById("laborerName");
-const amountEl = document.getElementById("amount");
-const workTypeEl = document.getElementById("workType");
-const formMsg = document.getElementById("formMsg");
+/* -----------------------------
+   Helpers
+------------------------------ */
+const $ = (id) => document.getElementById(id);
 
-const totalsTableBody = document.querySelector("#totalsTable tbody");
-const totalsCount = document.getElementById("totalsCount");
-const totalsSum = document.getElementById("totalsSum");
-
-const asOfDateEl = document.getElementById("asOfDate");
-const runReportBtn = document.getElementById("runReportBtn");
-const exportCsvBtn = document.getElementById("exportCsvBtn");
-
-const reportTableBody = document.querySelector("#reportTable tbody");
-const reportRange = document.getElementById("reportRange");
-const reportSum = document.getElementById("reportSum");
-const reportCount = document.getElementById("reportCount");
-
-const logoutLink = document.getElementById("logoutLink");
-
-let currentUid = null;
-let lastReportRows = [];
-
-// Helpers
-function toCents(amountStr) {
-  const n = Number(amountStr);
-  if (!Number.isFinite(n)) return null;
-  return Math.round(n * 100);
+function money(n) {
+  const val = Number(n || 0);
+  return val.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
 
-function centsToUsd(cents) {
-  const dollars = (cents || 0) / 100;
-  return dollars.toLocaleString(undefined, { style: "currency", currency: "USD" });
-}
-
-function dateToStartTimestamp(dateStr) {
-  // dateStr = "YYYY-MM-DD"
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dt = new Date(y, m - 1, d, 0, 0, 0, 0);
-  return Timestamp.fromDate(dt);
-}
-function dateToEndTimestamp(dateStr) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dt = new Date(y, m - 1, d, 23, 59, 59, 999);
-  return Timestamp.fromDate(dt);
-}
-
-function shiftMonths(date, months) {
-  const d = new Date(date.getTime());
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
-function isoToday() {
+function todayISO() {
   const d = new Date();
-  const pad = (x) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-function setMsg(text, isError = false) {
-  formMsg.textContent = text;
-  formMsg.style.color = isError ? "rgba(255,120,120,0.95)" : "rgba(208,229,49,0.95)";
+function monthStartISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${yyyy}-${mm}-01`;
 }
 
-// Firestore path
-function entriesCol(uid) {
-  return collection(db, "users", uid, "payrollEntries");
+function normalizeName(name) {
+  return String(name || "")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
-async function addEntry(uid, entry) {
-  await addDoc(entriesCol(uid), entry);
-}
+/* -----------------------------
+   State
+------------------------------ */
+let employees = []; // {id, name, nameLower}
+let payments = [];  // {id, ...}
 
-async function deleteEntry(uid, entryId) {
-  await deleteDoc(doc(db, "users", uid, "payrollEntries", entryId));
-}
+/* -----------------------------
+   UI elements
+------------------------------ */
+const statusText = $("statusText");
 
-// Totals by laborer (all-time)
-async function loadTotals(uid) {
-  const q = query(entriesCol(uid), orderBy("paymentDate", "desc"));
+const employeeName = $("employeeName");
+const employeeList = $("employeeList");
+const payDate = $("payDate");
+const amount = $("amount");
+const method = $("method");
+const formMsg = $("formMsg");
+const saveBtn = $("saveBtn");
+const resetBtn = $("resetBtn");
+
+const monthCount = $("monthCount");
+const monthTotal = $("monthTotal");
+const allTotal = $("allTotal");
+
+const paymentsTbody = $("paymentsTbody");
+const tableMsg = $("tableMsg");
+
+const searchBox = $("searchBox");
+const filterMethod = $("filterMethod");
+const fromDate = $("fromDate");
+const toDate = $("toDate");
+const clearFiltersBtn = $("clearFiltersBtn");
+const exportCsvBtn = $("exportCsvBtn");
+
+/* -----------------------------
+   Loaders
+------------------------------ */
+async function loadEmployees() {
+  const q = query(collection(db, "employees"), orderBy("nameLower"));
   const snap = await getDocs(q);
 
-  const totals = new Map(); // laborerName => cents
-  let grandTotal = 0;
+  employees = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderEmployeeDatalist();
+}
 
-  snap.forEach((d) => {
-    const data = d.data();
-    const name = (data.laborerName || "").trim() || "Unknown";
-    const cents = Number(data.amountCents || 0);
-    totals.set(name, (totals.get(name) || 0) + cents);
-    grandTotal += cents;
-  });
+async function loadPayments() {
+  const q = query(collection(db, "payments"), orderBy("payDate", "desc"), limit(500));
+  const snap = await getDocs(q);
 
-  const rows = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+  payments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderPaymentsTable();
+  renderStats();
+}
 
-  if (rows.length === 0) {
-    totalsTableBody.innerHTML = `<tr><td class="muted" colspan="2">No entries yet.</td></tr>`;
-  } else {
-    totalsTableBody.innerHTML = rows
-      .map(([name, cents]) => `
-        <tr>
-          <td>${escapeHtml(name)}</td>
-          <td class="right">${centsToUsd(cents)}</td>
-        </tr>
-      `).join("");
+/* -----------------------------
+   Rendering
+------------------------------ */
+function renderEmployeeDatalist() {
+  employeeList.innerHTML = "";
+  for (const e of employees) {
+    const opt = document.createElement("option");
+    opt.value = e.name;
+    employeeList.appendChild(opt);
+  }
+}
+
+function passesFilters(p) {
+  const term = searchBox.value.trim().toLowerCase();
+  const meth = filterMethod.value;
+
+  const from = fromDate.value ? new Date(fromDate.value + "T00:00:00") : null;
+  const to = toDate.value ? new Date(toDate.value + "T23:59:59") : null;
+
+  if (term && !(p.employeeNameLower || "").includes(term)) return false;
+  if (meth && p.method !== meth) return false;
+
+  if (from || to) {
+    const d = new Date((p.payDate || "") + "T12:00:00");
+    if (from && d < from) return false;
+    if (to && d > to) return false;
   }
 
-  totalsCount.textContent = `${rows.length} laborers`;
-  totalsSum.textContent = `${centsToUsd(grandTotal)} total`;
+  return true;
 }
 
-// 12-month report ending on selected date
-async function runReport(uid) {
-  const asOf = asOfDateEl.value || isoToday();
-  asOfDateEl.value = asOf;
+function renderPaymentsTable() {
+  const filtered = payments.filter(passesFilters);
 
-  const endTs = dateToEndTimestamp(asOf);
-
-  // start = asOf date minus 12 months + 1 day? Usually “last 12 months” includes same day.
-  // We'll use: start = (asOf date shifted back 12 months) + 1 day at 00:00? Instead, clean: same month/day, 12 months prior, start of day.
-  const [y, m, d] = asOf.split("-").map(Number);
-  const endDate = new Date(y, m - 1, d, 12, 0, 0, 0);
-  const startDate = shiftMonths(endDate, -12);
-  startDate.setHours(0, 0, 0, 0);
-
-  const startIso = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
-  const startTs = Timestamp.fromDate(startDate);
-
-  reportRange.textContent = `Range: ${startIso} → ${asOf}`;
-
-  const q = query(
-    entriesCol(uid),
-    where("paymentDate", ">=", startTs),
-    where("paymentDate", "<=", endTs),
-    orderBy("paymentDate", "desc")
-  );
-
-  const snap = await getDocs(q);
-
-  const rows = [];
-  let total = 0;
-
-  snap.forEach((d) => {
-    const data = d.data();
-    const pd = data.paymentDate?.toDate?.() ? data.paymentDate.toDate() : null;
-    const dateStr = pd ? pd.toISOString().slice(0, 10) : "";
-    const name = (data.laborerName || "").trim();
-    const work = (data.workType || "").trim();
-    const cents = Number(data.amountCents || 0);
-
-    total += cents;
-    rows.push({
-      id: d.id,
-      date: dateStr,
-      laborerName: name,
-      workType: work,
-      amountCents: cents
-    });
-  });
-
-  lastReportRows = rows;
-
-  reportSum.textContent = `${centsToUsd(total)} total`;
-  reportCount.textContent = `${rows.length} entries`;
-
-  if (rows.length === 0) {
-    reportTableBody.innerHTML = `<tr><td class="muted" colspan="5">No entries found for that range.</td></tr>`;
+  if (!filtered.length) {
+    paymentsTbody.innerHTML = `<tr><td colspan="5" class="muted">No payments found for the current filters.</td></tr>`;
+    tableMsg.textContent = "";
     return;
   }
 
-  reportTableBody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.date)}</td>
-      <td>${escapeHtml(r.laborerName)}</td>
-      <td>${escapeHtml(r.workType)}</td>
-      <td class="right">${centsToUsd(r.amountCents)}</td>
-      <td class="right">
-        <button class="btn-link" data-del="${r.id}">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+  paymentsTbody.innerHTML = "";
+  for (const p of filtered) {
+    const tr = document.createElement("tr");
 
-  // Wire delete buttons
-  reportTableBody.querySelectorAll("[data-del]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-del");
-      if (!confirm("Delete this entry?")) return;
-      await deleteEntry(uid, id);
-      await loadTotals(uid);
-      await runReport(uid);
-    });
-  });
+    const tdDate = document.createElement("td");
+    tdDate.textContent = p.payDate || "—";
+
+    const tdEmp = document.createElement("td");
+    tdEmp.textContent = p.employeeName || "—";
+
+    const tdMethod = document.createElement("td");
+    const pill = document.createElement("span");
+    pill.className = "pill";
+    pill.textContent = p.method || "—";
+    tdMethod.appendChild(pill);
+
+    const tdAmt = document.createElement("td");
+    tdAmt.className = "right";
+    tdAmt.textContent = money(p.amount);
+
+    const tdAct = document.createElement("td");
+    tdAct.className = "right";
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.textContent = "Delete";
+    delBtn.addEventListener("click", () => onDeletePayment(p.id, p.employeeName, p.payDate));
+    tdAct.appendChild(delBtn);
+
+    tr.append(tdDate, tdEmp, tdMethod, tdAmt, tdAct);
+    paymentsTbody.appendChild(tr);
+  }
+
+  tableMsg.textContent = `Showing ${filtered.length} of ${payments.length} payments (max 500 loaded).`;
 }
 
-function exportReportCsv() {
-  if (!lastReportRows || lastReportRows.length === 0) {
-    alert("Run a report first.");
+function renderStats() {
+  const start = monthStartISO();
+
+  const monthPays = payments.filter(p => (p.payDate || "") >= start);
+  const monthSum = monthPays.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  const allSum = payments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+
+  monthCount.textContent = String(monthPays.length);
+  monthTotal.textContent = money(monthSum);
+  allTotal.textContent = money(allSum);
+}
+
+function setFormMessage(type, text) {
+  if (!text) {
+    formMsg.innerHTML = "";
+    return;
+  }
+  const cls = type === "error" ? "danger" : "success";
+  formMsg.innerHTML = `<span class="${cls}">${text}</span>`;
+}
+
+/* -----------------------------
+   Actions
+------------------------------ */
+async function ensureEmployee(name) {
+  const clean = normalizeName(name);
+  const lower = clean.toLowerCase();
+  if (!clean) throw new Error("Employee name is required.");
+
+  // If already loaded, return it
+  const existing = employees.find(e => e.nameLower === lower);
+  if (existing) return existing;
+
+  // Otherwise create
+  const ref = await addDoc(collection(db, "employees"), {
+    name: clean,
+    nameLower: lower,
+    createdAt: serverTimestamp(),
+  });
+
+  const newEmp = { id: ref.id, name: clean, nameLower: lower };
+  employees.push(newEmp);
+  employees.sort((a, b) => a.nameLower.localeCompare(b.nameLower));
+  renderEmployeeDatalist();
+  return newEmp;
+}
+
+async function onSubmitPayment(e) {
+  e.preventDefault();
+
+  try {
+    saveBtn.disabled = true;
+    setFormMessage("", "");
+
+    const empName = normalizeName(employeeName.value);
+    const date = payDate.value;
+    const amt = Number(amount.value);
+    const meth = method.value;
+
+    if (!empName) throw new Error("Please enter an employee name.");
+    if (!date) throw new Error("Please choose a payment date.");
+    if (!Number.isFinite(amt) || amt <= 0) throw new Error("Please enter a valid amount greater than 0.");
+    if (!meth) throw new Error("Please choose a payment method.");
+
+    statusText.textContent = "Saving…";
+
+    const emp = await ensureEmployee(empName);
+
+    await addDoc(collection(db, "payments"), {
+      employeeId: emp.id,
+      employeeName: emp.name,
+      employeeNameLower: emp.nameLower,
+      payDate: date,          // store as YYYY-MM-DD (simple + sortable)
+      amount: Number(amt.toFixed(2)),
+      method: meth,
+      createdAt: serverTimestamp(),
+    });
+
+    setFormMessage("success", "Payment saved.");
+    resetFormKeepToday();
+    await loadPayments();
+    statusText.textContent = "Ready";
+  } catch (err) {
+    console.error(err);
+    setFormMessage("error", err?.message || "Error saving payment.");
+    statusText.textContent = "Error";
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+function resetFormKeepToday() {
+  employeeName.value = "";
+  amount.value = "";
+  method.value = "Cash";
+  // keep date as-is
+}
+
+async function onDeletePayment(paymentId, empName, date) {
+  const ok = confirm(`Delete this payment?\n\nEmployee: ${empName || "—"}\nDate: ${date || "—"}`);
+  if (!ok) return;
+
+  try {
+    statusText.textContent = "Deleting…";
+    await deleteDoc(doc(db, "payments", paymentId));
+    payments = payments.filter(p => p.id !== paymentId);
+    renderPaymentsTable();
+    renderStats();
+    statusText.textContent = "Ready";
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "Error deleting payment.");
+    statusText.textContent = "Error";
+  }
+}
+
+function clearFilters() {
+  searchBox.value = "";
+  filterMethod.value = "";
+  fromDate.value = "";
+  toDate.value = "";
+  renderPaymentsTable();
+}
+
+function exportCsv() {
+  const rows = payments.filter(passesFilters).map(p => ({
+    payDate: p.payDate || "",
+    employeeName: p.employeeName || "",
+    method: p.method || "",
+    amount: Number(p.amount || 0),
+  }));
+
+  if (!rows.length) {
+    alert("No rows to export.");
     return;
   }
 
-  const headers = ["Date", "Laborer", "Work Type", "Amount"];
-  const lines = [headers.join(",")];
+  const header = ["Date", "Employee", "Method", "Amount"];
+  const lines = [
+    header.join(","),
+    ...rows.map(r => [
+      csvCell(r.payDate),
+      csvCell(r.employeeName),
+      csvCell(r.method),
+      csvCell(r.amount.toFixed(2)),
+    ].join(",")),
+  ];
 
-  for (const r of lastReportRows) {
-    const row = [
-      csvSafe(r.date),
-      csvSafe(r.laborerName),
-      csvSafe(r.workType),
-      csvSafe((r.amountCents / 100).toFixed(2))
-    ];
-    lines.push(row.join(","));
-  }
-
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
-  a.download = `payroll_report_${(asOfDateEl.value || isoToday())}.csv`;
+  a.download = `payroll_${todayISO()}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
 
-function csvSafe(v) {
+function csvCell(v) {
   const s = String(v ?? "");
   // escape quotes and wrap in quotes if needed
-  if (/[,"\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
-function escapeHtml(str) {
-  return String(str ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-// Auth gate
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    // Redirect to your login page if different
-    window.location.href = "login.html";
-    return;
-  }
-  currentUid = user.uid;
-
-  // defaults
-  paymentDateEl.value = isoToday();
-  asOfDateEl.value = isoToday();
-
-  await loadTotals(currentUid);
-  // optional: auto-run report on load
-  await runReport(currentUid);
-});
-
-// Events
-payrollForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!currentUid) return;
-
-  const paymentDate = paymentDateEl.value;
-  const laborerName = laborerNameEl.value.trim();
-  const workType = workTypeEl.value.trim();
-  const cents = toCents(amountEl.value);
-
-  if (!paymentDate || !laborerName || !workType || cents === null) {
-    setMsg("Please fill out all fields correctly.", true);
-    return;
-  }
-
+/* -----------------------------
+   Init
+------------------------------ */
+async function init() {
   try {
-    await addEntry(currentUid, {
-      paymentDate: dateToStartTimestamp(paymentDate),
-      laborerName,
-      workType,
-      amountCents: cents,
-      createdAt: serverTimestamp()
-    });
+    statusText.textContent = "Loading…";
+    payDate.value = todayISO();
 
-    setMsg("Entry added.");
-    amountEl.value = "";
-    workTypeEl.value = "";
-    // keep laborer name to speed entry; uncomment next line if you want it cleared:
-    // laborerNameEl.value = "";
+    // Optional convenience default: set "from" to month start
+    // fromDate.value = monthStartISO();
 
-    await loadTotals(currentUid);
-    await runReport(currentUid);
+    await loadEmployees();
+    await loadPayments();
+
+    statusText.textContent = "Ready";
   } catch (err) {
     console.error(err);
-    setMsg("Error saving entry. Check console.", true);
+    statusText.textContent = "Error";
+    formMsg.innerHTML = `<span class="danger">Firebase not ready. Check config.js export (db) and Firestore rules.</span>`;
   }
-});
-
-runReportBtn.addEventListener("click", async () => {
-  if (!currentUid) return;
-  await runReport(currentUid);
-});
-
-exportCsvBtn.addEventListener("click", () => exportReportCsv());
-
-if (logoutLink) {
-  logoutLink.addEventListener("click", async (e) => {
-    // If your logout is a real page, remove this handler.
-    e.preventDefault();
-    await signOut(auth);
-    window.location.href = "login.html";
-  });
 }
+
+$("paymentForm").addEventListener("submit", onSubmitPayment);
+resetBtn.addEventListener("click", resetFormKeepToday);
+
+searchBox.addEventListener("input", renderPaymentsTable);
+filterMethod.addEventListener("change", renderPaymentsTable);
+fromDate.addEventListener("change", renderPaymentsTable);
+toDate.addEventListener("change", renderPaymentsTable);
+
+clearFiltersBtn.addEventListener("click", clearFilters);
+exportCsvBtn.addEventListener("click", exportCsv);
+
+init();
