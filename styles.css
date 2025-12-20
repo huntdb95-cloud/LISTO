@@ -448,6 +448,92 @@ input:focus{ border-color: rgba(94,234,212,0.38); box-shadow: 0 0 0 3px rgba(94,
   .kv-row { grid-template-columns: 1fr; }
 }
 
+/* ===== W-9 preview overlay ===== */
+.w9-stage{
+  width: 100%;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+/* Use a fixed “design size” for easy positioning.
+   8.5x11 ratio at 96dpi => 816 x 1056 */
+.w9-sheet{
+  position: relative;
+  width: 816px;
+  height: 1056px;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.w9-bg{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.w9-txt, .w9-check{
+  position: absolute;
+  left: calc(var(--x) * 1px);
+  top: calc(var(--y) * 1px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.w9-txt{
+  width: calc(var(--w, 200) * 1px);
+  font-size: calc(var(--size, 14) * 1px);
+  line-height: 1.1;
+  color: #111;
+  font-weight: 600;
+  text-shadow: 0 0 0 transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w9-check{
+  width: 12px;
+  height: 12px;
+  border: 2px solid #111;
+  border-radius: 2px;
+  background: transparent;
+  opacity: 0; /* hidden until selected */
+}
+.w9-check.on{
+  opacity: 1;
+  background:
+    linear-gradient(45deg, transparent 45%, #111 46%, #111 54%, transparent 55%),
+    linear-gradient(-45deg, transparent 45%, #111 46%, #111 54%, transparent 55%);
+}
+.fieldset{
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.03);
+  border-radius: 16px;
+  padding: 12px;
+}
+.radio-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.radio{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+}
+.grid-2.tight{ gap: 10px; }
 
 
 /* ========== Responsive ========== */
