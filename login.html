@@ -1,76 +1,65 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Listo — Login</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — Login</title>
+<link href="styles.css" rel="stylesheet"/>
 </head>
-
 <body data-page="login">
-  <a class="skip-link" href="#main">Skip to content</a>
-
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Listo Home">
-        <span class="brand-mark" aria-hidden="true">L</span>
-        <span class="brand-name">Listo</span>
-      </a>
-
-      <div class="header-actions">
-        <div class="lang-switch" role="group" aria-label="Language toggle">
-          <button type="button" class="chip" data-lang="en" aria-pressed="true">EN</button>
-          <button type="button" class="chip" data-lang="es" aria-pressed="false">ES</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main id="main" class="auth-wrap">
-    <section class="container auth-grid">
-      <div class="card auth-card">
-        <div class="card-header">
-          <h1 class="auth-title" data-i18n="auth.loginTitle">Welcome back</h1>
-          <p class="muted" data-i18n="auth.loginSubtitle">Log in to access your Listo workspace.</p>
-        </div>
-
-        <form id="loginForm" class="auth-form">
-          <label class="field">
-            <span class="field-label" data-i18n="auth.email">Email</span>
-            <input id="loginEmail" type="email" autocomplete="email" required />
-          </label>
-
-          <label class="field">
-            <span class="field-label" data-i18n="auth.password">Password</span>
-            <input id="loginPassword" type="password" autocomplete="current-password" required />
-          </label>
-
-          <button class="btn primary" type="submit" data-i18n="auth.loginBtn">Log In</button>
-
-          <p class="muted tiny">
-            <span data-i18n="auth.noAccount">No account?</span>
-            <a class="mini-link inline" href="signup.html" data-i18n="auth.goSignup">Create one</a>
-          </p>
-
-          <p id="loginError" class="form-error" role="alert" aria-live="polite"></p>
-        </form>
-      </div>
-
-      <div class="auth-side">
-        <h2 data-i18n="auth.sideTitle">Private. Secure. Built for onboarding.</h2>
-        <p class="muted" data-i18n="auth.sideBody">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a aria-label="Listo Home" class="brand" href="index.html">
+<span aria-hidden="true" class="brand-mark">L</span>
+<span class="brand-name">Listo</span>
+</a>
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="sidebar-nav" id="sideNav"></div></aside><main class="auth-wrap" id="main">
+<section class="container auth-grid">
+<div class="card auth-card">
+<div class="card-header">
+<h1 class="auth-title" data-i18n="auth.loginTitle">Welcome back</h1>
+<p class="muted" data-i18n="auth.loginSubtitle">Log in to access your Listo workspace.</p>
+</div>
+<form class="auth-form" id="loginForm">
+<label class="field">
+<span class="field-label" data-i18n="auth.email">Email</span>
+<input autocomplete="email" id="loginEmail" required="" type="email"/>
+</label>
+<label class="field">
+<span class="field-label" data-i18n="auth.password">Password</span>
+<input autocomplete="current-password" id="loginPassword" required="" type="password"/>
+</label>
+<button class="btn primary" data-i18n="auth.loginBtn" type="submit">Log In</button>
+<p class="muted tiny">
+<span data-i18n="auth.noAccount">No account?</span>
+<a class="mini-link inline" data-i18n="auth.goSignup" href="signup.html">Create one</a>
+</p>
+<p aria-live="polite" class="form-error" id="loginError" role="alert"></p>
+</form>
+</div>
+<div class="auth-side">
+<h2 data-i18n="auth.sideTitle">Private. Secure. Built for onboarding.</h2>
+<p class="muted" data-i18n="auth.sideBody">
           Your documents and uploads are protected behind your login.
         </p>
-        <div class="trust-row">
-          <div class="pill" data-i18n="hero.pill1">W-9 Completed</div>
-          <div class="pill" data-i18n="hero.pill2">Active COI Uploaded</div>
-          <div class="pill" data-i18n="hero.pill3">Subcontractor Agreement Signed</div>
-        </div>
-      </div>
-    </section>
-  </main>
+<div class="trust-row">
+<div class="pill" data-i18n="hero.pill1">W-9 Completed</div>
+<div class="pill" data-i18n="hero.pill2">Active COI Uploaded</div>
+<div class="pill" data-i18n="hero.pill3">Subcontractor Agreement Signed</div>
+</div>
+</div>
+</section>
+</main></div>
 
-  <script type="module" src="scripts.js"></script>
+<script src="scripts.js" type="module"></script>
 </body>
 </html>
-

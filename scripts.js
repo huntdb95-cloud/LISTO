@@ -829,29 +829,42 @@ async function initW9Page(user) {
 }
 
 /* ========= Existing UI bits ========= */
-function initMobileNav() {
-  const toggle = document.querySelector(".nav-toggle");
-  const menu = document.querySelector("#navMenu");
-  if (!toggle || !menu) return;
 
-  const setState = (open) => {
-    menu.classList.toggle("open", open);
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+/* ========== Sidebar (Mobile Toggle + Active Link) ========= */
+function initSidebarNav() {
+  const toggle = document.querySelector(".sidebar-toggle");
+  const sidebar = document.querySelector(".sidebar");
+  const sideNav = document.querySelector("#sideNav");
+  if (!sidebar || !sideNav) return;
+
+  const setOpen = (open) => {
+    sidebar.classList.toggle("open", open);
+    if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
   };
 
-  toggle.addEventListener("click", () => setState(!menu.classList.contains("open")));
-  menu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => setState(false)));
+  // Toggle sidebar on mobile
+  if (toggle) {
+    toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("open")));
+  }
 
+  // Close after clicking a link (mobile)
+  sideNav.querySelectorAll("a").forEach(a => a.addEventListener("click", () => setOpen(false)));
+
+  // Close when clicking outside
   document.addEventListener("click", (e) => {
-    if (!menu.classList.contains("open")) return;
-    const clickedInside = menu.contains(e.target) || toggle.contains(e.target);
-    if (!clickedInside) setState(false);
+    if (!sidebar.classList.contains("open")) return;
+    if (sidebar.contains(e.target) || (toggle && toggle.contains(e.target))) return;
+    setOpen(false);
   });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setState(false);
+  // Mark active link
+  const path = window.location.pathname.split("/").pop() || "index.html";
+  sideNav.querySelectorAll("a").forEach(a => {
+    const href = (a.getAttribute("href") || "").split("/").pop();
+    if (href === path) a.classList.add("active");
   });
 }
+
 
 function initYear() {
   const y = document.getElementById("year");
@@ -860,7 +873,7 @@ function initYear() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   initLanguage();
-  initMobileNav();
+  initSidebarNav();
   initYear();
 
   const ok = await initFirebase();

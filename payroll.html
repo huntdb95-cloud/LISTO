@@ -1,138 +1,117 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Listo — Payroll</title>
-
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — Payroll</title>
+<link href="styles.css" rel="stylesheet"/>
 </head>
-<body>
-  <!-- Header: match your site header structure if you already have one -->
-  <header class="header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Listo Home">
-        <img src="logo.png" alt="Listo logo" class="brand-logo">
-      </a>
+<body><a class="skip-link" href="#main">Skip to content</a>
+<!-- Header: match your site header structure if you already have one -->
+<header class="site-header">
+<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a aria-label="Listo Home" class="brand" href="index.html">
+<img alt="Listo logo" class="brand-logo" src="images/logo.png"/>
+</a>
 
-      <nav class="nav">
-        <a href="index.html">Home</a>
-        <a class="active" href="payroll.html">Payroll</a>
-        <a href="logout.html" id="logoutLink">Logout</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="container page">
-    <section class="card">
-      <div class="card-header">
-        <h1>Payroll</h1>
-        <p class="muted">Add payments, see totals by laborer, and export the last 12 months of payments.</p>
-      </div>
-
-      <div class="grid-2">
-        <!-- Entry Form -->
-        <div class="panel">
-          <h2 class="h3">Add a payroll entry</h2>
-
-          <form id="payrollForm" class="form">
-            <label>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="sidebar-nav" id="sideNav"><a class="sidebar-link" href="index.html">Home</a><a class="active sidebar-link" href="payroll.html">Payroll</a><a class="sidebar-link" href="logout.html" id="logoutLink">Logout</a></div></aside><main class="page container app-main" id="main">
+<section class="card">
+<div class="card-header">
+<h1>Payroll</h1>
+<p class="muted">Add payments, see totals by laborer, and export the last 12 months of payments.</p>
+</div>
+<div class="grid-2">
+<!-- Entry Form -->
+<div class="panel">
+<h2 class="h3">Add a payroll entry</h2>
+<form class="form" id="payrollForm">
+<label>
               Date of payment
-              <input type="date" id="paymentDate" required />
-            </label>
-
-            <label>
+              <input id="paymentDate" required="" type="date"/>
+</label>
+<label>
               Laborer name
-              <input type="text" id="laborerName" placeholder="e.g., John Ramirez" required />
-            </label>
-
-            <label>
+              <input id="laborerName" placeholder="e.g., John Ramirez" required="" type="text"/>
+</label>
+<label>
               Amount paid
-              <input type="number" id="amount" min="0" step="0.01" placeholder="e.g., 250.00" required />
-            </label>
-
-            <label>
+              <input id="amount" min="0" placeholder="e.g., 250.00" required="" step="0.01" type="number"/>
+</label>
+<label>
               Type of work
-              <input type="text" id="workType" placeholder="e.g., framing, demo, tile" required />
-            </label>
-
-            <button type="submit" class="btn">Add entry</button>
-            <div class="form-note" id="formMsg" aria-live="polite"></div>
-          </form>
-        </div>
-
-        <!-- Totals -->
-        <div class="panel">
-          <h2 class="h3">Totals by laborer</h2>
-          <div class="totals-meta">
-            <span class="badge" id="totalsCount">0 laborers</span>
-            <span class="badge" id="totalsSum">$0.00 total</span>
-          </div>
-          <div class="table-wrap">
-            <table class="table" id="totalsTable">
-              <thead>
-                <tr>
-                  <th>Laborer</th>
-                  <th class="right">Total Paid</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td class="muted" colspan="2">No entries yet.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <hr class="divider" />
-
-      <!-- Report -->
-      <section class="panel">
-        <div class="report-head">
-          <div>
-            <h2 class="h3">12-month report</h2>
-            <p class="muted">Pick an “as of” date. We’ll pull the prior 12 months ending on that date.</p>
-          </div>
-
-          <div class="report-controls">
-            <label class="inline">
+              <input id="workType" placeholder="e.g., framing, demo, tile" required="" type="text"/>
+</label>
+<button class="btn" type="submit">Add entry</button>
+<div aria-live="polite" class="form-note" id="formMsg"></div>
+</form>
+</div>
+<!-- Totals -->
+<div class="panel">
+<h2 class="h3">Totals by laborer</h2>
+<div class="totals-meta">
+<span class="badge" id="totalsCount">0 laborers</span>
+<span class="badge" id="totalsSum">$0.00 total</span>
+</div>
+<div class="table-wrap">
+<table class="table" id="totalsTable">
+<thead>
+<tr>
+<th>Laborer</th>
+<th class="right">Total Paid</th>
+</tr>
+</thead>
+<tbody>
+<tr><td class="muted" colspan="2">No entries yet.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<hr class="divider"/>
+<!-- Report -->
+<section class="panel">
+<div class="report-head">
+<div>
+<h2 class="h3">12-month report</h2>
+<p class="muted">Pick an “as of” date. We’ll pull the prior 12 months ending on that date.</p>
+</div>
+<div class="report-controls">
+<label class="inline">
               As of date
-              <input type="date" id="asOfDate" />
-            </label>
+              <input id="asOfDate" type="date"/>
+</label>
+<button class="btn btn-secondary" id="runReportBtn" type="button">Run report</button>
+<button class="btn" id="exportCsvBtn" type="button">Export CSV</button>
+</div>
+</div>
+<div class="report-meta">
+<span class="badge" id="reportRange">Range: —</span>
+<span class="badge" id="reportSum">$0.00 total</span>
+<span class="badge" id="reportCount">0 entries</span>
+</div>
+<div class="table-wrap">
+<table class="table" id="reportTable">
+<thead>
+<tr>
+<th>Date</th>
+<th>Laborer</th>
+<th>Work Type</th>
+<th class="right">Amount</th>
+<th class="right">Action</th>
+</tr>
+</thead>
+<tbody>
+<tr><td class="muted" colspan="5">Run a report to see entries.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+</main></div>
 
-            <button class="btn btn-secondary" id="runReportBtn" type="button">Run report</button>
-            <button class="btn" id="exportCsvBtn" type="button">Export CSV</button>
-          </div>
-        </div>
-
-        <div class="report-meta">
-          <span class="badge" id="reportRange">Range: —</span>
-          <span class="badge" id="reportSum">$0.00 total</span>
-          <span class="badge" id="reportCount">0 entries</span>
-        </div>
-
-        <div class="table-wrap">
-          <table class="table" id="reportTable">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Laborer</th>
-                <th>Work Type</th>
-                <th class="right">Amount</th>
-                <th class="right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td class="muted" colspan="5">Run a report to see entries.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-  </main>
-
-  <!-- Firebase + Payroll JS -->
-  <script type="module" src="payroll.js"></script>
+<!-- Firebase + Payroll JS -->
+<script src="payroll.js" type="module"></script>
 </body>
 </html>
-

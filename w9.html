@@ -1,298 +1,249 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Listo — W-9</title>
-  <meta name="description" content="Fill out and save your W-9 information securely in your Listo account." />
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — W-9</title>
+<meta content="Fill out and save your W-9 information securely in your Listo account." name="description"/>
+<link href="styles.css" rel="stylesheet"/>
 </head>
-
 <body data-page="w9" data-requires-auth="true">
-  <a class="skip-link" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a aria-label="Listo Home" class="brand" href="index.html">
+<span aria-hidden="true" class="brand-mark">L</span>
+<span class="brand-name">Listo</span>
+</a>
 
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Listo Home">
-        <span class="brand-mark" aria-hidden="true">L</span>
-        <span class="brand-name">Listo</span>
-      </a>
-
-      <nav class="nav" aria-label="Primary navigation">
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="navMenu">
-          <span class="sr-only" data-i18n="nav.menu">Menu</span>
-          <span class="hamburger" aria-hidden="true"></span>
-        </button>
-
-        <div class="nav-menu" id="navMenu">
-          <a class="nav-link" href="index.html" data-i18n="nav.home">Home</a>
-          <a class="nav-link" href="prequal.html" data-i18n="nav.prequal">Pre-Qualification</a>
-          <a class="nav-link" href="payroll.html" data-i18n="nav.payroll">Payroll</a>
-          <a class="nav-link" href="audit.html" data-i18n="nav.audit">Insurance Audit Help</a>
-          <a class="nav-link" href="directory.html" data-i18n="nav.directory">Directory</a>
-        </div>
-      </nav>
-
-      <div class="header-actions">
-        <div class="lang-switch" role="group" aria-label="Language toggle">
-          <button type="button" class="chip" data-lang="en" aria-pressed="true">EN</button>
-          <button type="button" class="chip" data-lang="es" aria-pressed="false">ES</button>
-        </div>
-
-        <button id="logoutBtn" class="btn small ghost" type="button" hidden data-i18n="auth.logout">
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
           Log out
         </button>
-      </div>
-    </div>
-  </header>
-
-  <main id="main">
-    <section class="section">
-      <div class="container">
-        <div class="section-head">
-          <h1 class="page-title">W-9</h1>
-          <p class="muted">
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.home" href="index.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
+<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="payroll.html">Payroll</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit.html">Insurance Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.directory" href="directory.html">Directory</a>
+</div></aside><main id="main">
+<section class="section">
+<div class="container">
+<div class="section-head">
+<h1 class="page-title">W-9</h1>
+<p class="muted">
             Fill out the information below. Your entries are saved to your account and previewed on the W-9 image.
           </p>
-        </div>
-
-        <div class="grid-2">
-          <!-- FORM -->
-          <div class="card pad">
-            <div class="row-between">
-              <div>
-                <h2 class="h2">W-9 Information</h2>
-                <p class="muted small">We’ll store these entries under your login and mark W-9 as completed.</p>
-              </div>
-              <a class="btn small" href="prequal.html">Back</a>
-            </div>
-
-            <div class="divider"></div>
-
-            <form id="w9Form" class="form-grid">
-              <!-- Lines 1 & 2 -->
-              <label class="field">
-                <span class="field-label">1) Name (as shown on your income tax return)</span>
-                <input id="w9_name1" type="text" autocomplete="name" required />
-              </label>
-
-              <label class="field">
-                <span class="field-label">2) Business name / disregarded entity name (if different)</span>
-                <input id="w9_name2" type="text" />
-              </label>
-
-              <!-- Tax classification -->
-              <fieldset class="fieldset">
-                <legend class="field-label">3a) Federal tax classification (select one)</legend>
-
-                <div class="radio-grid">
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="individual" required />
-                    <span>Individual / Sole proprietor</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="c_corp" />
-                    <span>C corporation</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="s_corp" />
-                    <span>S corporation</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="partnership" />
-                    <span>Partnership</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="trust_estate" />
-                    <span>Trust / estate</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="llc" />
-                    <span>LLC</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="taxClass" value="other" />
-                    <span>Other</span>
-                  </label>
-                </div>
-
-                <div class="grid-2 tight">
-                  <label class="field" id="llcTypeWrap">
-                    <span class="field-label">LLC classification (C / S / P)</span>
-                    <input id="w9_llcType" type="text" placeholder="C, S, or P" maxlength="1" />
-                  </label>
-
-                  <label class="field" id="otherTypeWrap">
-                    <span class="field-label">Other classification (text)</span>
-                    <input id="w9_otherType" type="text" placeholder="(see instructions)" />
-                  </label>
-                </div>
-              </fieldset>
-
-              <!-- Exemptions -->
-              <div class="grid-2 tight">
-                <label class="field">
-                  <span class="field-label">4) Exempt payee code (if any)</span>
-                  <input id="w9_exemptPayee" type="text" />
-                </label>
-
-                <label class="field">
-                  <span class="field-label">4) FATCA reporting code (if any)</span>
-                  <input id="w9_fatca" type="text" />
-                </label>
-              </div>
-
-              <!-- Address -->
-              <label class="field">
-                <span class="field-label">5) Address (number, street, apt/suite)</span>
-                <input id="w9_address" type="text" autocomplete="street-address" />
-              </label>
-
-              <label class="field">
-                <span class="field-label">6) City, state, and ZIP</span>
-                <input id="w9_cityStateZip" type="text" autocomplete="postal-code" />
-              </label>
-
-              <label class="field">
-                <span class="field-label">Requester’s name and address (optional)</span>
-                <input id="w9_requester" type="text" />
-              </label>
-
-              <label class="field">
-                <span class="field-label">7) Account number(s) (optional)</span>
-                <input id="w9_accounts" type="text" />
-              </label>
-
-              <!-- TIN -->
-              <fieldset class="fieldset">
-                <legend class="field-label">Taxpayer Identification Number (TIN)</legend>
-
-                <div class="grid-2 tight">
-                  <label class="radio">
-                    <input type="radio" name="tinType" value="ssn" checked />
-                    <span>SSN</span>
-                  </label>
-                  <label class="radio">
-                    <input type="radio" name="tinType" value="ein" />
-                    <span>EIN</span>
-                  </label>
-                </div>
-
-                <label class="field">
-                  <span class="field-label">TIN number</span>
-                  <input id="w9_tin" type="text" placeholder="SSN or EIN" />
-                  <span class="muted small">Tip: You can type numbers only; formatting can be added later.</span>
-                </label>
-              </fieldset>
-
-              <!-- Signature -->
-              <div class="grid-2 tight">
-                <label class="field">
-                  <span class="field-label">Signature of U.S. person</span>
-                  <input id="w9_signature" type="text" placeholder="Type full name" />
-                </label>
-
-                <label class="field">
-                  <span class="field-label">Date</span>
-                  <input id="w9_date" type="date" />
-                </label>
-              </div>
-
-              <div class="row">
-                <button class="btn primary" type="submit" id="w9SaveBtn">Save W-9</button>
-                <button class="btn" type="button" id="w9RefreshBtn">Refresh Preview</button>
-              </div>
-
-              <p id="w9Msg" class="muted small" role="status" aria-live="polite"></p>
-              <p id="w9Err" class="form-error" role="alert" aria-live="polite"></p>
-            </form>
-          </div>
-
-          <!-- PREVIEW -->
-          <div class="card pad">
-            <div class="row-between">
-              <div>
-                <h2 class="h2">W-9 Preview</h2>
-                <p class="muted small">Overlay is adjustable. We’ll fine-tune coordinates after testing.</p>
-              </div>
-              <div class="muted small" id="w9LoadedMeta"></div>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- 8.5x11 aspect container -->
-            <div class="w9-stage" aria-label="W-9 overlay preview">
-              <div class="w9-sheet" id="w9Sheet">
-                <img class="w9-bg" src="images/w9.png" alt="W-9 background" />
-
-                <!-- Overlay fields (positions are placeholders; you’ll tune them) -->
-                <div class="w9-txt" data-bind="name1" style="--x: 110; --y: 150; --w: 520;"></div>
-                <div class="w9-txt" data-bind="name2" style="--x: 110; --y: 205; --w: 520;"></div>
-
-                <!-- Tax classification checkboxes: set by JS -->
-                <div class="w9-check" data-check="individual"   style="--x: 122; --y: 284;"></div>
-                <div class="w9-check" data-check="c_corp"       style="--x: 305; --y: 284;"></div>
-                <div class="w9-check" data-check="s_corp"       style="--x: 418; --y: 284;"></div>
-                <div class="w9-check" data-check="partnership"  style="--x: 520; --y: 284;"></div>
-                <div class="w9-check" data-check="trust_estate" style="--x: 655; --y: 284;"></div>
-
-                <div class="w9-check" data-check="llc"          style="--x: 122; --y: 324;"></div>
-                <div class="w9-txt"   data-bind="llcType"       style="--x: 230; --y: 322; --w: 26; --size: 14;"></div>
-
-                <div class="w9-check" data-check="other"        style="--x: 122; --y: 362;"></div>
-                <div class="w9-txt"   data-bind="otherType"     style="--x: 210; --y: 360; --w: 260;"></div>
-
-                <div class="w9-txt" data-bind="exemptPayee" style="--x: 738; --y: 290; --w: 120;"></div>
-                <div class="w9-txt" data-bind="fatca"       style="--x: 738; --y: 347; --w: 120;"></div>
-
-                <div class="w9-txt" data-bind="address"      style="--x: 110; --y: 448; --w: 520;"></div>
-                <div class="w9-txt" data-bind="cityStateZip" style="--x: 110; --y: 502; --w: 520;"></div>
-
-                <div class="w9-txt" data-bind="requester" style="--x: 660; --y: 448; --w: 240;"></div>
-                <div class="w9-txt" data-bind="accounts"  style="--x: 110; --y: 558; --w: 760;"></div>
-
-                <!-- TIN boxes (we’ll show the string; later you can split into boxes) -->
-                <div class="w9-txt" data-bind="tin" style="--x: 690; --y: 628; --w: 210; --size: 16;"></div>
-
-                <!-- Signature + date -->
-                <div class="w9-txt" data-bind="signature" style="--x: 120; --y: 785; --w: 520;"></div>
-                <div class="w9-txt" data-bind="date"      style="--x: 730; --y: 785; --w: 160;"></div>
-              </div>
-            </div>
-
-            <p class="muted small" style="margin-top:12px;">
+</div>
+<div class="grid-2">
+<!-- FORM -->
+<div class="card pad">
+<div class="row-between">
+<div>
+<h2 class="h2">W-9 Information</h2>
+<p class="muted small">We’ll store these entries under your login and mark W-9 as completed.</p>
+</div>
+<a class="btn small" href="prequal.html">Back</a>
+</div>
+<div class="divider"></div>
+<form class="form-grid" id="w9Form">
+<!-- Lines 1 & 2 -->
+<label class="field">
+<span class="field-label">1) Name (as shown on your income tax return)</span>
+<input autocomplete="name" id="w9_name1" required="" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">2) Business name / disregarded entity name (if different)</span>
+<input id="w9_name2" type="text"/>
+</label>
+<!-- Tax classification -->
+<fieldset class="fieldset">
+<legend class="field-label">3a) Federal tax classification (select one)</legend>
+<div class="radio-grid">
+<label class="radio">
+<input name="taxClass" required="" type="radio" value="individual"/>
+<span>Individual / Sole proprietor</span>
+</label>
+<label class="radio">
+<input name="taxClass" type="radio" value="c_corp"/>
+<span>C corporation</span>
+</label>
+<label class="radio">
+<input name="taxClass" type="radio" value="s_corp"/>
+<span>S corporation</span>
+</label>
+<label class="radio">
+<input name="taxClass" type="radio" value="partnership"/>
+<span>Partnership</span>
+</label>
+<label class="radio">
+<input name="taxClass" type="radio" value="trust_estate"/>
+<span>Trust / estate</span>
+</label>
+<label class="radio">
+<input name="taxClass" type="radio" value="llc"/>
+<span>LLC</span>
+</label>
+<label class="radio">
+<input name="taxClass" type="radio" value="other"/>
+<span>Other</span>
+</label>
+</div>
+<div class="grid-2 tight">
+<label class="field" id="llcTypeWrap">
+<span class="field-label">LLC classification (C / S / P)</span>
+<input id="w9_llcType" maxlength="1" placeholder="C, S, or P" type="text"/>
+</label>
+<label class="field" id="otherTypeWrap">
+<span class="field-label">Other classification (text)</span>
+<input id="w9_otherType" placeholder="(see instructions)" type="text"/>
+</label>
+</div>
+</fieldset>
+<!-- Exemptions -->
+<div class="grid-2 tight">
+<label class="field">
+<span class="field-label">4) Exempt payee code (if any)</span>
+<input id="w9_exemptPayee" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">4) FATCA reporting code (if any)</span>
+<input id="w9_fatca" type="text"/>
+</label>
+</div>
+<!-- Address -->
+<label class="field">
+<span class="field-label">5) Address (number, street, apt/suite)</span>
+<input autocomplete="street-address" id="w9_address" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">6) City, state, and ZIP</span>
+<input autocomplete="postal-code" id="w9_cityStateZip" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">Requester’s name and address (optional)</span>
+<input id="w9_requester" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">7) Account number(s) (optional)</span>
+<input id="w9_accounts" type="text"/>
+</label>
+<!-- TIN -->
+<fieldset class="fieldset">
+<legend class="field-label">Taxpayer Identification Number (TIN)</legend>
+<div class="grid-2 tight">
+<label class="radio">
+<input checked="" name="tinType" type="radio" value="ssn"/>
+<span>SSN</span>
+</label>
+<label class="radio">
+<input name="tinType" type="radio" value="ein"/>
+<span>EIN</span>
+</label>
+</div>
+<label class="field">
+<span class="field-label">TIN number</span>
+<input id="w9_tin" placeholder="SSN or EIN" type="text"/>
+<span class="muted small">Tip: You can type numbers only; formatting can be added later.</span>
+</label>
+</fieldset>
+<!-- Signature -->
+<div class="grid-2 tight">
+<label class="field">
+<span class="field-label">Signature of U.S. person</span>
+<input id="w9_signature" placeholder="Type full name" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">Date</span>
+<input id="w9_date" type="date"/>
+</label>
+</div>
+<div class="row">
+<button class="btn primary" id="w9SaveBtn" type="submit">Save W-9</button>
+<button class="btn" id="w9RefreshBtn" type="button">Refresh Preview</button>
+</div>
+<p aria-live="polite" class="muted small" id="w9Msg" role="status"></p>
+<p aria-live="polite" class="form-error" id="w9Err" role="alert"></p>
+</form>
+</div>
+<!-- PREVIEW -->
+<div class="card pad">
+<div class="row-between">
+<div>
+<h2 class="h2">W-9 Preview</h2>
+<p class="muted small">Overlay is adjustable. We’ll fine-tune coordinates after testing.</p>
+</div>
+<div class="muted small" id="w9LoadedMeta"></div>
+</div>
+<div class="divider"></div>
+<!-- 8.5x11 aspect container -->
+<div aria-label="W-9 overlay preview" class="w9-stage">
+<div class="w9-sheet" id="w9Sheet">
+<img alt="W-9 background" class="w9-bg" src="images/w9.png"/>
+<!-- Overlay fields (positions are placeholders; you’ll tune them) -->
+<div class="w9-txt" data-bind="name1" style="--x: 110; --y: 150; --w: 520;"></div>
+<div class="w9-txt" data-bind="name2" style="--x: 110; --y: 205; --w: 520;"></div>
+<!-- Tax classification checkboxes: set by JS -->
+<div class="w9-check" data-check="individual" style="--x: 122; --y: 284;"></div>
+<div class="w9-check" data-check="c_corp" style="--x: 305; --y: 284;"></div>
+<div class="w9-check" data-check="s_corp" style="--x: 418; --y: 284;"></div>
+<div class="w9-check" data-check="partnership" style="--x: 520; --y: 284;"></div>
+<div class="w9-check" data-check="trust_estate" style="--x: 655; --y: 284;"></div>
+<div class="w9-check" data-check="llc" style="--x: 122; --y: 324;"></div>
+<div class="w9-txt" data-bind="llcType" style="--x: 230; --y: 322; --w: 26; --size: 14;"></div>
+<div class="w9-check" data-check="other" style="--x: 122; --y: 362;"></div>
+<div class="w9-txt" data-bind="otherType" style="--x: 210; --y: 360; --w: 260;"></div>
+<div class="w9-txt" data-bind="exemptPayee" style="--x: 738; --y: 290; --w: 120;"></div>
+<div class="w9-txt" data-bind="fatca" style="--x: 738; --y: 347; --w: 120;"></div>
+<div class="w9-txt" data-bind="address" style="--x: 110; --y: 448; --w: 520;"></div>
+<div class="w9-txt" data-bind="cityStateZip" style="--x: 110; --y: 502; --w: 520;"></div>
+<div class="w9-txt" data-bind="requester" style="--x: 660; --y: 448; --w: 240;"></div>
+<div class="w9-txt" data-bind="accounts" style="--x: 110; --y: 558; --w: 760;"></div>
+<!-- TIN boxes (we’ll show the string; later you can split into boxes) -->
+<div class="w9-txt" data-bind="tin" style="--x: 690; --y: 628; --w: 210; --size: 16;"></div>
+<!-- Signature + date -->
+<div class="w9-txt" data-bind="signature" style="--x: 120; --y: 785; --w: 520;"></div>
+<div class="w9-txt" data-bind="date" style="--x: 730; --y: 785; --w: 160;"></div>
+</div>
+</div>
+<p class="muted small" style="margin-top:12px;">
               Next step: once aligned, we can export a flattened PDF/PNG and upload it to Firebase Storage.
             </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <div>
-          <div class="brand footer-brand">
-            <span class="brand-mark" aria-hidden="true">L</span>
-            <span class="brand-name">Listo</span>
-          </div>
-          <p class="muted" data-i18n="footer.note">
+</div>
+</div>
+</div>
+</section>
+<footer class="site-footer">
+<div class="container footer-inner">
+<div>
+<div class="brand footer-brand">
+<span aria-hidden="true" class="brand-mark">L</span>
+<span class="brand-name">Listo</span>
+</div>
+<p class="muted" data-i18n="footer.note">
             Built to help subcontractors look sharp, stay compliant, and win more work.
           </p>
-        </div>
+</div>
+<div class="footer-links">
+<a data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
+<a data-i18n="nav.payroll" href="payroll.html">Payroll</a>
+<a data-i18n="nav.audit" href="audit.html">Insurance Audit Help</a>
+<a data-i18n="nav.directory" href="directory.html">Directory</a>
+</div>
+</div>
+<div class="container footer-bottom">
+<span class="muted">© <span id="year"></span> Listo</span>
+</div>
+</footer>
+</main></div>
 
-        <div class="footer-links">
-          <a href="prequal.html" data-i18n="nav.prequal">Pre-Qualification</a>
-          <a href="payroll.html" data-i18n="nav.payroll">Payroll</a>
-          <a href="audit.html" data-i18n="nav.audit">Insurance Audit Help</a>
-          <a href="directory.html" data-i18n="nav.directory">Directory</a>
-        </div>
-      </div>
-      <div class="container footer-bottom">
-        <span class="muted">© <span id="year"></span> Listo</span>
-      </div>
-    </footer>
-  </main>
-
-  <script type="module" src="scripts.js"></script>
+<script src="scripts.js" type="module"></script>
 </body>
 </html>

@@ -1,165 +1,138 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Listo — Pre-Qualification</title>
-  <meta name="description" content="Complete W-9, upload COI, and sign agreement to become Pre-Qualified on Listo." />
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — Pre-Qualification</title>
+<meta content="Complete W-9, upload COI, and sign agreement to become Pre-Qualified on Listo." name="description"/>
+<link href="styles.css" rel="stylesheet"/>
 </head>
-
 <body data-page="prequal" data-requires-auth="true">
-  <a class="skip-link" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a aria-label="Listo Home" class="brand" href="index.html">
+<span aria-hidden="true" class="brand-mark">L</span>
+<span class="brand-name">Listo</span>
+</a>
 
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Listo Home">
-        <span class="brand-mark" aria-hidden="true">L</span>
-        <span class="brand-name">Listo</span>
-      </a>
-
-      <nav class="nav" aria-label="Primary navigation">
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="navMenu">
-          <span class="sr-only" data-i18n="nav.menu">Menu</span>
-          <span class="hamburger" aria-hidden="true"></span>
-        </button>
-
-        <div class="nav-menu" id="navMenu">
-          <a class="nav-link" href="index.html" data-i18n="nav.home">Home</a>
-          <a class="nav-link" href="prequal.html" data-i18n="nav.prequal">Pre-Qualification</a>
-          <a class="nav-link" href="payroll.html" data-i18n="nav.payroll">Payroll</a>
-          <a class="nav-link" href="audit.html" data-i18n="nav.audit">Insurance Audit Help</a>
-          <a class="nav-link" href="directory.html" data-i18n="nav.directory">Directory</a>
-        </div>
-      </nav>
-
-      <div class="header-actions">
-        <div class="lang-switch" role="group" aria-label="Language toggle">
-          <button type="button" class="chip" data-lang="en" aria-pressed="true">EN</button>
-          <button type="button" class="chip" data-lang="es" aria-pressed="false">ES</button>
-        </div>
-
-        <button id="logoutBtn" class="btn small ghost" type="button" hidden data-i18n="auth.logout">
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
           Log out
         </button>
-      </div>
-    </div>
-  </header>
-
-  <main id="main">
-    <section class="section">
-      <div class="container">
-        <div class="section-head">
-          <h1 class="page-title" data-i18n="prequal.title">Pre-Qualification</h1>
-          <p class="muted" data-i18n="prequal.subtitle">
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.home" href="index.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
+<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="payroll.html">Payroll</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit.html">Insurance Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.directory" href="directory.html">Directory</a>
+</div></aside><main id="main">
+<section class="section">
+<div class="container">
+<div class="section-head">
+<h1 class="page-title" data-i18n="prequal.title">Pre-Qualification</h1>
+<p class="muted" data-i18n="prequal.subtitle">
             Complete the items below to earn your “Pre-Qualified” status.
           </p>
-        </div>
-
-        <div class="grid-2">
-          <!-- Status Card -->
-          <div class="card pad">
-            <div class="row-between">
-              <div>
-                <h2 class="h2" data-i18n="prequal.statusTitle">Status</h2>
-                <p class="muted" data-i18n="prequal.statusDesc">
+</div>
+<div class="grid-2">
+<!-- Status Card -->
+<div class="card pad">
+<div class="row-between">
+<div>
+<h2 class="h2" data-i18n="prequal.statusTitle">Status</h2>
+<p class="muted" data-i18n="prequal.statusDesc">
                   Your checklist updates automatically when items are completed.
                 </p>
-              </div>
-
-              <div id="prequalBadge" class="badge badge-wip" aria-live="polite">
-                <span data-i18n="prequal.badge.loading">Loading…</span>
-              </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <ul class="status-list" id="statusList">
-              <li class="status-item" data-key="w9Completed">
-                <span class="dot dot-off" aria-hidden="true"></span>
-                <div class="status-text">
-                  <div class="status-title" data-i18n="prequal.itemW9">W-9 Completed</div>
-                  <div class="muted small" data-i18n="prequal.itemW9Desc">Fill and submit your W-9.</div>
-                </div>
-                <a class="btn small" href="w9.html" data-i18n="prequal.open">Open</a>
-              </li>
-
-              <li class="status-item" data-key="coiCompleted">
-                <span class="dot dot-off" aria-hidden="true"></span>
-                <div class="status-text">
-                  <div class="status-title" data-i18n="prequal.itemCOI">Certificate of Insurance (COI)</div>
-                  <div class="muted small" id="coiMetaText" data-i18n="prequal.itemCOIDesc">
+</div>
+<div aria-live="polite" class="badge badge-wip" id="prequalBadge">
+<span data-i18n="prequal.badge.loading">Loading…</span>
+</div>
+</div>
+<div class="divider"></div>
+<ul class="status-list" id="statusList">
+<li class="status-item" data-key="w9Completed">
+<span aria-hidden="true" class="dot dot-off"></span>
+<div class="status-text">
+<div class="status-title" data-i18n="prequal.itemW9">W-9 Completed</div>
+<div class="muted small" data-i18n="prequal.itemW9Desc">Fill and submit your W-9.</div>
+</div>
+<a class="btn small" data-i18n="prequal.open" href="w9.html">Open</a>
+</li>
+<li class="status-item" data-key="coiCompleted">
+<span aria-hidden="true" class="dot dot-off"></span>
+<div class="status-text">
+<div class="status-title" data-i18n="prequal.itemCOI">Certificate of Insurance (COI)</div>
+<div class="muted small" data-i18n="prequal.itemCOIDesc" id="coiMetaText">
                     Upload an active COI and set the expiration date.
                   </div>
-                </div>
-                <a class="btn small" href="coi.html" data-i18n="prequal.open">Open</a>
-              </li>
-
-              <li class="status-item" data-key="agreementCompleted">
-                <span class="dot dot-off" aria-hidden="true"></span>
-                <div class="status-text">
-                  <div class="status-title" data-i18n="prequal.itemAgreement">Subcontractor Agreement</div>
-                  <div class="muted small" data-i18n="prequal.itemAgreementDesc">Review and sign your agreement.</div>
-                </div>
-                <a class="btn small" href="agreement.html" data-i18n="prequal.open">Open</a>
-              </li>
-            </ul>
-
-            <p class="muted small" id="prequalUpdatedAt"></p>
-          </div>
-
-          <!-- What this means -->
-          <div class="card pad">
-            <h2 class="h2" data-i18n="prequal.whatTitle">What “Pre-Qualified” means</h2>
-            <p class="muted" data-i18n="prequal.whatBody">
+</div>
+<a class="btn small" data-i18n="prequal.open" href="coi.html">Open</a>
+</li>
+<li class="status-item" data-key="agreementCompleted">
+<span aria-hidden="true" class="dot dot-off"></span>
+<div class="status-text">
+<div class="status-title" data-i18n="prequal.itemAgreement">Subcontractor Agreement</div>
+<div class="muted small" data-i18n="prequal.itemAgreementDesc">Review and sign your agreement.</div>
+</div>
+<a class="btn small" data-i18n="prequal.open" href="agreement.html">Open</a>
+</li>
+</ul>
+<p class="muted small" id="prequalUpdatedAt"></p>
+</div>
+<!-- What this means -->
+<div class="card pad">
+<h2 class="h2" data-i18n="prequal.whatTitle">What “Pre-Qualified” means</h2>
+<p class="muted" data-i18n="prequal.whatBody">
               Pre-Qualified subcontractors have a completed W-9, an active COI on file, and a signed subcontractor agreement.
               This makes it easier for general contractors to onboard and select you for work.
             </p>
-
-            <div class="divider"></div>
-
-            <h3 class="h3" data-i18n="prequal.nextTitle">Next steps</h3>
-            <ul class="bullets">
-              <li class="muted" data-i18n="prequal.next1">Complete the missing items in your checklist.</li>
-              <li class="muted" data-i18n="prequal.next2">Keep your COI current — update it before it expires.</li>
-              <li class="muted" data-i18n="prequal.next3">Once pre-qualified, build your Directory profile (coming next).</li>
-            </ul>
-
-            <div class="note">
-              <strong data-i18n="prequal.noteTitle">Tip:</strong>
-              <span class="muted" data-i18n="prequal.noteBody">You can upload a new COI anytime. The latest upload becomes your active COI.</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <div>
-          <div class="brand footer-brand">
-            <span class="brand-mark" aria-hidden="true">L</span>
-            <span class="brand-name">Listo</span>
-          </div>
-          <p class="muted" data-i18n="footer.note">
+<div class="divider"></div>
+<h3 class="h3" data-i18n="prequal.nextTitle">Next steps</h3>
+<ul class="bullets">
+<li class="muted" data-i18n="prequal.next1">Complete the missing items in your checklist.</li>
+<li class="muted" data-i18n="prequal.next2">Keep your COI current — update it before it expires.</li>
+<li class="muted" data-i18n="prequal.next3">Once pre-qualified, build your Directory profile (coming next).</li>
+</ul>
+<div class="note">
+<strong data-i18n="prequal.noteTitle">Tip:</strong>
+<span class="muted" data-i18n="prequal.noteBody">You can upload a new COI anytime. The latest upload becomes your active COI.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<footer class="site-footer">
+<div class="container footer-inner">
+<div>
+<div class="brand footer-brand">
+<span aria-hidden="true" class="brand-mark">L</span>
+<span class="brand-name">Listo</span>
+</div>
+<p class="muted" data-i18n="footer.note">
             Built to help subcontractors look sharp, stay compliant, and win more work.
           </p>
-        </div>
+</div>
+<div class="footer-links">
+<a data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
+<a data-i18n="nav.payroll" href="payroll.html">Payroll</a>
+<a data-i18n="nav.audit" href="audit.html">Insurance Audit Help</a>
+<a data-i18n="nav.directory" href="directory.html">Directory</a>
+</div>
+</div>
+<div class="container footer-bottom">
+<span class="muted">© <span id="year"></span> Listo</span>
+</div>
+</footer>
+</main></div>
 
-        <div class="footer-links">
-          <a href="prequal.html" data-i18n="nav.prequal">Pre-Qualification</a>
-          <a href="payroll.html" data-i18n="nav.payroll">Payroll</a>
-          <a href="audit.html" data-i18n="nav.audit">Insurance Audit Help</a>
-          <a href="directory.html" data-i18n="nav.directory">Directory</a>
-        </div>
-      </div>
-      <div class="container footer-bottom">
-        <span class="muted">© <span id="year"></span> Listo</span>
-      </div>
-    </footer>
-  </main>
-
-  <script type="module" src="scripts.js"></script>
+<script src="scripts.js" type="module"></script>
 </body>
 </html>
