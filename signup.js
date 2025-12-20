@@ -4,15 +4,21 @@ import {
   updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-import { auth } from "./config.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { auth, db } from "./config.js";
 
 const form = document.getElementById("signupForm");
+const displayNameEl = document.getElementById("displayName");
 const emailEl = document.getElementById("signupEmail");
 const passEl = document.getElementById("signupPassword");
 const errorEl = document.getElementById("signupError");
 
 function setError(text) {
   errorEl.textContent = text || "";
+}
+
+function cleanName(s) {
+  return String(s || "").trim().replace(/\s+/g, " ");
 }
 
 function friendlyAuthError(err) {
@@ -29,19 +35,33 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   setError("");
 
-  const email = (emailEl.value || "").trim();
-  const password = passEl.value || "";
+  const displayName = cleanName(displayNameEl?.value);
+  const email = (emailEl?.value || "").trim();
+  const password = passEl?.value || "";
+
+  if (!displayName) {
+    setError("Please enter a company / display name.");
+    return;
+  }
+  if (displayName.length > 80) {
+    setError("Display name is too long (max 80 characters).");
+    return;
+  }
 
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Optional: set a displayName from the email prefix (safe default)
-    const displayName = email.split("@")[0]?.slice(0, 40) || "";
-    if (displayName) {
-      await updateProfile(cred.user, { displayName });
-    }
+    // Set Auth profile display name
+    await updateProfile(cred.user, { displayName });
 
-    // Redirect after successful signup
+    // Store a profile doc in Firestore: /users/{uid}/profile/main
+    await setDoc(doc(db, "users", cred.user.uid, "profile", "main"), {
+      displayName,
+      displayNameLower: displayName.toLowerCase(),
+      email,
+      createdAt: serverTimestamp()
+    });
+
     window.location.href = "index.html";
   } catch (err) {
     console.error(err);

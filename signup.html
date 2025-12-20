@@ -22,8 +22,19 @@
         <p class="muted" style="margin: 0;">Create your login to access payroll and documents.</p>
       </div>
 
-      <!-- These IDs match signup.js exactly -->
       <form id="signupForm" class="auth-form" autocomplete="on">
+        <div class="field">
+          <label class="field-label" for="displayName">Company / Display name</label>
+          <input
+            id="displayName"
+            name="displayName"
+            type="text"
+            required
+            autocomplete="organization"
+            placeholder="ABC Construction"
+          />
+        </div>
+
         <div class="field">
           <label class="field-label" for="signupEmail">Email</label>
           <input
@@ -60,7 +71,6 @@
     </section>
   </main>
 
-  <!-- Keep scripts as modules -->
   <script type="module" src="./signup.js"></script>
 </body>
 </html>

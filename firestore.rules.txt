@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidMethod(m) { return m in ['Cash', 'Check', 'Zelle']; }
+    function isValidDateString(s) {
+      return s is string && s.size() == 10 && s.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+    function isValidMoney(n) { return (n is int || n is float) && n > 0; }
+
+    match /users/{userId}/employees/{employeeId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name', 'nameLower', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.nameLower is string
+        && request.resource.data.nameLower == request.resource.data.name.lower()
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name', 'nameLower', 'createdAt'])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.nameLower is string
+        && request.resource.data.nameLower == request.resource.data.name.lower();
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/payrollEntries/{entryId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'employeeId','employeeName','employeeNameLower','payDate','amount','method','createdAt'
+        ])
+        && request.resource.data.employeeId is string
+        && request.resource.data.employeeId.size() >= 1
+        && request.resource.data.employeeName is string
+        && request.resource.data.employeeName.size() >= 1
+        && request.resource.data.employeeName.size() <= 80
+        && request.resource.data.employeeNameLower is string
+        && request.resource.data.employeeNameLower == request.resource.data.employeeName.lower()
+        && isValidDateString(request.resource.data.payDate)
+        && isValidMoney(request.resource.data.amount)
+        && isValidMethod(request.resource.data.method)
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'employeeId','employeeName','employeeNameLower','payDate','amount','method','createdAt'
+        ])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.employeeId is string
+        && request.resource.data.employeeId.size() >= 1
+        && request.resource.data.employeeName is string
+        && request.resource.data.employeeName.size() >= 1
+        && request.resource.data.employeeName.size() <= 80
+        && request.resource.data.employeeNameLower is string
+        && request.resource.data.employeeNameLower == request.resource.data.employeeName.lower()
+        && isValidDateString(request.resource.data.payDate)
+        && isValidMoney(request.resource.data.amount)
+        && isValidMethod(request.resource.data.method);
+
+      allow delete: if isOwner(userId);
+    }
+
+    // Profile documents, used on signup: /users/{uid}/profile/main
+    match /users/{userId}/profile/{docId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['displayName','displayNameLower','email','createdAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.displayNameLower is string
+        && request.resource.data.displayNameLower == request.resource.data.displayName.lower()
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['displayName','displayNameLower','email','createdAt'])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.displayNameLower is string
+        && request.resource.data.displayNameLower == request.resource.data.displayName.lower();
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
