@@ -1,16 +1,27 @@
 <header class="site-header">
-  <button class="menu-toggle" id="menuToggle">☰</button>
-  <img src="images/logo.png" alt="Listo" class="logo">
+  <div class="container header-inner">
+    <button class="sidebar-toggle" id="menuToggle" type="button" aria-label="Open menu">
+      <span class="hamburger" aria-hidden="true"></span>
+    </button>
+
+    <a class="brand" href="index.html">
+      <img src="images/logo.png" alt="Listo" class="brand-logo">
+    </a>
+
+    <div class="header-actions">
+      <!-- Optional space for auth/user controls -->
+    </div>
+  </div>
 </header>
 
 <aside class="sidebar" id="sidebar">
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="payroll.html">Payroll</a>
-    <a href="prequal.html">Prequalification</a>
-    <a href="w9.html">W-9 Upload</a>
-    <a href="coi.html">COI</a>
-    <a href="agreement.html">Agreements</a>
-    <a href="login.html">Login</a>
+  <nav class="sidebar-nav">
+    <a class="sidebar-link" href="index.html">Dashboard</a>
+    <a class="sidebar-link" href="payroll.html">Payroll</a>
+    <a class="sidebar-link" href="prequal.html">Prequalification</a>
+    <a class="sidebar-link" href="w9.html">W-9 Upload</a>
+    <a class="sidebar-link" href="coi.html">COI</a>
+    <a class="sidebar-link" href="agreement.html">Agreements</a>
+    <a class="sidebar-link" href="login.html">Login</a>
   </nav>
 </aside>
