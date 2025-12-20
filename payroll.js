@@ -1,8 +1,8 @@
 // payroll.js
-// Professional Payroll Tracker (Firestore) - PER USER
-// Data model (per logged-in user):
-// - /users/{uid}/employees/{employeeId}: { name, nameLower, createdAt }
-// - /users/{uid}/payrollEntries/{entryId}: { employeeId, employeeName, employeeNameLower, payDate, amount, method, createdAt }
+// Payroll Tracker (Firestore) - locked to each logged-in user
+// Matches rules:
+// - /users/{uid}/employees/{employeeId}
+// - /users/{uid}/payrollEntries/{entryId}
 
 import {
   collection,
@@ -13,16 +13,11 @@ import {
   limit,
   serverTimestamp,
   doc,
-  deleteDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-import {
-  getAuth,
-  onAuthStateChanged,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-
-// ✅ Adjust this import to match YOUR config.js
-import { db } from "./config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { db, auth } from "./config.js";
 
 /* -----------------------------
    Helpers
@@ -50,20 +45,11 @@ function monthStartISO() {
 }
 
 function normalizeName(name) {
-  return String(name || "")
-    .trim()
-    .replace(/\s+/g, " ");
+  return String(name || "").trim().replace(/\s+/g, " ");
 }
 
 /* -----------------------------
-   State
------------------------------- */
-let employees = []; // {id, name, nameLower}
-let payments = [];  // {id, ...}
-let currentUid = null;
-
-/* -----------------------------
-   UI elements
+   UI elements (must exist in payroll.html)
 ------------------------------ */
 const statusText = $("statusText");
 
@@ -91,7 +77,14 @@ const clearFiltersBtn = $("clearFiltersBtn");
 const exportCsvBtn = $("exportCsvBtn");
 
 /* -----------------------------
-   Path helpers (THIS is the “addDoc path” part)
+   State
+------------------------------ */
+let currentUid = null;
+let employees = []; // { id, name, nameLower }
+let payrollEntries = []; // { id, employeeId, employeeName, employeeNameLower, payDate, amount, method, createdAt }
+
+/* -----------------------------
+   Firestore path helpers (these are the “paths”)
 ------------------------------ */
 function employeesCol(uid) {
   // /users/{uid}/employees
@@ -109,28 +102,17 @@ function payrollEntryDoc(uid, entryId) {
 }
 
 /* -----------------------------
-   Loaders
------------------------------- */
-async function loadEmployees() {
-  const q = query(employeesCol(currentUid), orderBy("nameLower"));
-  const snap = await getDocs(q);
-
-  employees = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  renderEmployeeDatalist();
-}
-
-async function loadPayments() {
-  const q = query(payrollEntriesCol(currentUid), orderBy("payDate", "desc"), limit(500));
-  const snap = await getDocs(q);
-
-  payments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  renderPaymentsTable();
-  renderStats();
-}
-
-/* -----------------------------
    Rendering
 ------------------------------ */
+function setFormMessage(type, text) {
+  if (!text) {
+    formMsg.innerHTML = "";
+    return;
+  }
+  const cls = type === "error" ? "danger" : "success";
+  formMsg.innerHTML = `<span class="${cls}">${text}</span>`;
+}
+
 function renderEmployeeDatalist() {
   employeeList.innerHTML = "";
   for (const e of employees) {
@@ -159,11 +141,12 @@ function passesFilters(p) {
   return true;
 }
 
-function renderPaymentsTable() {
-  const filtered = payments.filter(passesFilters);
+function renderTable() {
+  const filtered = payrollEntries.filter(passesFilters);
 
   if (!filtered.length) {
-    paymentsTbody.innerHTML = `<tr><td colspan="5" class="muted">No payments found for the current filters.</td></tr>`;
+    paymentsTbody.innerHTML =
+      `<tr><td colspan="5" class="muted">No payroll entries found for the current filters.</td></tr>`;
     tableMsg.textContent = "";
     return;
   }
@@ -193,35 +176,46 @@ function renderPaymentsTable() {
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.textContent = "Delete";
-    delBtn.addEventListener("click", () => onDeletePayment(p.id, p.employeeName, p.payDate));
+    delBtn.addEventListener("click", () => onDeleteEntry(p.id, p.employeeName, p.payDate));
     tdAct.appendChild(delBtn);
 
     tr.append(tdDate, tdEmp, tdMethod, tdAmt, tdAct);
     paymentsTbody.appendChild(tr);
   }
 
-  tableMsg.textContent = `Showing ${filtered.length} of ${payments.length} payments (max 500 loaded).`;
+  tableMsg.textContent = `Showing ${filtered.length} of ${payrollEntries.length} entries (max 500 loaded).`;
 }
 
 function renderStats() {
   const start = monthStartISO();
 
-  const monthPays = payments.filter(p => (p.payDate || "") >= start);
-  const monthSum = monthPays.reduce((acc, p) => acc + Number(p.amount || 0), 0);
-  const allSum = payments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  const monthEntries = payrollEntries.filter(p => (p.payDate || "") >= start);
+  const monthSum = monthEntries.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  const allSum = payrollEntries.reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
-  monthCount.textContent = String(monthPays.length);
+  monthCount.textContent = String(monthEntries.length);
   monthTotal.textContent = money(monthSum);
   allTotal.textContent = money(allSum);
 }
 
-function setFormMessage(type, text) {
-  if (!text) {
-    formMsg.innerHTML = "";
-    return;
-  }
-  const cls = type === "error" ? "danger" : "success";
-  formMsg.innerHTML = `<span class="${cls}">${text}</span>`;
+/* -----------------------------
+   Loaders
+------------------------------ */
+async function loadEmployees() {
+  const q = query(employeesCol(currentUid), orderBy("nameLower"));
+  const snap = await getDocs(q);
+
+  employees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderEmployeeDatalist();
+}
+
+async function loadPayrollEntries() {
+  const q = query(payrollEntriesCol(currentUid), orderBy("payDate", "desc"), limit(500));
+  const snap = await getDocs(q);
+
+  payrollEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderTable();
+  renderStats();
 }
 
 /* -----------------------------
@@ -232,15 +226,14 @@ async function ensureEmployee(name) {
   const lower = clean.toLowerCase();
   if (!clean) throw new Error("Employee name is required.");
 
-  // If already loaded, return it
   const existing = employees.find(e => e.nameLower === lower);
   if (existing) return existing;
 
-  // Otherwise create under /users/{uid}/employees
+  // Must match rules: keys must be only name, nameLower, createdAt
   const ref = await addDoc(employeesCol(currentUid), {
     name: clean,
     nameLower: lower,
-    createdAt: serverTimestamp(),
+    createdAt: serverTimestamp()
   });
 
   const newEmp = { id: ref.id, name: clean, nameLower: lower };
@@ -250,31 +243,29 @@ async function ensureEmployee(name) {
   return newEmp;
 }
 
-async function onSubmitPayment(e) {
+async function onSubmit(e) {
   e.preventDefault();
 
   try {
-    if (!currentUid) throw new Error("You must be logged in to save payroll.");
+    if (!currentUid) throw new Error("You must be logged in to use Payroll.");
 
     saveBtn.disabled = true;
     setFormMessage("", "");
+    statusText.textContent = "Saving…";
 
     const empName = normalizeName(employeeName.value);
-    const date = payDate.value;
+    const date = payDate.value; // must be YYYY-MM-DD
     const amt = Number(amount.value);
     const meth = method.value;
 
     if (!empName) throw new Error("Please enter an employee name.");
     if (!date) throw new Error("Please choose a payment date.");
     if (!Number.isFinite(amt) || amt <= 0) throw new Error("Please enter a valid amount greater than 0.");
-    if (!meth) throw new Error("Please choose a payment method.");
-
-    statusText.textContent = "Saving…";
+    if (!["Cash", "Check", "Zelle"].includes(meth)) throw new Error("Invalid payment method.");
 
     const emp = await ensureEmployee(empName);
 
-    // ✅ This is the new “addDoc path”:
-    // /users/{uid}/payrollEntries
+    // Must match rules: keys must be exactly the listed 7 keys
     await addDoc(payrollEntriesCol(currentUid), {
       employeeId: emp.id,
       employeeName: emp.name,
@@ -282,47 +273,39 @@ async function onSubmitPayment(e) {
       payDate: date,
       amount: Number(amt.toFixed(2)),
       method: meth,
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp()
     });
 
-    setFormMessage("success", "Payment saved.");
-    resetFormKeepToday();
-    await loadPayments();
+    setFormMessage("success", "Payroll entry saved.");
+    employeeName.value = "";
+    amount.value = "";
+    method.value = "Cash";
+
+    await loadPayrollEntries();
     statusText.textContent = "Ready";
   } catch (err) {
     console.error(err);
-    setFormMessage("error", err?.message || "Error saving payment.");
+    setFormMessage("error", err?.message || "Error saving entry.");
     statusText.textContent = "Error";
   } finally {
     saveBtn.disabled = false;
   }
 }
 
-function resetFormKeepToday() {
-  employeeName.value = "";
-  amount.value = "";
-  method.value = "Cash";
-  // keep date as-is
-}
-
-async function onDeletePayment(paymentId, empName, date) {
-  const ok = confirm(`Delete this payment?\n\nEmployee: ${empName || "—"}\nDate: ${date || "—"}`);
+async function onDeleteEntry(entryId, empName, date) {
+  const ok = confirm(`Delete this payroll entry?\n\nEmployee: ${empName || "—"}\nDate: ${date || "—"}`);
   if (!ok) return;
 
   try {
     statusText.textContent = "Deleting…";
-
-    // ✅ This is the new “doc path”:
-    // /users/{uid}/payrollEntries/{paymentId}
-    await deleteDoc(payrollEntryDoc(currentUid, paymentId));
-
-    payments = payments.filter(p => p.id !== paymentId);
-    renderPaymentsTable();
+    await deleteDoc(payrollEntryDoc(currentUid, entryId));
+    payrollEntries = payrollEntries.filter(p => p.id !== entryId);
+    renderTable();
     renderStats();
     statusText.textContent = "Ready";
   } catch (err) {
     console.error(err);
-    alert(err?.message || "Error deleting payment.");
+    alert(err?.message || "Error deleting entry.");
     statusText.textContent = "Error";
   }
 }
@@ -332,16 +315,18 @@ function clearFilters() {
   filterMethod.value = "";
   fromDate.value = "";
   toDate.value = "";
-  renderPaymentsTable();
+  renderTable();
 }
 
 function exportCsv() {
-  const rows = payments.filter(passesFilters).map(p => ({
-    payDate: p.payDate || "",
-    employeeName: p.employeeName || "",
-    method: p.method || "",
-    amount: Number(p.amount || 0),
-  }));
+  const rows = payrollEntries
+    .filter(passesFilters)
+    .map(p => ({
+      payDate: p.payDate || "",
+      employeeName: p.employeeName || "",
+      method: p.method || "",
+      amount: Number(p.amount || 0)
+    }));
 
   if (!rows.length) {
     alert("No rows to export.");
@@ -355,8 +340,8 @@ function exportCsv() {
       csvCell(r.payDate),
       csvCell(r.employeeName),
       csvCell(r.method),
-      csvCell(r.amount.toFixed(2)),
-    ].join(",")),
+      csvCell(r.amount.toFixed(2))
+    ].join(","))
   ];
 
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -380,14 +365,26 @@ function csvCell(v) {
 /* -----------------------------
    Init
 ------------------------------ */
+function setLoggedOutUI() {
+  statusText.textContent = "Please log in to use Payroll.";
+  employees = [];
+  payrollEntries = [];
+  renderEmployeeDatalist();
+  paymentsTbody.innerHTML = `<tr><td colspan="5" class="muted">Log in to view payroll entries.</td></tr>`;
+  tableMsg.textContent = "";
+  monthCount.textContent = "—";
+  monthTotal.textContent = "—";
+  allTotal.textContent = "—";
+}
+
 async function initForUser(uid) {
   currentUid = uid;
-
   statusText.textContent = "Loading…";
-  payDate.value = todayISO();
+
+  payDate.value = payDate.value || todayISO();
 
   await loadEmployees();
-  await loadPayments();
+  await loadPayrollEntries();
 
   statusText.textContent = "Ready";
 }
@@ -395,38 +392,37 @@ async function initForUser(uid) {
 function init() {
   payDate.value = todayISO();
 
-  const auth = getAuth();
   onAuthStateChanged(auth, async (user) => {
     try {
       if (!user) {
         currentUid = null;
-        statusText.textContent = "Please log in to use Payroll.";
-        employees = [];
-        payments = [];
-        renderEmployeeDatalist();
-        paymentsTbody.innerHTML = `<tr><td colspan="5" class="muted">Log in to view payroll entries.</td></tr>`;
-        monthCount.textContent = "—";
-        monthTotal.textContent = "—";
-        allTotal.textContent = "—";
+        setLoggedOutUI();
         return;
       }
-
       await initForUser(user.uid);
     } catch (err) {
       console.error(err);
       statusText.textContent = "Error";
-      formMsg.innerHTML = `<span class="danger">Firebase not ready. Check config.js export (db) and Firestore rules.</span>`;
+      setFormMessage("error", "Firebase error. Check config.js and Firestore rules.");
     }
   });
 }
 
-$("paymentForm").addEventListener("submit", onSubmitPayment);
-resetBtn.addEventListener("click", resetFormKeepToday);
+/* -----------------------------
+   Events
+------------------------------ */
+$("paymentForm").addEventListener("submit", onSubmit);
+resetBtn.addEventListener("click", () => {
+  employeeName.value = "";
+  amount.value = "";
+  method.value = "Cash";
+  setFormMessage("", "");
+});
 
-searchBox.addEventListener("input", renderPaymentsTable);
-filterMethod.addEventListener("change", renderPaymentsTable);
-fromDate.addEventListener("change", renderPaymentsTable);
-toDate.addEventListener("change", renderPaymentsTable);
+searchBox.addEventListener("input", renderTable);
+filterMethod.addEventListener("change", renderTable);
+fromDate.addEventListener("change", renderTable);
+toDate.addEventListener("change", renderTable);
 
 clearFiltersBtn.addEventListener("click", clearFilters);
 exportCsvBtn.addEventListener("click", exportCsv);
