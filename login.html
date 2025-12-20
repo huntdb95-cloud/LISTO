@@ -1,65 +1,50 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Listo — Login</title>
-<link href="styles.css" rel="stylesheet"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
-<body data-page="login">
-<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header">
-<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
-<a aria-label="Listo Home" class="brand" href="index.html">
-<span aria-hidden="true" class="brand-mark">L</span>
-<span class="brand-name">Listo</span>
-</a>
-<div class="header-actions">
-<div aria-label="Language toggle" class="lang-switch" role="group">
-<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
-<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
-</div>
-</div>
-</div>
-</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="sidebar-nav" id="sideNav"></div></aside><main class="auth-wrap" id="main">
-<section class="container auth-grid">
-<div class="card auth-card">
-<div class="card-header">
-<h1 class="auth-title" data-i18n="auth.loginTitle">Welcome back</h1>
-<p class="muted" data-i18n="auth.loginSubtitle">Log in to access your Listo workspace.</p>
-</div>
-<form class="auth-form" id="loginForm">
-<label class="field">
-<span class="field-label" data-i18n="auth.email">Email</span>
-<input autocomplete="email" id="loginEmail" required="" type="email"/>
-</label>
-<label class="field">
-<span class="field-label" data-i18n="auth.password">Password</span>
-<input autocomplete="current-password" id="loginPassword" required="" type="password"/>
-</label>
-<button class="btn primary" data-i18n="auth.loginBtn" type="submit">Log In</button>
-<p class="muted tiny">
-<span data-i18n="auth.noAccount">No account?</span>
-<a class="mini-link inline" data-i18n="auth.goSignup" href="signup.html">Create one</a>
-</p>
-<p aria-live="polite" class="form-error" id="loginError" role="alert"></p>
-</form>
-</div>
-<div class="auth-side">
-<h2 data-i18n="auth.sideTitle">Private. Secure. Built for onboarding.</h2>
-<p class="muted" data-i18n="auth.sideBody">
-          Your documents and uploads are protected behind your login.
-        </p>
-<div class="trust-row">
-<div class="pill" data-i18n="hero.pill1">W-9 Completed</div>
-<div class="pill" data-i18n="hero.pill2">Active COI Uploaded</div>
-<div class="pill" data-i18n="hero.pill3">Subcontractor Agreement Signed</div>
-</div>
-</div>
-</section>
-</main></div>
 
-<script src="scripts.js" type="module"></script>
+<body class="auth-page">
+  <main class="auth-center">
+    <!-- Large logo above the card -->
+    <a href="index.html" class="auth-logo-wrap" aria-label="Go to home">
+      <img src="images/logo.png" alt="Listo" class="auth-logo" />
+    </a>
+
+    <!-- Centered login card -->
+    <section class="card auth-card" aria-label="Login">
+      <div class="card-header">
+        <h1 class="auth-title">Sign in</h1>
+        <p class="muted" style="margin: 0;">Access your account to manage payroll and documents.</p>
+      </div>
+
+      <form id="loginForm" class="auth-form" autocomplete="on">
+        <div class="field">
+          <label class="field-label" for="email">Email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@company.com" />
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="password">Password</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••" />
+        </div>
+
+        <p id="loginMsg" class="form-error" aria-live="polite"></p>
+
+        <button class="btn primary" type="submit">Log In</button>
+
+        <div class="auth-links">
+          <a class="mini-link" href="signup.html">Create account</a>
+          <a class="mini-link" href="forgot.html">Forgot password</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <!-- Your existing login JS -->
+  <script type="module" src="./login.js"></script>
 </body>
 </html>
