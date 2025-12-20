@@ -1,14 +1,18 @@
 // invoice.js (Firebase v9+ modular assumed)
 //
 // Requirements:
-// - You already have a config.js that exports { auth, db }
-// - Firebase Auth is used to identify the contractor (user)
+// - config.js exports { auth, db } (initialized Firebase app)
 // - Firestore stores invoices under: users/{uid}/invoices/{invoiceId}
+// - A deployed Callable Cloud Function named: sendInvoiceEmail
+//
+// This version adds: "Send Invoice (Email PDF)" via SendGrid backend.
 
 import { auth, db } from "./config.js";
+
 import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
 import {
   collection,
   addDoc,
@@ -21,6 +25,11 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+import {
+  getFunctions,
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
+
 const el = (id) => document.getElementById(id);
 
 const state = {
@@ -28,6 +37,10 @@ const state = {
   currentInvoiceId: null,
   items: []
 };
+
+// ----- Callable Function Handle -----
+const functions = getFunctions();
+const sendInvoiceEmailCallable = httpsCallable(functions, "sendInvoiceEmail");
 
 // ---------- Helpers ----------
 function money(n) {
@@ -49,7 +62,6 @@ function todayISO() {
 }
 
 function makeInvoiceNumber() {
-  // Simple local number; you can swap for a stronger scheme later
   const t = new Date();
   const y = t.getFullYear();
   const m = String(t.getMonth() + 1).padStart(2, "0");
@@ -58,8 +70,24 @@ function makeInvoiceNumber() {
   return `INV-${y}${m}${d}-${r}`;
 }
 
-function setStatus(text) {
-  el("statusPill").textContent = text;
+function setStatus(text, kind = "") {
+  const pill = el("statusPill");
+  pill.textContent = text;
+  pill.className = `pill ${kind}`.trim();
+}
+
+function setSendResult(text, kind = "") {
+  const box = el("sendResult");
+  box.textContent = text || "";
+  box.className = `muted ${kind}`.trim();
+}
+
+function setBusy(isBusy) {
+  const ids = ["btnNew", "btnSave", "btnPdf", "btnSendEmail", "btnAddItem", "btnLoad", "btnDelete"];
+  ids.forEach((id) => {
+    const b = el(id);
+    if (b) b.disabled = !!isBusy;
+  });
 }
 
 // ---------- Items UI ----------
@@ -87,7 +115,7 @@ function renderItems() {
     desc.placeholder = "Labor / materials / service";
     desc.addEventListener("input", () => {
       state.items[idx].description = desc.value;
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved");
+      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
     tdDesc.appendChild(desc);
@@ -101,7 +129,7 @@ function renderItems() {
     qty.value = item.qty ?? 1;
     qty.addEventListener("input", () => {
       state.items[idx].qty = num(qty.value);
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved");
+      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
     tdQty.appendChild(qty);
@@ -115,7 +143,7 @@ function renderItems() {
     unit.value = item.unitPrice ?? 0;
     unit.addEventListener("input", () => {
       state.items[idx].unitPrice = num(unit.value);
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved");
+      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
     tdUnit.appendChild(unit);
@@ -280,9 +308,10 @@ async function refreshSavedInvoices() {
     const numStr = inv?.meta?.invoiceNumber || "Invoice";
     const nameStr = inv?.to?.name ? ` • ${inv.to.name}` : "";
     const dateStr = inv?.meta?.invoiceDate ? ` • ${inv.meta.invoiceDate}` : "";
+    const sentStr = inv?.sentAt ? " • SENT" : "";
     const opt = document.createElement("option");
     opt.value = d.id;
-    opt.textContent = `${numStr}${nameStr}${dateStr}`;
+    opt.textContent = `${numStr}${nameStr}${dateStr}${sentStr}`;
     sel.appendChild(opt);
   });
 }
@@ -290,7 +319,7 @@ async function refreshSavedInvoices() {
 async function saveInvoice() {
   if (!state.uid) {
     alert("Please sign in first.");
-    return;
+    return null;
   }
 
   const invoice = collectInvoice();
@@ -304,13 +333,14 @@ async function saveInvoice() {
     updatedAt: serverTimestamp()
   };
 
-  // For simplicity: always create a new record (keeps history)
   const ref = await addDoc(invoicesCol(), payload);
   state.currentInvoiceId = ref.id;
 
-  setStatus("Saved");
+  setStatus("Saved", "ok");
   await refreshSavedInvoices();
   el("savedInvoicesSelect").value = ref.id;
+
+  return ref.id;
 }
 
 async function loadInvoice() {
@@ -326,7 +356,8 @@ async function loadInvoice() {
 
   state.currentInvoiceId = id;
   fillInvoice(snap.data());
-  setStatus("Loaded");
+  setStatus("Loaded", "ok");
+  setSendResult("");
 }
 
 async function deleteInvoice() {
@@ -343,14 +374,15 @@ async function deleteInvoice() {
 
   if (state.currentInvoiceId === id) {
     state.currentInvoiceId = null;
-    setStatus("Not saved");
+    setStatus("Not saved", "");
   }
 
   await refreshSavedInvoices();
   el("savedInvoicesSelect").value = "";
+  setSendResult("");
 }
 
-// ---------- PDF ----------
+// ---------- PDF (Client download) ----------
 function buildPdfFileName(invoice) {
   const invNo = invoice.meta.invoiceNumber || "invoice";
   const customer = (invoice.to.name || "").replace(/[^\w\-]+/g, "_").slice(0, 40);
@@ -361,39 +393,39 @@ function downloadPdf() {
   const invoice = collectInvoice();
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const docPdf = new jsPDF();
 
   const left = 14;
   let y = 14;
 
-  doc.setFontSize(18);
-  doc.text("INVOICE", left, y);
+  docPdf.setFontSize(18);
+  docPdf.text("INVOICE", left, y);
   y += 8;
 
-  doc.setFontSize(11);
-  doc.text(`Invoice #: ${invoice.meta.invoiceNumber || ""}`, left, y); y += 6;
-  doc.text(`Invoice Date: ${invoice.meta.invoiceDate || ""}`, left, y); y += 6;
-  doc.text(`Due Date: ${invoice.meta.dueDate || ""}`, left, y); y += 8;
+  docPdf.setFontSize(11);
+  docPdf.text(`Invoice #: ${invoice.meta.invoiceNumber || ""}`, left, y); y += 6;
+  docPdf.text(`Invoice Date: ${invoice.meta.invoiceDate || ""}`, left, y); y += 6;
+  docPdf.text(`Due Date: ${invoice.meta.dueDate || ""}`, left, y); y += 8;
 
-  doc.setFontSize(12);
-  doc.text("From:", left, y); y += 6;
-  doc.setFontSize(10);
-  doc.text(`${invoice.from.name || ""}`, left, y); y += 5;
-  if (invoice.from.email) { doc.text(`Email: ${invoice.from.email}`, left, y); y += 5; }
-  if (invoice.from.phone) { doc.text(`Phone: ${invoice.from.phone}`, left, y); y += 5; }
-  if (invoice.from.address) { doc.text(invoice.from.address, left, y); y += 10; } else { y += 6; }
+  docPdf.setFontSize(12);
+  docPdf.text("From:", left, y); y += 6;
+  docPdf.setFontSize(10);
+  docPdf.text(`${invoice.from.name || ""}`, left, y); y += 5;
+  if (invoice.from.email) { docPdf.text(`Email: ${invoice.from.email}`, left, y); y += 5; }
+  if (invoice.from.phone) { docPdf.text(`Phone: ${invoice.from.phone}`, left, y); y += 5; }
+  if (invoice.from.address) { docPdf.text(invoice.from.address, left, y); y += 10; } else { y += 6; }
 
-  doc.setFontSize(12);
-  doc.text("Bill To:", left, y); y += 6;
-  doc.setFontSize(10);
-  doc.text(`${invoice.to.name || ""}`, left, y); y += 5;
-  if (invoice.to.email) { doc.text(`Email: ${invoice.to.email}`, left, y); y += 5; }
-  if (invoice.to.phone) { doc.text(`Phone: ${invoice.to.phone}`, left, y); y += 5; }
-  if (invoice.to.address) { doc.text(invoice.to.address, left, y); y += 8; } else { y += 6; }
+  docPdf.setFontSize(12);
+  docPdf.text("Bill To:", left, y); y += 6;
+  docPdf.setFontSize(10);
+  docPdf.text(`${invoice.to.name || ""}`, left, y); y += 5;
+  if (invoice.to.email) { docPdf.text(`Email: ${invoice.to.email}`, left, y); y += 5; }
+  if (invoice.to.phone) { docPdf.text(`Phone: ${invoice.to.phone}`, left, y); y += 5; }
+  if (invoice.to.address) { docPdf.text(invoice.to.address, left, y); y += 8; } else { y += 6; }
 
   if (invoice.meta.projectName) {
-    doc.setFontSize(11);
-    doc.text(`Project: ${invoice.meta.projectName}`, left, y);
+    docPdf.setFontSize(11);
+    docPdf.text(`Project: ${invoice.meta.projectName}`, left, y);
     y += 8;
   }
 
@@ -404,7 +436,7 @@ function downloadPdf() {
     money(num(it.qty) * num(it.unitPrice))
   ]));
 
-  doc.autoTable({
+  docPdf.autoTable({
     startY: y,
     head: [["Description", "Qty", "Unit Price", "Line Total"]],
     body: tableRows.length ? tableRows : [["(no items)", "", "", ""]],
@@ -417,7 +449,7 @@ function downloadPdf() {
     }
   });
 
-  const afterTableY = doc.lastAutoTable.finalY + 8;
+  const afterTableY = docPdf.lastAutoTable.finalY + 8;
 
   const totals = invoice.totals;
   const lines = [
@@ -429,66 +461,104 @@ function downloadPdf() {
   ];
 
   let ty = afterTableY;
-  doc.setFontSize(11);
+  docPdf.setFontSize(11);
   lines.forEach(([k, v], idx) => {
-    if (idx === lines.length - 1) doc.setFont(undefined, "bold");
-    doc.text(k, left, ty);
-    doc.text(v, 200 - left, ty, { align: "right" });
-    doc.setFont(undefined, "normal");
+    if (idx === lines.length - 1) docPdf.setFont(undefined, "bold");
+    docPdf.text(k, left, ty);
+    docPdf.text(v, 200 - left, ty, { align: "right" });
+    docPdf.setFont(undefined, "normal");
     ty += 6;
   });
 
   ty += 4;
   if (invoice.paymentInstructions) {
-    doc.setFontSize(11);
-    doc.text("Payment Instructions:", left, ty); ty += 6;
-    doc.setFontSize(10);
-    doc.text(invoice.paymentInstructions, left, ty);
+    docPdf.setFontSize(11);
+    docPdf.text("Payment Instructions:", left, ty); ty += 6;
+    docPdf.setFontSize(10);
+    docPdf.text(invoice.paymentInstructions, left, ty);
     ty += 10;
   }
 
   if (invoice.notes) {
-    doc.setFontSize(11);
-    doc.text("Notes:", left, ty); ty += 6;
-    doc.setFontSize(10);
-    doc.text(invoice.notes, left, ty);
+    docPdf.setFontSize(11);
+    docPdf.text("Notes:", left, ty); ty += 6;
+    docPdf.setFontSize(10);
+    docPdf.text(invoice.notes, left, ty);
   }
 
-  doc.save(buildPdfFileName(invoice));
+  docPdf.save(buildPdfFileName(invoice));
 }
 
-// ---------- Email Draft ----------
-function emailDraft() {
-  const invoice = collectInvoice();
+// ---------- SendGrid email (via Callable Cloud Function) ----------
+function getFriendlyError(err) {
+  const msg = (err?.message || "").toLowerCase();
+  if (msg.includes("unauthenticated")) return "Please sign in again.";
+  if (msg.includes("permission-denied")) return "Permission denied.";
+  if (msg.includes("not-found")) return "Invoice not found.";
+  if (msg.includes("failed-precondition")) return "Missing required fields (like customer email).";
+  if (msg.includes("invalid-argument")) return "Invalid request.";
+  return err?.message || "Email send failed.";
+}
 
-  const to = encodeURIComponent(invoice.to.email || "");
-  const subject = encodeURIComponent(`Invoice ${invoice.meta.invoiceNumber || ""} - ${invoice.from.name || ""}`.trim());
+async function sendInvoiceEmail() {
+  if (!state.uid) {
+    alert("Please sign in first.");
+    return;
+  }
 
-  const totals = invoice.totals;
-  const bodyLines = [
-    `Hi ${invoice.to.name || ""},`.trim(),
-    ``,
-    `Please find your invoice below:`,
-    `Invoice #: ${invoice.meta.invoiceNumber || ""}`,
-    `Invoice Date: ${invoice.meta.invoiceDate || ""}`,
-    `Due Date: ${invoice.meta.dueDate || ""}`,
-    invoice.meta.projectName ? `Project: ${invoice.meta.projectName}` : null,
-    ``,
-    `Total Due: ${money(totals.total)}`,
-    ``,
-    invoice.paymentInstructions ? `Payment Instructions:\n${invoice.paymentInstructions}` : null,
-    ``,
-    `I’ve attached the PDF invoice.`,
-    ``,
-    `Thank you,`,
-    `${invoice.from.name || ""}`.trim(),
-    invoice.from.phone ? invoice.from.phone : null
-  ].filter(Boolean);
+  setSendResult("");
+  setBusy(true);
+  setStatus("Sending…", "warn");
 
-  const body = encodeURIComponent(bodyLines.join("\n"));
-  const href = `mailto:${to}?subject=${subject}&body=${body}`;
+  try {
+    // Ensure invoice is saved so backend can fetch it
+    let invoiceId = state.currentInvoiceId;
 
-  window.location.href = href;
+    // If not saved yet OR edited since last save, we save a fresh copy (history-friendly)
+    if (!invoiceId) {
+      invoiceId = await saveInvoice();
+    } else {
+      // Optional: if you want to force-save on send every time:
+      // invoiceId = await saveInvoice();
+    }
+
+    if (!invoiceId) {
+      setStatus("Not saved", "");
+      setBusy(false);
+      return;
+    }
+
+    // Basic checks before calling backend
+    const toEmail = el("toEmail").value.trim();
+    if (!toEmail) {
+      setStatus("Missing customer email", "err");
+      setSendResult("Customer email is required to send.", "err");
+      setBusy(false);
+      return;
+    }
+
+    const res = await sendInvoiceEmailCallable({ invoiceId });
+
+    if (res?.data?.ok) {
+      setStatus("Sent", "ok");
+      setSendResult("Invoice emailed successfully (PDF attached).", "ok");
+      await refreshSavedInvoices();
+      if (el("savedInvoicesSelect").value) {
+        // Keep selection as-is
+      } else if (state.currentInvoiceId) {
+        el("savedInvoicesSelect").value = state.currentInvoiceId;
+      }
+    } else {
+      setStatus("Send failed", "err");
+      setSendResult("Send failed (no ok response).", "err");
+    }
+  } catch (err) {
+    setStatus("Send failed", "err");
+    setSendResult(getFriendlyError(err), "err");
+    console.error(err);
+  } finally {
+    setBusy(false);
+  }
 }
 
 // ---------- New invoice ----------
@@ -499,30 +569,33 @@ function newInvoice() {
     from: { name: "", email: "", phone: "", address: "" },
     to: { name: "", email: "", phone: "", address: "" },
     meta: { invoiceNumber: makeInvoiceNumber(), invoiceDate: todayISO(), dueDate: "", projectName: "" },
-    items: [
-      { description: "Labor", qty: 1, unitPrice: 0 }
-    ],
+    items: [{ description: "Labor", qty: 1, unitPrice: 0 }],
     adjustments: { taxRatePct: 0, discount: 0, deposit: 0 },
     notes: "Thank you for your business.",
     paymentInstructions: ""
   });
 
-  setStatus("Not saved");
+  setSendResult("");
+  setStatus("Not saved", "");
 }
 
 // ---------- Wire up ----------
 function addListeners() {
   el("btnAddItem").addEventListener("click", () => addItemRow());
-  el("btnSave").addEventListener("click", saveInvoice);
+  el("btnSave").addEventListener("click", async () => {
+    setSendResult("");
+    await saveInvoice();
+  });
   el("btnPdf").addEventListener("click", downloadPdf);
-  el("btnEmail").addEventListener("click", emailDraft);
+  el("btnSendEmail").addEventListener("click", sendInvoiceEmail);
   el("btnNew").addEventListener("click", newInvoice);
   el("btnLoad").addEventListener("click", loadInvoice);
   el("btnDelete").addEventListener("click", deleteInvoice);
 
   ["taxRate", "discount", "deposit"].forEach((id) => {
     el(id).addEventListener("input", () => {
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved");
+      setSendResult("");
+      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
   });
@@ -534,7 +607,8 @@ function addListeners() {
     "notes","paymentInstructions"
   ].forEach((id) => {
     el(id).addEventListener("input", () => {
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved");
+      setSendResult("");
+      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
     });
   });
 }
@@ -542,16 +616,14 @@ function addListeners() {
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     state.uid = null;
-    setStatus("Sign in required");
-    // Still allow local editing/PDF, just no saving
-    newInvoice();
+    setStatus("Sign in required", "warn");
+    newInvoice(); // still usable locally (PDF download), but no saving/sending
     return;
   }
 
   state.uid = user.uid;
-  setStatus("Not saved");
+  setStatus("Not saved", "");
 
-  // Initialize defaults
   el("invoiceDate").value = el("invoiceDate").value || todayISO();
   if (!el("invoiceNumber").value) el("invoiceNumber").value = makeInvoiceNumber();
 
