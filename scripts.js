@@ -2,6 +2,7 @@
 import { firebaseConfig } from "./config.js";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
 import {
   getAuth,
   onAuthStateChanged,
@@ -263,9 +264,9 @@ function initLanguage() {
 }
 
 /* ========= Firebase ========= */
-let app, auth, db, storage;
+let app, auth, db, storage, analytics;
 
-function initFirebase() {
+async function initFirebase() {
   if (!firebaseConfig || !firebaseConfig.apiKey) {
     console.error("Missing Firebase config. Paste it into config.js");
     return false;
@@ -274,6 +275,17 @@ function initFirebase() {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
+
+  // Analytics only works in supported environments (typically HTTPS, non-blocked cookies, etc.)
+  try {
+    if (await isSupported()) {
+      analytics = getAnalytics(app);
+    }
+  } catch (e) {
+    // If analytics isn't supported (local file://, blocked, etc.), safely ignore.
+    analytics = undefined;
+  }
+
   return true;
 }
 
@@ -757,12 +769,13 @@ function initYear() {
   if (y) y.textContent = String(new Date().getFullYear());
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initLanguage();
   initMobileNav();
   initYear();
 
-  if (!initFirebase()) return;
+  const ok = await initFirebase();
+  if (!ok) return;
 
   onAuthStateChanged(auth, async (user) => {
     const logoutBtn = document.getElementById("logoutBtn");
