@@ -880,6 +880,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (page === "prequal") await initPrequalPage(user);
       if (page === "coi") await initCoiPage(user);
       if (page === "w9") await initW9Page(user);
+      if (page === "agreement") await initAgreementPage(user);
     } catch (e) {
       console.error(e);
     }
