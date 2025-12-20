@@ -1,5 +1,22 @@
-/* Listo starter: mobile nav + bilingual i18n (EN/ES) */
+// scripts.js (ES Module)
+import { firebaseConfig } from "./config.js";
 
+// Firebase modular SDK via CDN (version noted in Firebase release notes)
+// You can bump the version later if desired. :contentReference[oaicite:3]{index=3}
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+
+// (Next phase we’ll add Firestore + Storage imports)
+// import { getFirestore } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+// import { getStorage } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-storage.js";
+
+/* ========= i18n ========= */
 const I18N = {
   en: {
     "nav.menu": "Menu",
@@ -43,7 +60,23 @@ const I18N = {
     "how.s3Title": "Be audit-ready",
     "how.s3Desc": "Upload audit documents and understand what the carrier checks.",
 
-    "footer.note": "Built to help subcontractors look sharp, stay compliant, and win more work."
+    "footer.note": "Built to help subcontractors look sharp, stay compliant, and win more work.",
+
+    "auth.loginTitle": "Welcome back",
+    "auth.loginSubtitle": "Log in to access your Listo workspace.",
+    "auth.signupTitle": "Create your account",
+    "auth.signupSubtitle": "Use email + password to get started.",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.loginBtn": "Log In",
+    "auth.createBtn": "Create Account",
+    "auth.noAccount": "No account?",
+    "auth.goSignup": "Create one",
+    "auth.haveAccount": "Already have an account?",
+    "auth.goLogin": "Log in",
+    "auth.sideTitle": "Private. Secure. Built for onboarding.",
+    "auth.sideBody": "Your documents and uploads are protected behind your login.",
+    "auth.logout": "Log out"
   },
 
   es: {
@@ -88,42 +121,154 @@ const I18N = {
     "how.s3Title": "Listo para auditoría",
     "how.s3Desc": "Sube documentos y entiende qué revisa la aseguradora.",
 
-    "footer.note": "Diseñado para ayudar a subcontratistas a verse profesionales, cumplir requisitos y ganar más trabajo."
+    "footer.note": "Diseñado para ayudar a subcontratistas a verse profesionales, cumplir requisitos y ganar más trabajo.",
+
+    "auth.loginTitle": "Bienvenido de nuevo",
+    "auth.loginSubtitle": "Inicia sesión para acceder a tu espacio de Listo.",
+    "auth.signupTitle": "Crea tu cuenta",
+    "auth.signupSubtitle": "Usa correo + contraseña para comenzar.",
+    "auth.email": "Correo",
+    "auth.password": "Contraseña",
+    "auth.loginBtn": "Iniciar sesión",
+    "auth.createBtn": "Crear cuenta",
+    "auth.noAccount": "¿No tienes cuenta?",
+    "auth.goSignup": "Crear una",
+    "auth.haveAccount": "¿Ya tienes cuenta?",
+    "auth.goLogin": "Inicia sesión",
+    "auth.sideTitle": "Privado. Seguro. Hecho para incorporación.",
+    "auth.sideBody": "Tus documentos y cargas están protegidos con tu inicio de sesión.",
+    "auth.logout": "Cerrar sesión"
   }
 };
 
 const LANG_KEY = "listo_lang";
-
 function setPressedButtons(lang) {
   document.querySelectorAll("[data-lang]").forEach(btn => {
     const isActive = btn.getAttribute("data-lang") === lang;
     btn.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 }
-
 function applyTranslations(lang) {
   const dict = I18N[lang] || I18N.en;
   document.documentElement.lang = lang;
-
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     if (dict[key]) el.textContent = dict[key];
   });
-
   setPressedButtons(lang);
   localStorage.setItem(LANG_KEY, lang);
 }
-
 function initLanguage() {
   const saved = localStorage.getItem(LANG_KEY);
   const lang = (saved && I18N[saved]) ? saved : "en";
   applyTranslations(lang);
-
   document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => applyTranslations(btn.getAttribute("data-lang")));
   });
 }
 
+/* ========= Firebase Auth =========
+   Firebase web setup + Auth start docs :contentReference[oaicite:4]{index=4}
+*/
+let app, auth;
+
+function initFirebase() {
+  if (!firebaseConfig || !firebaseConfig.apiKey) {
+    console.error("Missing Firebase config. Paste it into config.js");
+    return false;
+  }
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  return true;
+}
+
+function getNextUrl() {
+  const url = new URL(window.location.href);
+  const next = url.searchParams.get("next");
+  return next && next.startsWith("/") === false ? next : "index.html";
+}
+
+function requireAuthGuard(user) {
+  const body = document.body;
+  const requiresAuth = body?.hasAttribute("data-requires-auth");
+  const page = body?.getAttribute("data-page");
+
+  // If page requires auth and there's no user, send to login
+  if (requiresAuth && !user) {
+    const next = window.location.pathname.split("/").pop() || "index.html";
+    window.location.href = `login.html?next=${encodeURIComponent(next)}`;
+    return;
+  }
+
+  // If user is logged in and they are on login/signup, bounce to next/index
+  if (user && (page === "login" || page === "signup")) {
+    window.location.href = getNextUrl();
+  }
+}
+
+function initAuthUI() {
+  // Logout button (shows only when logged in)
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn && auth) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "login.html";
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+
+  // Login form
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm && auth) {
+    const err = document.getElementById("loginError");
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (err) err.textContent = "";
+      const email = document.getElementById("loginEmail")?.value?.trim();
+      const password = document.getElementById("loginPassword")?.value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = getNextUrl();
+      } catch (error) {
+        if (err) err.textContent = readableAuthError(error);
+      }
+    });
+  }
+
+  // Signup form
+  const signupForm = document.getElementById("signupForm");
+  if (signupForm && auth) {
+    const err = document.getElementById("signupError");
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (err) err.textContent = "";
+      const email = document.getElementById("signupEmail")?.value?.trim();
+      const password = document.getElementById("signupPassword")?.value;
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        window.location.href = "index.html";
+      } catch (error) {
+        if (err) err.textContent = readableAuthError(error);
+      }
+    });
+  }
+}
+
+function readableAuthError(error) {
+  const code = error?.code || "";
+  if (code.includes("auth/invalid-email")) return "Invalid email address.";
+  if (code.includes("auth/user-not-found")) return "No user found with that email.";
+  if (code.includes("auth/wrong-password")) return "Incorrect password.";
+  if (code.includes("auth/invalid-credential")) return "Invalid login. Check email and password.";
+  if (code.includes("auth/email-already-in-use")) return "That email is already in use.";
+  if (code.includes("auth/weak-password")) return "Password should be at least 6 characters.";
+  return error?.message || "Something went wrong. Please try again.";
+}
+
+/* ========= Existing UI bits ========= */
 function initMobileNav() {
   const toggle = document.querySelector(".nav-toggle");
   const menu = document.querySelector("#navMenu");
@@ -134,24 +279,15 @@ function initMobileNav() {
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
   };
 
-  toggle.addEventListener("click", () => {
-    const isOpen = menu.classList.contains("open");
-    setState(!isOpen);
-  });
+  toggle.addEventListener("click", () => setState(!menu.classList.contains("open")));
+  menu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => setState(false)));
 
-  // Close menu when clicking a link (mobile)
-  menu.querySelectorAll("a").forEach(a => {
-    a.addEventListener("click", () => setState(false));
-  });
-
-  // Close on outside click
   document.addEventListener("click", (e) => {
     if (!menu.classList.contains("open")) return;
     const clickedInside = menu.contains(e.target) || toggle.contains(e.target);
     if (!clickedInside) setState(false);
   });
 
-  // Close on escape
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") setState(false);
   });
@@ -166,4 +302,20 @@ document.addEventListener("DOMContentLoaded", () => {
   initLanguage();
   initMobileNav();
   initYear();
+
+  // Firebase init
+  if (!initFirebase()) return;
+
+  // Watch auth state
+  onAuthStateChanged(auth, (user) => {
+    // Toggle logout button visibility if present
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) logoutBtn.hidden = !user;
+
+    // Route guard behavior
+    requireAuthGuard(user);
+  });
+
+  // Attach auth handlers (login/signup/logout)
+  initAuthUI();
 });
