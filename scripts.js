@@ -884,5 +884,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (e) {
       console.error(e);
     }
+
+    (() => {
+  const splash = document.getElementById("listo-splash");
+  const loginRoot = document.getElementById("login-root");
+
+  const LGroup = document.getElementById("LGroup");
+  const CheckGroup = document.getElementById("CheckGroup");
+
+  // Timing controls (tweak to taste)
+  const startDelay = 150;     // wait a beat before animating
+  const flipDuration = 720;   // should match CSS keyframes length
+  const holdAfter = 350;      // time to hold final ✓isto before fading splash
+
+  // Kick off
+  window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+      // Flip L out
+      LGroup.classList.add("flip-out");
+
+      // Flip check in slightly after L starts flipping
+      setTimeout(() => {
+        CheckGroup.style.opacity = "1";
+        CheckGroup.classList.add("flip-in");
+      }, Math.floor(flipDuration * 0.35));
+
+      // Fade splash, reveal login
+      setTimeout(() => {
+        splash.style.opacity = "0";
+
+        // reveal login
+        loginRoot.classList.remove("login-hidden");
+        loginRoot.classList.add("login-visible");
+
+        // remove splash from layout after fade
+        setTimeout(() => splash.remove(), 420);
+      }, flipDuration + holdAfter);
+    }, startDelay);
+  });
+})();
+
+    
   });
 });
