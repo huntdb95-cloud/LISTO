@@ -520,6 +520,178 @@ async function renderCoiCurrent(user) {
     }
   }
 
+  async function getW9DocRef(uid) {
+  return doc(db, "users", uid, "private", "w9");
+}
+
+function collectW9FormData() {
+  const taxClass = document.querySelector('input[name="taxClass"]:checked')?.value || "";
+  const tinType = document.querySelector('input[name="tinType"]:checked')?.value || "ssn";
+
+  return {
+    name1: document.getElementById("w9_name1")?.value?.trim() || "",
+    name2: document.getElementById("w9_name2")?.value?.trim() || "",
+    taxClass,
+    llcType: (document.getElementById("w9_llcType")?.value || "").trim().toUpperCase(),
+    otherType: (document.getElementById("w9_otherType")?.value || "").trim(),
+    exemptPayee: (document.getElementById("w9_exemptPayee")?.value || "").trim(),
+    fatca: (document.getElementById("w9_fatca")?.value || "").trim(),
+    address: (document.getElementById("w9_address")?.value || "").trim(),
+    cityStateZip: (document.getElementById("w9_cityStateZip")?.value || "").trim(),
+    requester: (document.getElementById("w9_requester")?.value || "").trim(),
+    accounts: (document.getElementById("w9_accounts")?.value || "").trim(),
+    tinType,
+    tin: (document.getElementById("w9_tin")?.value || "").trim(),
+    signature: (document.getElementById("w9_signature")?.value || "").trim(),
+    date: (document.getElementById("w9_date")?.value || "").trim()
+  };
+}
+
+function fillW9Form(data) {
+  if (!data) return;
+
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+
+  setVal("w9_name1", data.name1);
+  setVal("w9_name2", data.name2);
+  setVal("w9_llcType", data.llcType);
+  setVal("w9_otherType", data.otherType);
+  setVal("w9_exemptPayee", data.exemptPayee);
+  setVal("w9_fatca", data.fatca);
+  setVal("w9_address", data.address);
+  setVal("w9_cityStateZip", data.cityStateZip);
+  setVal("w9_requester", data.requester);
+  setVal("w9_accounts", data.accounts);
+  setVal("w9_tin", data.tin);
+  setVal("w9_signature", data.signature);
+  setVal("w9_date", data.date);
+
+  // tax class radios
+  if (data.taxClass) {
+    const r = document.querySelector(`input[name="taxClass"][value="${data.taxClass}"]`);
+    if (r) r.checked = true;
+  }
+  // tin type radios
+  if (data.tinType) {
+    const t = document.querySelector(`input[name="tinType"][value="${data.tinType}"]`);
+    if (t) t.checked = true;
+  }
+}
+
+function updateW9Preview(data) {
+  // text fields
+  document.querySelectorAll(".w9-txt[data-bind]").forEach(el => {
+    const key = el.getAttribute("data-bind");
+    let val = data[key] ?? "";
+    // simple date formatting for preview
+    if (key === "date" && val) val = val;
+    el.textContent = val;
+  });
+
+  // checkbox selection
+  const selected = data.taxClass || "";
+  document.querySelectorAll(".w9-check[data-check]").forEach(box => {
+    const key = box.getAttribute("data-check");
+    box.classList.toggle("on", key === selected);
+  });
+
+  // show/hide LLC/Other helper inputs on the form
+  const llcWrap = document.getElementById("llcTypeWrap");
+  const otherWrap = document.getElementById("otherTypeWrap");
+  if (llcWrap) llcWrap.style.display = (selected === "llc") ? "block" : "none";
+  if (otherWrap) otherWrap.style.display = (selected === "other") ? "block" : "none";
+}
+
+async function loadW9(user) {
+  const w9Ref = await getW9DocRef(user.uid);
+  const snap = await getDoc(w9Ref);
+  if (!snap.exists()) return null;
+  return snap.data();
+}
+
+async function saveW9(user, w9Data) {
+  const w9Ref = await getW9DocRef(user.uid);
+
+  await setDoc(w9Ref, {
+    ...w9Data,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  // Mark prequal item complete
+  const prequalRef = await getPrequalDocRef(user.uid);
+  await setDoc(prequalRef, {
+    w9Completed: true,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+function attachW9LivePreview() {
+  const form = document.getElementById("w9Form");
+  if (!form) return;
+
+  const handler = () => updateW9Preview(collectW9FormData());
+
+  form.addEventListener("input", handler);
+  form.addEventListener("change", handler);
+
+  const refreshBtn = document.getElementById("w9RefreshBtn");
+  refreshBtn?.addEventListener("click", handler);
+
+  // initial render
+  handler();
+}
+
+async function initW9Page(user) {
+  const msg = document.getElementById("w9Msg");
+  const err = document.getElementById("w9Err");
+  const btn = document.getElementById("w9SaveBtn");
+  const meta = document.getElementById("w9LoadedMeta");
+
+  // Ensure helper fields are hidden until needed
+  const llcWrap = document.getElementById("llcTypeWrap");
+  const otherWrap = document.getElementById("otherTypeWrap");
+  if (llcWrap) llcWrap.style.display = "none";
+  if (otherWrap) otherWrap.style.display = "none";
+
+  // Load existing
+  const existing = await loadW9(user);
+  if (existing) {
+    fillW9Form(existing);
+    updateW9Preview(existing);
+    if (meta && existing.updatedAt?.toDate) {
+      meta.textContent = `Loaded: ${existing.updatedAt.toDate().toLocaleString()}`;
+    }
+  }
+
+  attachW9LivePreview();
+
+  // Submit handler
+  document.getElementById("w9Form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (msg) msg.textContent = "";
+    if (err) err.textContent = "";
+
+    const data = collectW9FormData();
+    if (!data.name1) { if (err) err.textContent = "Name (line 1) is required."; return; }
+    if (!data.taxClass) { if (err) err.textContent = "Please select a tax classification."; return; }
+
+    try {
+      if (btn) btn.disabled = true;
+      if (msg) msg.textContent = "Saving…";
+
+      await saveW9(user, data);
+
+      if (msg) msg.textContent = "Saved. Your W-9 is stored in your account.";
+    } catch (e2) {
+      console.error(e2);
+      if (err) err.textContent = "Save failed. Please try again.";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+
   // Expiry note
   const until = daysUntil(coi.expiresOn);
   if (note && until !== null) {
