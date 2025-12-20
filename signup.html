@@ -10,65 +10,69 @@
 
 <body class="auth-page">
   <main class="auth-center">
-    <!-- Large logo above the card -->
-    <a href="index.html" class="auth-logo-wrap" aria-label="Go to home">
-      <img src="images/logo.png" alt="Listo" class="auth-logo" />
-    </a>
-
-    <!-- Centered signup card -->
-    <section class="card auth-card" aria-label="Create account">
-      <div class="card-header">
-        <h1 class="auth-title">Create account</h1>
-        <p class="muted" style="margin: 0;">Create your login to access payroll and documents.</p>
+    <div class="auth-stack">
+      <div class="auth-hero">
+        <a href="index.html" class="auth-logo-wrap" aria-label="Go to home">
+          <img src="images/logo.png" alt="Listo" class="auth-logo" />
+        </a>
       </div>
 
-      <form id="signupForm" class="auth-form" autocomplete="on">
-        <div class="field">
-          <label class="field-label" for="displayName">Company / Display name</label>
-          <input
-            id="displayName"
-            name="displayName"
-            type="text"
-            required
-            autocomplete="organization"
-            placeholder="ABC Construction"
-          />
+      <section class="card auth-card" aria-label="Create account">
+        <div class="card-header">
+          <h1 class="auth-title">Create account</h1>
+          <p class="auth-subtitle">Create your login to access payroll and documents.</p>
         </div>
 
-        <div class="field">
-          <label class="field-label" for="signupEmail">Email</label>
-          <input
-            id="signupEmail"
-            name="email"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="you@company.com"
-          />
-        </div>
+        <form id="signupForm" class="auth-form" autocomplete="on">
+          <div class="field">
+            <label class="field-label" for="displayName">Company / Display name</label>
+            <input
+              id="displayName"
+              name="displayName"
+              type="text"
+              required
+              autocomplete="organization"
+              placeholder="ABC Construction"
+            />
+          </div>
 
-        <div class="field">
-          <label class="field-label" for="signupPassword">Password</label>
-          <input
-            id="signupPassword"
-            name="password"
-            type="password"
-            required
-            autocomplete="new-password"
-            placeholder="At least 6 characters"
-          />
-        </div>
+          <div class="field">
+            <label class="field-label" for="signupEmail">Email</label>
+            <input
+              id="signupEmail"
+              name="email"
+              type="email"
+              required
+              autocomplete="email"
+              placeholder="you@company.com"
+            />
+          </div>
 
-        <p id="signupError" class="form-error" aria-live="polite"></p>
+          <div class="field">
+            <label class="field-label" for="signupPassword">Password</label>
+            <input
+              id="signupPassword"
+              name="password"
+              type="password"
+              required
+              autocomplete="new-password"
+              placeholder="At least 6 characters"
+            />
+          </div>
 
-        <button class="btn primary" type="submit">Create Account</button>
+          <p id="signupError" class="form-error" aria-live="polite"></p>
 
-        <div class="auth-links">
-          <a class="mini-link" href="login.html">Already have an account? Log in</a>
-          <a class="mini-link" href="index.html">Back to Home</a>
-        </div>
-      </form>
-    </section>
+          <button class="btn primary" type="submit">Create Account</button>
+
+          <div class="auth-links">
+            <a class="mini-link" href="login.html">Already have an account? Log in</a>
+            <a class="mini-link" href="index.html">Back to Home</a>
+          </div>
+        </form>
+      </section>
+
+      <div class="auth-footnote">Secure sign-up powered by Firebase</div>
+    </div>
   </main>
 
   <script type="module" src="./signup.js"></script>
