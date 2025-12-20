@@ -8,12 +8,11 @@
   <!-- Your existing site styles -->
   <link rel="stylesheet" href="./styles.css" />
 
-  <!-- jsPDF + AutoTable (PDF export) -->
+  <!-- jsPDF + AutoTable (PDF export on client) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    /* Small, safe extras that won’t fight your styles.css */
     .page-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
     .card { background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px; }
     .grid { display: grid; gap: 12px; }
@@ -34,12 +33,16 @@
     .btn.secondary { background: #374151; }
     .btn.ghost { background: transparent; color: #111827; border: 1px solid rgba(0,0,0,.15); }
     .btn.danger { background: #b91c1c; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
     .muted { opacity:.8; font-size:.92rem; }
     .totals { margin-left: auto; min-width: 320px; }
     .totals .line { display:flex; justify-content: space-between; padding: 6px 0; }
     .totals .grand { font-weight: 800; font-size: 1.1rem; border-top: 1px solid rgba(0,0,0,.15); padding-top: 10px; margin-top: 8px; }
     .topbar { display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
     .pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(17,24,39,.08); }
+    .pill.ok { background: rgba(16,185,129,.14); }
+    .pill.warn { background: rgba(245,158,11,.18); }
+    .pill.err { background: rgba(239,68,68,.18); }
     @media (max-width: 860px){
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
       .totals { min-width: 100%; }
@@ -48,21 +51,18 @@
 </head>
 
 <body>
-  <!-- If your site already injects header/sidebar, keep those.
-       Otherwise, this page still works as a standalone tool. -->
-
   <div class="page-wrap">
     <div class="topbar">
       <div>
         <h1 style="margin:0 0 6px 0;">Invoice Builder</h1>
-        <div class="muted">Create, save, email, and export a basic invoice.</div>
+        <div class="muted">Create, save, export, and send invoices (PDF attached via SendGrid).</div>
       </div>
 
       <div class="row">
         <button class="btn ghost" id="btnNew">New</button>
         <button class="btn secondary" id="btnSave">Save</button>
         <button class="btn" id="btnPdf">Download PDF</button>
-        <button class="btn ghost" id="btnEmail">Email Draft</button>
+        <button class="btn" id="btnSendEmail">Send Invoice (Email PDF)</button>
       </div>
     </div>
 
@@ -77,7 +77,7 @@
             <input id="fromName" placeholder="ABC Construction LLC" />
           </div>
           <div>
-            <label>Email</label>
+            <label>Email (Reply-To)</label>
             <input id="fromEmail" placeholder="billing@yourcompany.com" />
           </div>
           <div>
@@ -187,9 +187,12 @@
           <div class="line"><span>Discount</span><span id="discountOut">$0.00</span></div>
           <div class="line"><span>Deposit</span><span id="depositOut">$0.00</span></div>
           <div class="line grand"><span>Total Due</span><span id="totalOut">$0.00</span></div>
+
           <div style="margin-top:8px;" class="muted">
             <span class="pill" id="statusPill">Not saved</span>
           </div>
+
+          <div style="margin-top:8px;" class="muted" id="sendResult"></div>
         </div>
       </div>
 
@@ -218,13 +221,12 @@
           <button class="btn danger" id="btnDelete">Delete</button>
         </div>
         <div class="muted" style="margin-top:8px;">
-          Email drafts can’t attach PDFs automatically; export the PDF and attach it in your email client.
+          “Send Invoice” emails a PDF attachment through your Firebase backend + SendGrid.
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Firebase config (your existing file) + tool script -->
   <script type="module" src="./invoice.js"></script>
 </body>
 </html>
