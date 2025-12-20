@@ -535,6 +535,39 @@ input:focus{ border-color: rgba(94,234,212,0.38); box-shadow: 0 0 0 3px rgba(94,
 }
 .grid-2.tight{ gap: 10px; }
 
+/* ===== Agreement helpers ===== */
+.legal { color: rgba(233,238,245,0.93); }
+.legal h4 { margin: 14px 0 6px; font-size: 1.02rem; }
+.legal p { margin: 0 0 10px; line-height: 1.55; }
+.legal-title { margin: 0 0 10px; font-size: 1.15rem; letter-spacing: 0.02em; }
+.legal-ol { margin: 8px 0 12px 20px; }
+.legal-ol li { margin: 8px 0; line-height: 1.5; }
+
+.pdf-frame{
+  width: 100%;
+  height: 520px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+}
+.pdf-frame iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.checkline{
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+}
+.checkline input{ margin-top: 4px; }
+
 
 /* ========== Responsive ========== */
 @media (max-width: 940px){
