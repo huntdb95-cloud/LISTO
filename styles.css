@@ -357,6 +357,10 @@ img { max-width: 100%; display: block; }
 .hero-card .card{ overflow: hidden; }
 
 /* Dashboard Grid */
+.completion-status-card {
+  margin-bottom: 32px;
+}
+
 .prequal-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
