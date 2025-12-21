@@ -292,7 +292,8 @@ async function initFirebase() {
 function getNextUrl() {
   const url = new URL(window.location.href);
   const next = url.searchParams.get("next");
-  return next && next.startsWith("/") === false ? next : "index.html";
+  // If next is provided and is an absolute path, use it; otherwise default to index
+  return next && next.startsWith("/") ? next : "/index.html";
 }
 
 function requireAuthGuard(user) {
@@ -301,8 +302,10 @@ function requireAuthGuard(user) {
   const page = body?.getAttribute("data-page");
 
   if (requiresAuth && !user) {
-    const next = window.location.pathname.split("/").pop() || "index.html";
-    window.location.href = `login/login.html?next=${encodeURIComponent(next)}`;
+    // Get full absolute path (keep leading slash) for next parameter
+    const pathname = window.location.pathname;
+    const next = pathname.startsWith("/") ? pathname : `/${pathname}`;
+    window.location.href = `/login/login.html?next=${encodeURIComponent(next || "/index.html")}`;
     return;
   }
 
@@ -318,7 +321,8 @@ function initAuthUI() {
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        window.location.href = "login/login.html";
+        // Use absolute path to ensure it works from any page location
+        window.location.href = "/login/login.html";
       } catch (e) {
         console.error(e);
       }

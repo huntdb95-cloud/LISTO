@@ -74,16 +74,25 @@ img { max-width: 100%; display: block; }
 }
 
 .header-inner{
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   padding: 14px 0;
   gap: 14px;
+  position: relative;
+}
+
+.header-inner > .brand{
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .brand{
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font-weight: 800;
   letter-spacing: 0.2px;
@@ -95,7 +104,10 @@ img { max-width: 100%; display: block; }
   width: auto;
   display: block;
 }
-.footer-logo{ height: 38px; }
+.footer-brand .footer-logo,
+.footer-logo{ 
+  height: 38px; 
+}
 
 .brand-mark{
   width: 34px;
@@ -821,7 +833,7 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* Header tweaks */
-.brand-logo{
+.layout .brand-logo:not(.footer-logo){
   height: 32px;
   width: auto;
 }
