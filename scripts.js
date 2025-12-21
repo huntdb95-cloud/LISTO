@@ -156,6 +156,7 @@ const I18N = {
     "prequal.uploadBtn": "Upload",
     "prequal.currentFile": "Current File:",
     "prequal.uploaded": "Uploaded:",
+    "prequal.viewDocument": "View",
     "prequal.download": "Download",
     "prequal.fileHint": "Accepted: PDF, PNG, JPG",
     "prequal.open": "Open",
@@ -527,6 +528,7 @@ const I18N = {
     "prequal.uploadBtn": "Subir",
     "prequal.currentFile": "Archivo Actual:",
     "prequal.uploaded": "Subido:",
+    "prequal.viewDocument": "Ver",
     "prequal.download": "Descargar",
     "prequal.fileHint": "Aceptado: PDF, PNG, JPG",
     "prequal.open": "Abrir",
@@ -1085,6 +1087,30 @@ function updatePrequalUI(data) {
     const label = (I18N[lang]?.["prequal.coiExpires"] || "Expires");
     coiMetaText.textContent = `${label}: ${formatDate(expiresOn)}`;
   }
+
+  // Show/hide view buttons based on completion status
+  const w9ViewBtn = document.getElementById("w9ViewBtn");
+  if (w9ViewBtn) {
+    w9ViewBtn.style.display = w9 ? "inline-block" : "none";
+  }
+
+  const coiViewBtn = document.getElementById("coiViewBtn");
+  if (coiViewBtn && coi && data?.coi?.filePath) {
+    coiViewBtn.style.display = "inline-block";
+    // Set the COI view link URL
+    getDownloadURL(ref(storage, data.coi.filePath)).then(url => {
+      coiViewBtn.href = url;
+    }).catch(err => {
+      console.error("Error getting COI URL:", err);
+    });
+  } else if (coiViewBtn) {
+    coiViewBtn.style.display = "none";
+  }
+
+  const agreementViewBtn = document.getElementById("agreementViewBtn");
+  if (agreementViewBtn) {
+    agreementViewBtn.style.display = agr ? "inline-block" : "none";
+  }
 }
 
 async function initPrequalPage(user) {
@@ -1475,14 +1501,23 @@ async function renderBusinessLicenseCurrent(user) {
   if (fileNameEl) fileNameEl.textContent = businessLicense.fileName || "—";
   if (uploadedEl) uploadedEl.textContent = businessLicense.uploadedAtMs ? new Date(businessLicense.uploadedAtMs).toLocaleString() : "—";
 
+  const viewLink = document.getElementById("businessLicenseViewLink");
+  
   if (downloadLink && businessLicense.filePath) {
     try {
       const url = await getDownloadURL(ref(storage, businessLicense.filePath));
       downloadLink.href = url;
       downloadLink.hidden = false;
+      if (viewLink) {
+        viewLink.href = url;
+        viewLink.hidden = false;
+      }
     } catch {
       downloadLink.hidden = true;
+      if (viewLink) viewLink.hidden = true;
     }
+  } else {
+    if (viewLink) viewLink.hidden = true;
   }
 }
 
@@ -1559,14 +1594,23 @@ async function renderWorkersCompCurrent(user) {
   if (fileNameEl) fileNameEl.textContent = workersComp.fileName || "—";
   if (uploadedEl) uploadedEl.textContent = workersComp.uploadedAtMs ? new Date(workersComp.uploadedAtMs).toLocaleString() : "—";
 
+  const viewLink = document.getElementById("workersCompViewLink");
+  
   if (downloadLink && workersComp.filePath) {
     try {
       const url = await getDownloadURL(ref(storage, workersComp.filePath));
       downloadLink.href = url;
       downloadLink.hidden = false;
+      if (viewLink) {
+        viewLink.href = url;
+        viewLink.hidden = false;
+      }
     } catch {
       downloadLink.hidden = true;
+      if (viewLink) viewLink.hidden = true;
     }
+  } else {
+    if (viewLink) viewLink.hidden = true;
   }
 }
 
