@@ -73,22 +73,22 @@
 <a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
 <a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
 <a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
-<a class="sidebar-link nav-link" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
-<a class="sidebar-link nav-link" href="../invoice/invoice.html">Invoice Builder</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
 <a class="sidebar-link nav-link" data-i18n="nav.directory" href="../directory.html">Directory</a>
 </div></aside><main id="main">
   <div class="page-wrap">
     <div class="topbar">
       <div>
-        <h1 style="margin:0 0 6px 0;">Invoice Builder</h1>
-        <div class="muted">Create, save, export, and send invoices (PDF attached via SendGrid).</div>
+        <h1 style="margin:0 0 6px 0;" data-i18n="invoice.title">Invoice Builder</h1>
+        <div class="muted" data-i18n="invoice.description">Create, save, export, and send invoices (PDF attached via SendGrid).</div>
       </div>
 
       <div class="row">
-        <button class="btn ghost" id="btnNew">New</button>
-        <button class="btn secondary" id="btnSave">Save</button>
-        <button class="btn" id="btnPdf">Download PDF</button>
-        <button class="btn" id="btnSendEmail">Send Invoice (Email PDF)</button>
+        <button class="btn ghost" id="btnNew" data-i18n="invoice.new">New</button>
+        <button class="btn secondary" id="btnSave" data-i18n="invoice.save">Save</button>
+        <button class="btn" id="btnPdf" data-i18n="invoice.downloadPdf">Download PDF</button>
+        <button class="btn" id="btnSendEmail" data-i18n="invoice.sendEmail">Send Invoice (Email PDF)</button>
       </div>
     </div>
 
@@ -96,44 +96,44 @@
 
     <div class="card grid grid-2">
       <div>
-        <h3 style="margin:0 0 10px 0;">Your Company</h3>
+        <h3 style="margin:0 0 10px 0;" data-i18n="invoice.yourCompany">Your Company</h3>
         <div class="grid">
           <div>
-            <label>Company / Contractor Name</label>
+            <label data-i18n="invoice.companyName">Company / Contractor Name</label>
             <input id="fromName" placeholder="ABC Construction LLC" />
           </div>
           <div>
-            <label>Email (Reply-To)</label>
+            <label data-i18n="invoice.replyEmail">Email (Reply-To)</label>
             <input id="fromEmail" placeholder="billing@yourcompany.com" />
           </div>
           <div>
-            <label>Phone</label>
+            <label data-i18n="invoice.phone">Phone</label>
             <input id="fromPhone" placeholder="(555) 555-5555" />
           </div>
           <div>
-            <label>Address</label>
+            <label data-i18n="invoice.address">Address</label>
             <textarea id="fromAddress" placeholder="Street&#10;City, State ZIP"></textarea>
           </div>
         </div>
       </div>
 
       <div>
-        <h3 style="margin:0 0 10px 0;">Customer</h3>
+        <h3 style="margin:0 0 10px 0;" data-i18n="invoice.customer">Customer</h3>
         <div class="grid">
           <div>
-            <label>Customer Name</label>
+            <label data-i18n="invoice.customerName">Customer Name</label>
             <input id="toName" placeholder="Customer Name" />
           </div>
           <div>
-            <label>Customer Email</label>
+            <label data-i18n="invoice.customerEmail">Customer Email</label>
             <input id="toEmail" placeholder="customer@email.com" />
           </div>
           <div>
-            <label>Customer Phone</label>
+            <label data-i18n="invoice.customerPhone">Customer Phone</label>
             <input id="toPhone" placeholder="(555) 555-5555" />
           </div>
           <div>
-            <label>Customer Address</label>
+            <label data-i18n="invoice.customerAddress">Customer Address</label>
             <textarea id="toAddress" placeholder="Street&#10;City, State ZIP"></textarea>
           </div>
         </div>
@@ -144,21 +144,21 @@
 
     <div class="card grid grid-3">
       <div>
-        <label>Invoice #</label>
+        <label data-i18n="invoice.invoiceNumber">Invoice #</label>
         <input id="invoiceNumber" placeholder="INV-1001" />
       </div>
       <div>
-        <label>Invoice Date</label>
+        <label data-i18n="invoice.invoiceDate">Invoice Date</label>
         <input id="invoiceDate" type="date" />
       </div>
       <div>
-        <label>Due Date</label>
+        <label data-i18n="invoice.dueDate">Due Date</label>
         <input id="dueDate" type="date" />
       </div>
 
       <div class="grid" style="grid-column: 1 / -1;">
         <div>
-          <label>Project / Description</label>
+          <label data-i18n="invoice.projectName">Project / Description</label>
           <input id="projectName" placeholder="Kitchen remodel - phase 1" />
         </div>
       </div>
@@ -168,8 +168,8 @@
 
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <h3 style="margin:0;">Line Items</h3>
-        <button class="btn ghost" id="btnAddItem">+ Add Item</button>
+        <h3 style="margin:0;" data-i18n="invoice.lineItems">Line Items</h3>
+        <button class="btn ghost" id="btnAddItem" data-i18n="invoice.addItem">+ Add Item</button>
       </div>
 
       <div style="height:10px;"></div>
@@ -178,10 +178,10 @@
         <table id="itemsTable">
           <thead>
             <tr>
-              <th style="min-width:260px;">Description</th>
-              <th style="width:90px;" class="num">Qty</th>
-              <th style="width:140px;" class="num">Unit Price</th>
-              <th style="width:140px;" class="num">Line Total</th>
+              <th style="min-width:260px;" data-i18n="invoice.description">Description</th>
+              <th style="width:90px;" class="num" data-i18n="invoice.quantity">Qty</th>
+              <th style="width:140px;" class="num" data-i18n="invoice.unitPrice">Unit Price</th>
+              <th style="width:140px;" class="num" data-i18n="invoice.lineTotal">Line Total</th>
               <th style="width:90px;"></th>
             </tr>
           </thead>
@@ -194,25 +194,25 @@
       <div class="row">
         <div class="grid grid-3" style="flex:1; min-width: 320px;">
           <div>
-            <label>Tax %</label>
+            <label data-i18n="invoice.taxRate">Tax %</label>
             <input id="taxRate" type="number" step="0.01" min="0" placeholder="0" />
           </div>
           <div>
-            <label>Discount ($)</label>
+            <label data-i18n="invoice.discount">Discount ($)</label>
             <input id="discount" type="number" step="0.01" min="0" placeholder="0" />
           </div>
           <div>
-            <label>Deposit Paid ($)</label>
+            <label data-i18n="invoice.deposit">Deposit Paid ($)</label>
             <input id="deposit" type="number" step="0.01" min="0" placeholder="0" />
           </div>
         </div>
 
         <div class="totals">
-          <div class="line"><span>Subtotal</span><span id="subtotalOut">$0.00</span></div>
-          <div class="line"><span>Tax</span><span id="taxOut">$0.00</span></div>
-          <div class="line"><span>Discount</span><span id="discountOut">$0.00</span></div>
-          <div class="line"><span>Deposit</span><span id="depositOut">$0.00</span></div>
-          <div class="line grand"><span>Total Due</span><span id="totalOut">$0.00</span></div>
+          <div class="line"><span data-i18n="invoice.subtotal">Subtotal</span><span id="subtotalOut">$0.00</span></div>
+          <div class="line"><span data-i18n="invoice.tax">Tax</span><span id="taxOut">$0.00</span></div>
+          <div class="line"><span data-i18n="invoice.discountLabel">Discount</span><span id="discountOut">$0.00</span></div>
+          <div class="line"><span data-i18n="invoice.depositLabel">Deposit</span><span id="depositOut">$0.00</span></div>
+          <div class="line grand"><span data-i18n="invoice.totalDue">Total Due</span><span id="totalOut">$0.00</span></div>
 
           <div style="margin-top:8px;" class="muted">
             <span class="pill" id="statusPill">Not saved</span>
@@ -226,11 +226,11 @@
 
       <div class="grid grid-2">
         <div>
-          <label>Notes</label>
+          <label data-i18n="invoice.notes">Notes</label>
           <textarea id="notes" placeholder="Thank you for your business."></textarea>
         </div>
         <div>
-          <label>Payment Instructions</label>
+          <label data-i18n="invoice.paymentInstructions">Payment Instructions</label>
           <textarea id="paymentInstructions" placeholder="Zelle: your@email.com&#10;Check payable to: ..."></textarea>
         </div>
       </div>
@@ -238,16 +238,16 @@
       <div style="height:12px;"></div>
 
       <div>
-        <label>Recent Saved Invoices</label>
+        <label data-i18n="invoice.recentInvoices">Recent Saved Invoices</label>
         <div class="row">
           <select id="savedInvoicesSelect" style="max-width:520px;">
             <option value="">— Load a saved invoice —</option>
           </select>
-          <button class="btn ghost" id="btnLoad">Load</button>
-          <button class="btn danger" id="btnDelete">Delete</button>
+          <button class="btn ghost" id="btnLoad" data-i18n="invoice.loadInvoice">Load</button>
+          <button class="btn danger" id="btnDelete" data-i18n="invoice.deleteInvoice">Delete</button>
         </div>
-        <div class="muted" style="margin-top:8px;">
-          “Send Invoice” emails a PDF attachment through your Firebase backend + SendGrid.
+        <div class="muted" style="margin-top:8px;" data-i18n="invoice.sendNote">
+          "Send Invoice" emails a PDF attachment through your Firebase backend + SendGrid.
         </div>
       </div>
     </div>
