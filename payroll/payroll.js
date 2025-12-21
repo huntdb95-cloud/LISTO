@@ -141,6 +141,22 @@ function passesFilters(p) {
   return true;
 }
 
+function formatDate(dateStr) {
+  if (!dateStr || dateStr === "—") return "—";
+  try {
+    const [year, month, day] = dateStr.split("-");
+    if (!year || !month || !day) return dateStr;
+    // Get 2-digit year
+    const yearShort = year.slice(-2);
+    // Remove leading zeros from month and day
+    const monthNum = parseInt(month, 10);
+    const dayNum = parseInt(day, 10);
+    return `${monthNum}/${dayNum}/${yearShort}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
 function renderTable() {
   const filtered = payrollEntries.filter(passesFilters);
 
@@ -156,7 +172,7 @@ function renderTable() {
     const tr = document.createElement("tr");
 
     const tdDate = document.createElement("td");
-    tdDate.textContent = p.payDate || "—";
+    tdDate.textContent = formatDate(p.payDate) || "—";
 
     const tdEmp = document.createElement("td");
     tdEmp.textContent = p.employeeName || "—";
@@ -293,7 +309,7 @@ async function onSubmit(e) {
 }
 
 async function onDeleteEntry(entryId, empName, date) {
-  const ok = confirm(`Delete this payroll entry?\n\nEmployee: ${empName || "—"}\nDate: ${date || "—"}`);
+  const ok = confirm(`Delete this payroll entry?\n\nEmployee: ${empName || "—"}\nDate: ${formatDate(date) || "—"}`);
   if (!ok) return;
 
   try {
