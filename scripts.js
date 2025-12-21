@@ -36,6 +36,7 @@ const I18N = {
     "nav.audit": "Insurance Audit Help",
     "nav.contractScanner": "Contract Scanner",
     "nav.invoiceBuilder": "Invoice Builder",
+    "nav.account": "My Account",
     "nav.support": "Support",
 
     "hero.title": "Focus on your work. We'll handle the paperwork.",
@@ -299,7 +300,29 @@ const I18N = {
     "support.faq4Q": "Can I update my COI after uploading it?",
     "support.faq4A": "Yes! You can upload a new COI anytime. The latest upload becomes your active COI. Make sure to set the correct expiration date when uploading.",
     "support.faq5Q": "How does the Contract Scanner work?",
-    "support.faq5A": "Upload a contract document (PDF, HEIC, JPG, or PNG). The tool uses Google OCR to extract text and translates it into Spanish. View both the original English text and Spanish translation side-by-side."
+    "support.faq5A": "Upload a contract document (PDF, HEIC, JPG, or PNG). The tool uses Google OCR to extract text and translates it into Spanish. View both the original English text and Spanish translation side-by-side.",
+
+    "account.title": "My Account",
+    "account.subtitle": "Manage your account settings and profile information.",
+    "account.profileTitle": "Profile Picture",
+    "account.profileDesc": "Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.",
+    "account.logoLabel": "Logo File",
+    "account.logoHint": "Accepted: JPG, PNG, GIF, WebP (max 5MB)",
+    "account.uploadLogo": "Upload Logo",
+    "account.removeLogo": "Remove Logo",
+    "account.infoTitle": "Account Information",
+    "account.emailTitle": "Email Address",
+    "account.currentEmail": "Current email:",
+    "account.newEmailLabel": "New Email Address",
+    "account.passwordConfirm": "Current Password (required)",
+    "account.updateEmail": "Update Email",
+    "account.passwordTitle": "Password",
+    "account.passwordDesc": "Change your password to keep your account secure.",
+    "account.currentPasswordLabel": "Current Password",
+    "account.newPasswordLabel": "New Password",
+    "account.passwordHint": "Minimum 6 characters",
+    "account.confirmPasswordLabel": "Confirm New Password",
+    "account.updatePassword": "Update Password"
   },
 
   es: {
@@ -576,7 +599,29 @@ const I18N = {
     "support.faq4Q": "¿Puedo actualizar mi COI después de subirlo?",
     "support.faq4A": "¡Sí! Puedes subir un COI nuevo en cualquier momento. La última carga se convierte en tu COI activo. Asegúrate de establecer la fecha de vencimiento correcta al subirlo.",
     "support.faq5Q": "¿Cómo funciona el Escáner de Contratos?",
-    "support.faq5A": "Sube un documento de contrato (PDF, HEIC, JPG o PNG). La herramienta usa Google OCR para extraer texto y lo traduce al español. Ve tanto el texto original en inglés como la traducción al español lado a lado."
+    "support.faq5A": "Sube un documento de contrato (PDF, HEIC, JPG o PNG). La herramienta usa Google OCR para extraer texto y lo traduce al español. Ve tanto el texto original en inglés como la traducción al español lado a lado.",
+
+    "account.title": "Mi Cuenta",
+    "account.subtitle": "Administra la configuración de tu cuenta e información de perfil.",
+    "account.profileTitle": "Foto de Perfil",
+    "account.profileDesc": "Sube el logo de tu empresa. Aparecerá en un contenedor circular, o se mostrarán tus iniciales si no se sube ningún logo.",
+    "account.logoLabel": "Archivo de Logo",
+    "account.logoHint": "Aceptado: JPG, PNG, GIF, WebP (máx. 5MB)",
+    "account.uploadLogo": "Subir Logo",
+    "account.removeLogo": "Eliminar Logo",
+    "account.infoTitle": "Información de la Cuenta",
+    "account.emailTitle": "Dirección de Correo",
+    "account.currentEmail": "Correo actual:",
+    "account.newEmailLabel": "Nueva Dirección de Correo",
+    "account.passwordConfirm": "Contraseña Actual (requerida)",
+    "account.updateEmail": "Actualizar Correo",
+    "account.passwordTitle": "Contraseña",
+    "account.passwordDesc": "Cambia tu contraseña para mantener tu cuenta segura.",
+    "account.currentPasswordLabel": "Contraseña Actual",
+    "account.newPasswordLabel": "Nueva Contraseña",
+    "account.passwordHint": "Mínimo 6 caracteres",
+    "account.confirmPasswordLabel": "Confirmar Nueva Contraseña",
+    "account.updatePassword": "Actualizar Contraseña"
   }
 };
 
