@@ -11,7 +11,14 @@
 <body data-page="agreement" data-requires-auth="true">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
-<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<div class="container header-inner">
+<div class="header-left">
+<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a href="account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+<img id="headerAvatarImage" alt="Profile" style="display: none;" />
+<span id="headerAvatarInitials" class="header-avatar-initials"></span>
+</a>
+</div>
 <a aria-label="Listo Home" class="brand" href="index.html">
 <img alt="Listo" class="brand-logo" src="images/logo2.png"/>
 </a>
@@ -33,7 +40,6 @@
 <a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit/audit.html">Insurance Audit Help</a>
 <a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">Contract Scanner</a>
 <a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">Invoice Builder</a>
-<a class="sidebar-link nav-link" data-i18n="nav.account" href="account/account.html">My Account</a>
 <a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">Support</a>
 </div></aside><main id="main">
 <section class="section">
