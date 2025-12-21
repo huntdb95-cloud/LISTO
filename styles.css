@@ -679,6 +679,63 @@ input:focus, select:focus, textarea:focus{
   background: rgba(242,184,75,0.16);
 }
 
+/* Support page styles */
+.contact-info {
+  display: grid;
+  gap: 14px;
+}
+.contact-item {
+  display: grid;
+  gap: 6px;
+}
+.contact-item strong {
+  font-weight: 600;
+  color: var(--text);
+}
+.contact-item a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-color: rgba(77,167,99,0.3);
+  transition: all 0.2s;
+}
+.contact-item a:hover {
+  color: var(--brand-dark);
+  text-decoration-color: var(--brand);
+}
+
+.faq-item {
+  margin-bottom: 0;
+}
+.faq-item:last-child {
+  margin-bottom: 0;
+}
+
+.bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.bullets li::before {
+  content: "•";
+  color: var(--brand);
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+.bullets li a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-color: rgba(77,167,99,0.3);
+  transition: all 0.2s;
+}
+.bullets li a:hover {
+  color: var(--brand-dark);
+  text-decoration-color: var(--brand);
+}
+
 @media (max-width: 940px){
   .grid-2 { grid-template-columns: 1fr; }
   .kv-row { grid-template-columns: 1fr; }
