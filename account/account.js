@@ -60,6 +60,11 @@ async function loadProfile() {
     // Display current email
     $("currentEmail").textContent = currentUser.email || "—";
     
+    // Display current name if name field exists
+    if ($("userName")) {
+      $("userName").value = currentProfile.name || currentUser.displayName || "";
+    }
+    
     // Display profile picture or initials
     await displayProfilePicture();
     
@@ -87,14 +92,16 @@ async function displayProfilePicture() {
     avatarImage.style.display = "none";
     avatarInitials.style.display = "flex";
     
-    // Generate initials from email or displayName
+    // Generate initials from profile name, displayName, or email
+    const profileName = currentProfile?.name || "";
     const displayName = currentUser.displayName || "";
     const email = currentUser.email || "";
     
     let initials = "";
-    if (displayName) {
-      // Use display name initials
-      const parts = displayName.trim().split(/\s+/);
+    const nameToUse = profileName || displayName;
+    if (nameToUse) {
+      // Use name initials
+      const parts = nameToUse.trim().split(/\s+/);
       if (parts.length >= 2) {
         initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
       } else if (parts[0]) {
@@ -141,6 +148,11 @@ function setupEventListeners() {
   
   // Remove logo button
   $("removeLogoBtn").addEventListener("click", handleRemoveLogo);
+  
+  // Name update form
+  if ($("nameForm")) {
+    $("nameForm").addEventListener("submit", handleNameUpdate);
+  }
   
   // Email update form
   $("emailForm").addEventListener("submit", handleEmailUpdate);
@@ -283,6 +295,55 @@ async function handleRemoveLogo() {
   } catch (err) {
     console.error("Remove logo error:", err);
     showError("logoError", getFriendlyError(err));
+  }
+}
+
+// Handle name update
+async function handleNameUpdate(e) {
+  e.preventDefault();
+  
+  const name = $("userName").value.trim();
+  
+  if (!name) {
+    showError("nameError", "Please enter your name.");
+    return;
+  }
+  
+  const btn = $("nameUpdateBtn");
+  const oldDisabled = btn.disabled;
+  
+  try {
+    btn.disabled = true;
+    clearMessages("name");
+    showMsg("nameMsg", "Updating name...");
+    
+    // Update Firestore profile
+    const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
+    await setDoc(profileRef, {
+      name: name,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    
+    // Update auth displayName
+    await updateProfile(currentUser, {
+      displayName: name
+    });
+    
+    // Reload profile
+    await loadProfile();
+    
+    // Refresh header avatar if available
+    if (typeof window.updateHeaderAvatar === 'function') {
+      await window.updateHeaderAvatar(currentUser);
+    }
+    
+    showMsg("nameMsg", "Name updated successfully!", false);
+    
+  } catch (err) {
+    console.error("Name update error:", err);
+    showError("nameError", getFriendlyError(err));
+  } finally {
+    btn.disabled = oldDisabled;
   }
 }
 

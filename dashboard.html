@@ -4,11 +4,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Listo — Upload COI</title>
-<meta content="Upload your Certificate of Insurance (COI) and record its expiration date." name="description"/>
+<title>Listo — Dashboard</title>
+<meta content="Your Listo dashboard - view your account information and access all tools." name="description"/>
 <link href="styles.css" rel="stylesheet"/>
 </head>
-<body data-page="coi" data-requires-auth="true">
+<body data-page="dashboard" data-requires-auth="true">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
 <div class="container header-inner">
@@ -37,75 +37,78 @@
 <a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="dashboard.html">Dashboard</a>
 <a class="sidebar-link nav-link" data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
 <a class="sidebar-link nav-link" data-i18n="nav.payroll" href="payroll/payroll.html">Payroll</a>
-<a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit/audit.html">Insurance Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit/audit.html">Audit Help</a>
 <a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">Contract Scanner</a>
 <a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">Invoice Builder</a>
 <a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">Support</a>
 </div></aside><main id="main">
+
 <section class="section">
 <div class="container">
 <div class="section-head">
-<h1 class="page-title" data-i18n="coi.title">Certificate of Insurance (COI)</h1>
-<p class="muted" data-i18n="coi.subtitle">
-            Upload your most recent COI and enter the expiration date.
+<h1 class="page-title" data-i18n="dashboard.title">Dashboard</h1>
+<p class="muted" data-i18n="dashboard.subtitle">
+            Welcome back! Here's an overview of your account.
           </p>
 </div>
-<div class="grid-2">
-<!-- Upload Card -->
-<div class="card pad">
-<h2 class="h2" data-i18n="coi.uploadTitle">Upload COI</h2>
-<form class="form-grid" id="coiForm">
-<label class="field">
-<span class="field-label" data-i18n="coi.fileLabel">COI File (PDF preferred)</span>
-<input accept=".pdf,.png,.jpg,.jpeg" id="coiFile" required="" type="file"/>
-<span class="muted small" data-i18n="coi.fileHint">Accepted: PDF, PNG, JPG</span>
-</label>
-<label class="field">
-<span class="field-label" data-i18n="coi.expLabel">Expiration date</span>
-<input id="coiExpires" required="" type="date"/>
-</label>
-<button class="btn primary" data-i18n="coi.uploadBtn" id="coiUploadBtn" type="submit">
-                Upload &amp; Save
-              </button>
-<p aria-live="polite" class="muted small" id="coiMsg" role="status"></p>
-<p aria-live="polite" class="form-error" id="coiErr" role="alert"></p>
-</form>
-</div>
-<!-- Current COI Card -->
-<div class="card pad">
-<div class="row-between">
-<h2 class="h2" data-i18n="coi.currentTitle">Current COI on file</h2>
-<a class="mini-link" data-i18n="coi.download" hidden="" href="#" id="coiDownloadLink" rel="noopener" target="_blank">Download</a>
-</div>
+
+<!-- Account Info Card -->
+<div class="card pad mb">
+<h2 class="h2" data-i18n="dashboard.accountInfo">Account Information</h2>
 <div class="divider"></div>
-<div class="kv">
+<div class="grid-2">
+<div>
 <div class="kv-row">
-<div class="muted" data-i18n="coi.currentFile">File</div>
-<div class="kv-val" id="coiCurrentFile">—</div>
-</div>
-<div class="kv-row">
-<div class="muted" data-i18n="coi.currentExp">Expires</div>
-<div class="kv-val" id="coiCurrentExp">—</div>
+<div class="muted" data-i18n="dashboard.name">Name:</div>
+<div class="kv-val" id="dashboardName">—</div>
 </div>
 <div class="kv-row">
-<div class="muted" data-i18n="coi.currentUploaded">Uploaded</div>
-<div class="kv-val" id="coiCurrentUploaded">—</div>
+<div class="muted" data-i18n="dashboard.email">Email:</div>
+<div class="kv-val" id="dashboardEmail">—</div>
+</div>
+<div class="kv-row">
+<div class="muted" data-i18n="dashboard.accountCreated">Account Created:</div>
+<div class="kv-val" id="dashboardCreated">—</div>
 </div>
 </div>
-<div class="note warn" hidden="" id="coiExpiryNote"></div>
-<div class="row">
-<a class="btn small" data-i18n="coi.backPrequal" href="prequal.html">Back to Pre-Qualification</a>
+<div class="profile-picture-container" style="justify-content: center;">
+<div class="profile-avatar" id="dashboardAvatar" style="width: 120px; height: 120px;">
+<img id="dashboardAvatarImage" alt="Profile" style="display: none;" />
+<span id="dashboardAvatarInitials" class="avatar-initials"></span>
 </div>
 </div>
 </div>
-<div class="card pad mt">
-<h3 class="h3" data-i18n="coi.tipTitle">What makes a COI “active”?</h3>
-<p class="muted" data-i18n="coi.tipBody">
-            A COI is considered active when the expiration date is in the future. If your policy renews, upload the updated COI.
-          </p>
+<div style="margin-top: 16px;">
+<a class="btn primary" href="account/account.html" data-i18n="dashboard.editAccount">Edit Account</a>
+</div>
+</div>
+
+<!-- Quick Links -->
+<div class="card pad">
+<h2 class="h2" data-i18n="dashboard.quickLinks">Quick Links</h2>
+<div class="divider"></div>
+<div class="dashboard-grid">
+<a class="dashboard-card" href="prequal.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.prequal">Pre-Qualification</h3>
+<p class="muted small" data-i18n="dashboard.prequalDesc">Complete your pre-qualification checklist</p>
+</a>
+<a class="dashboard-card" href="payroll/payroll.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.payroll">Payroll</h3>
+<p class="muted small" data-i18n="dashboard.payrollDesc">Track employee payments</p>
+</a>
+<a class="dashboard-card" href="invoice/invoice.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.invoiceBuilder">Invoice Builder</h3>
+<p class="muted small" data-i18n="dashboard.invoiceDesc">Create and send invoices</p>
+</a>
+<a class="dashboard-card" href="audit/audit.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.audit">Audit Help</h3>
+<p class="muted small" data-i18n="dashboard.auditDesc">Prepare for insurance audits</p>
+</a>
+</div>
 </div>
 </div>
 </section>
+
 <footer class="site-footer">
 <div class="container footer-inner">
 <div>
@@ -119,7 +122,7 @@
 <div class="footer-links">
 <a data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
 <a data-i18n="nav.payroll" href="payroll/payroll.html">Payroll</a>
-<a data-i18n="nav.audit" href="audit/audit.html">Insurance Audit Help</a>
+<a data-i18n="nav.audit" href="audit/audit.html">Audit Help</a>
 <a data-i18n="nav.support" href="support.html">Support</a>
 </div>
 </div>
@@ -130,5 +133,7 @@
 </main></div>
 
 <script src="scripts.js" type="module"></script>
+<script type="module" src="dashboard.js"></script>
 </body>
 </html>
+

@@ -8,18 +8,13 @@
 <meta content="Listo automates the business side of contracting so you can focus on what you do best. Track payroll, manage documents, create invoices, and stay compliant—all in one place." name="description"/>
 <link href="styles.css" rel="stylesheet"/>
 </head>
-<body data-page="home" data-requires-auth="true">
+<body data-page="landing">
 <!-- Skip link for accessibility -->
 <a class="skip-link" href="#main">Skip to content</a>
 <!-- Header / Nav -->
 <header class="site-header">
 <div class="container header-inner">
 <div class="header-left">
-<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
-<a href="account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
-<img id="headerAvatarImage" alt="Profile" style="display: none;" />
-<span id="headerAvatarInitials" class="header-avatar-initials"></span>
-</a>
 </div>
 <a aria-label="Listo Home" class="brand" href="index.html">
 <img alt="Listo" class="brand-logo" src="images/logo2.png"/>
@@ -30,21 +25,11 @@
 <button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
 <button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
 </div>
-<!-- Shows only when logged in (scripts.js toggles this) -->
-<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
-          Log out
-        </button>
+<a class="btn primary" href="login/login.html" data-i18n="landing.login">Log In</a>
 </div>
 </div>
-</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
-<a class="sidebar-link nav-link" data-i18n="nav.home" href="index.html">Home</a>
-<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
-<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="payroll/payroll.html">Payroll</a>
-<a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit/audit.html">Insurance Audit Help</a>
-<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">Contract Scanner</a>
-<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">Invoice Builder</a>
-<a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">Support</a>
-</div></aside><main id="main">
+</header>
+<main id="main">
 
 <!-- Hero -->
 <section class="hero">
@@ -55,8 +40,8 @@
             Stop wasting time on business tasks. Listo automates payroll tracking, document management, invoicing, and compliance—so you can get back to what you do best.
           </p>
 <div class="cta-row">
-<a class="btn primary" data-i18n="hero.ctaPrimary" href="#tools">Explore Tools</a>
-<a class="btn ghost" data-i18n="hero.ctaSecondary" href="prequal.html">Get Started</a>
+<a class="btn primary" data-i18n="hero.ctaPrimary" href="login/login.html">Log In</a>
+<a class="btn ghost" data-i18n="hero.ctaSecondary" href="signup/signup.html">Sign Up</a>
 </div>
 </div>
 </div>
@@ -108,7 +93,7 @@
 <span class="tool-feature" data-i18n="tools.t1F2">Search & filter</span>
 <span class="tool-feature" data-i18n="tools.t1F3">CSV export</span>
 </div>
-<a class="btn small primary" href="payroll/payroll.html" data-i18n="tools.openTool">Open Tool →</a>
+<a class="btn small primary" href="login/login.html" data-i18n="tools.openTool">Log In to Use →</a>
 </article>
 
 <article class="tool-card card">
@@ -251,7 +236,7 @@
 <span class="muted">© <span id="year"></span> Listo</span>
 </div>
 </footer>
-</main></div>
+</main>
 
 <!-- IMPORTANT: module is required for Firebase imports -->
 <script src="scripts.js" type="module"></script>

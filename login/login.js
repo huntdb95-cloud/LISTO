@@ -27,7 +27,14 @@ form.addEventListener("submit", async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = "../index.html";
+    // Check for next parameter or default to dashboard
+    const urlParams = new URLSearchParams(window.location.search);
+    const next = urlParams.get("next");
+    if (next) {
+      window.location.href = next.startsWith("/") ? `..${next}` : `../${next}`;
+    } else {
+      window.location.href = "../dashboard.html";
+    }
   } catch (err) {
     console.error(err);
     setMsg(friendlyAuthError(err));

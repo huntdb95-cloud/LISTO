@@ -19,7 +19,7 @@
 <span id="headerAvatarInitials" class="header-avatar-initials"></span>
 </a>
 </div>
-<a aria-label="Listo Home" class="brand" href="../index.html">
+<a aria-label="Listo Home" class="brand" href="../dashboard.html">
 <img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
 </a>
 
@@ -34,7 +34,7 @@
 </div>
 </div>
 </header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
-<a class="sidebar-link nav-link" data-i18n="nav.home" href="../index.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">Dashboard</a>
 <a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
 <a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
 <a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
@@ -81,6 +81,24 @@
 <!-- Account Information Section -->
 <div class="card">
 <h2 data-i18n="account.infoTitle">Account Information</h2>
+
+<!-- Name -->
+<div class="form-section">
+<h3 data-i18n="account.nameTitle">Name</h3>
+<p class="muted small" data-i18n="account.nameDesc">Your name as it will appear in your account.</p>
+
+<form id="nameForm" style="margin-top: 12px;">
+<div class="form-group">
+<label for="userName" data-i18n="account.nameLabel">Full Name</label>
+<input type="text" id="userName" placeholder="John Doe" />
+</div>
+<button type="submit" class="btn primary" id="nameUpdateBtn" data-i18n="account.updateName">Update Name</button>
+<div id="nameMsg" class="form-msg" style="margin-top: 10px;"></div>
+<div id="nameError" class="form-error" style="margin-top: 10px;"></div>
+</form>
+</div>
+
+<div class="divider"></div>
 
 <!-- Email Change -->
 <div class="form-section">
