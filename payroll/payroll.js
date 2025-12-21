@@ -443,4 +443,103 @@ toDate.addEventListener("change", renderTable);
 clearFiltersBtn.addEventListener("click", clearFilters);
 exportCsvBtn.addEventListener("click", exportCsv);
 
+/* -----------------------------
+   Mobile Swipe Functionality
+------------------------------ */
+function initSwipe() {
+  const container = document.getElementById("swipeContainer");
+  const indicators = document.querySelectorAll(".swipe-indicators .indicator");
+  let currentSlide = 0;
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+
+  // Only enable on mobile
+  if (window.innerWidth > 900) {
+    return;
+  }
+
+  // Update indicators
+  function updateIndicators(slideIndex) {
+    indicators.forEach((ind, idx) => {
+      ind.classList.toggle("active", idx === slideIndex);
+    });
+  }
+
+  // Scroll to slide
+  function goToSlide(index) {
+    if (index < 0 || index >= container.children.length) return;
+    currentSlide = index;
+    container.scrollTo({
+      left: index * container.offsetWidth,
+      behavior: "smooth"
+    });
+    updateIndicators(index);
+  }
+
+  // Indicator click handlers
+  indicators.forEach((ind, idx) => {
+    ind.addEventListener("click", () => goToSlide(idx));
+  });
+
+  // Touch event handlers
+  container.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+    isDragging = true;
+  });
+
+  container.addEventListener("touchmove", (e) => {
+    if (!isDragging) return;
+    currentX = e.touches[0].clientX;
+    const diff = startX - currentX;
+    // Allow native scrolling but prevent default if swiping horizontally
+    if (Math.abs(diff) > 10) {
+      e.preventDefault();
+    }
+  });
+
+  container.addEventListener("touchend", (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    const diff = startX - currentX;
+    const threshold = 50; // Minimum swipe distance
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0 && currentSlide < container.children.length - 1) {
+        goToSlide(currentSlide + 1);
+      } else if (diff < 0 && currentSlide > 0) {
+        goToSlide(currentSlide - 1);
+      }
+    }
+  });
+
+  // Update indicators on scroll (for manual scrolling)
+  container.addEventListener("scroll", () => {
+    const slideIndex = Math.round(container.scrollLeft / container.offsetWidth);
+    if (slideIndex !== currentSlide) {
+      currentSlide = slideIndex;
+      updateIndicators(slideIndex);
+    }
+  });
+
+  // Initialize
+  updateIndicators(0);
+}
+
+// Initialize swipe on load and resize
 init();
+
+// Initialize swipe after DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initSwipe, 100);
+  });
+} else {
+  setTimeout(initSwipe, 100);
+}
+
+window.addEventListener("resize", () => {
+  if (window.innerWidth <= 900) {
+    setTimeout(initSwipe, 100);
+  }
+});
