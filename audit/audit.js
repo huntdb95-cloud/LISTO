@@ -331,6 +331,8 @@ async function loadAuditData() {
       if (auditData.copyEmail) $("copyEmail").value = auditData.copyEmail;
       if (auditData.auditorEmail) $("auditorEmail").value = auditData.auditorEmail;
       if (auditData.phone) $("phone").value = auditData.phone;
+      if (auditData.policyNumber) $("policyNumber").value = auditData.policyNumber;
+      if (auditData.taxId) $("taxId").value = auditData.taxId;
       
       if (auditData.uploadedFiles && Array.isArray(auditData.uploadedFiles)) {
         uploadedFiles = auditData.uploadedFiles;
@@ -364,13 +366,18 @@ function generatePDF() {
   const businessName = $("businessName").value || "Business Name";
   const phone = $("phone").value || "";
   const copyEmail = $("copyEmail").value || "";
+  const policyNumber = $("policyNumber").value || "";
+  const taxId = $("taxId").value || "";
   
   docPdf.setFontSize(12);
   docPdf.text(businessName, left, y);
   y += 6;
-  if (phone) { docPdf.setFontSize(10); docPdf.text(`Phone: ${phone}`, left, y); y += 5; }
+  docPdf.setFontSize(10);
+  if (phone) { docPdf.text(`Phone: ${phone}`, left, y); y += 5; }
   if (copyEmail) { docPdf.text(`Email: ${copyEmail}`, left, y); y += 5; }
-  y += 5;
+  if (policyNumber) { docPdf.text(`Policy Number: ${policyNumber}`, left, y); y += 5; }
+  if (taxId) { docPdf.text(`Tax ID: ${taxId}`, left, y); y += 5; }
+  y += 3;
   
   // Audit Period
   docPdf.setFontSize(12);
@@ -478,6 +485,8 @@ async function emailAuditPackage() {
     copyEmail: copyEmail,
     auditorEmail: $("auditorEmail").value.trim() || "",
     phone: $("phone").value || "",
+    policyNumber: $("policyNumber").value || "",
+    taxId: $("taxId").value || "",
     payrollSummary: payrollData,
     questionnaire: {
       qCash: $("qCash").value || "",
@@ -535,6 +544,8 @@ function clearForm() {
   $("copyEmail").value = "";
   $("auditorEmail").value = "";
   $("phone").value = "";
+  $("policyNumber").value = "";
+  $("taxId").value = "";
   $("qCash").value = "";
   $("qCashExplain").value = "";
   $("qSubs").value = "";

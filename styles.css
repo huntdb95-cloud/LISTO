@@ -1336,6 +1336,9 @@ input:focus, select:focus, textarea:focus{
   position: sticky;
   top: 72px;
   height: calc(100vh - 72px);
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
   border-right: 1px solid var(--border);
   background: var(--bg);
   padding: 0;
@@ -1365,6 +1368,8 @@ input:focus, select:focus, textarea:focus{
   position: relative;
   flex: 1;
   min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
   justify-content: flex-start;
   background: var(--panel);
 }
