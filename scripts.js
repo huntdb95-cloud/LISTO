@@ -292,8 +292,13 @@ async function initFirebase() {
 function getNextUrl() {
   const url = new URL(window.location.href);
   const next = url.searchParams.get("next");
-  // If next is provided and is an absolute path, use it; otherwise default to index
-  return next && next.startsWith("/") ? next : "/index.html";
+  // next parameter is relative to root (without leading slash)
+  // From login page at /login/login.html, we need to go up one level
+  if (next && !next.startsWith("/") && !next.startsWith("../") && !next.startsWith("./")) {
+    return `../${next}`;
+  }
+  // If it's already a relative path or absolute, use as-is, otherwise default
+  return next || "../index.html";
 }
 
 function requireAuthGuard(user) {
@@ -302,10 +307,14 @@ function requireAuthGuard(user) {
   const page = body?.getAttribute("data-page");
 
   if (requiresAuth && !user) {
-    // Get full absolute path (keep leading slash) for next parameter
+    // Get path relative to root (without leading slash) for next parameter
     const pathname = window.location.pathname;
-    const next = pathname.startsWith("/") ? pathname : `/${pathname}`;
-    window.location.href = `/login/login.html?next=${encodeURIComponent(next || "/index.html")}`;
+    const next = pathname.startsWith("/") ? pathname.substring(1) : pathname;
+    // Calculate relative path to login page from current location
+    const pathSegments = pathname.split("/").filter(p => p && !p.endsWith(".html"));
+    const depth = pathSegments.length;
+    const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
+    window.location.href = `${loginPath}?next=${encodeURIComponent(next || "index.html")}`;
     return;
   }
 
@@ -321,8 +330,11 @@ function initAuthUI() {
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        // Use absolute path to ensure it works from any page location
-        window.location.href = "/login/login.html";
+        // Calculate relative path to login page from current location
+        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+        const depth = pathSegments.length;
+        const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
+        window.location.href = loginPath;
       } catch (e) {
         console.error(e);
       }
@@ -356,7 +368,11 @@ function initAuthUI() {
       const password = document.getElementById("signupPassword")?.value;
       try {
         await createUserWithEmailAndPassword(auth, email, password);
-        window.location.href = "index.html";
+        // Calculate relative path to index.html from current location
+        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+        const depth = pathSegments.length;
+        const indexPath = depth > 0 ? "../".repeat(depth) + "index.html" : "index.html";
+        window.location.href = indexPath;
       } catch (error) {
         if (err) err.textContent = readableAuthError(error);
       }

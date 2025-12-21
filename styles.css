@@ -100,7 +100,7 @@ img { max-width: 100%; display: block; }
 }
 
 .brand-logo{
-  height: 42px;
+  height: 84px;
   width: auto;
   display: block;
 }
@@ -834,7 +834,7 @@ input:focus, select:focus, textarea:focus{
 
 /* Header tweaks */
 .layout .brand-logo:not(.footer-logo){
-  height: 32px;
+  height: 64px;
   width: auto;
 }
 
