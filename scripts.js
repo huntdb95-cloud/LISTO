@@ -320,9 +320,12 @@ function initAuthUI() {
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        // Use root-relative path to ensure it works from any page location
-        const rootPath = window.location.pathname.split("/").slice(0, -window.location.pathname.split("/").filter(p => p && !p.includes(".")).length || 1).join("/") || "";
-        window.location.href = `${rootPath}/login/login.html`;
+        // Calculate relative path to root, then to login page
+        // Count directory segments (excluding empty first segment and HTML file)
+        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+        const depth = pathSegments.length;
+        const rootPath = depth > 0 ? "../".repeat(depth) : "./";
+        window.location.href = `${rootPath}login/login.html`;
       } catch (e) {
         console.error(e);
       }
