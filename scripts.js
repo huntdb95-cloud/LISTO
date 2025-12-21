@@ -136,12 +136,28 @@ const I18N = {
     "prequal.badge.loading": "Loading…",
     "prequal.badge.prequalified": "Pre-Qualified",
     "prequal.badge.incomplete": "Incomplete",
+    "prequal.dashboardTitle": "Completion Status",
+    "prequal.completeBtn": "Complete",
+    "prequal.completeW9": "Complete W-9",
+    "prequal.completeCOI": "Complete COI",
+    "prequal.completeAgreement": "Complete Agreement",
+    "prequal.optional": "(Optional)",
     "prequal.itemW9": "W-9 Completed",
     "prequal.itemW9Desc": "Fill and submit your W-9.",
     "prequal.itemCOI": "Certificate of Insurance (COI)",
     "prequal.itemCOIDesc": "Upload an active COI and set the expiration date.",
     "prequal.itemAgreement": "Subcontractor Agreement",
     "prequal.itemAgreementDesc": "Review and sign your agreement.",
+    "prequal.itemBusinessLicense": "Business License",
+    "prequal.itemBusinessLicenseDesc": "Upload your business license if applicable.",
+    "prequal.itemWorkersComp": "Workers Compensation Exemption",
+    "prequal.itemWorkersCompDesc": "Upload your workers compensation exemption certificate if applicable.",
+    "prequal.uploadFile": "Upload File",
+    "prequal.uploadBtn": "Upload",
+    "prequal.currentFile": "Current File:",
+    "prequal.uploaded": "Uploaded:",
+    "prequal.download": "Download",
+    "prequal.fileHint": "Accepted: PDF, PNG, JPG",
     "prequal.open": "Open",
     "prequal.updated": "Last updated:",
     "prequal.whatTitle": "What “Pre-Qualified” means",
@@ -306,8 +322,8 @@ const I18N = {
     "support.resource3": "Audit Preparation",
     "support.faqTitle": "Frequently Asked Questions",
 
-    "dashboard.title": "Home",
-    "dashboard.subtitle": "Welcome back! Here's an overview of your account.",
+    "dashboard.title": "Welcome back!",
+    "dashboard.subtitle": "Here's an overview of your account and quick access to your tools.",
     "dashboard.accountInfo": "Account Information",
     "dashboard.name": "Name:",
     "dashboard.email": "Email:",
@@ -491,12 +507,28 @@ const I18N = {
     "prequal.badge.loading": "Cargando…",
     "prequal.badge.prequalified": "Precalificado",
     "prequal.badge.incomplete": "Incompleto",
+    "prequal.dashboardTitle": "Estado de Completitud",
+    "prequal.completeBtn": "Completar",
+    "prequal.completeW9": "Completar W-9",
+    "prequal.completeCOI": "Completar COI",
+    "prequal.completeAgreement": "Completar Acuerdo",
+    "prequal.optional": "(Opcional)",
     "prequal.itemW9": "W-9 Completado",
     "prequal.itemW9Desc": "Completa y envía tu W-9.",
     "prequal.itemCOI": "Certificado de Seguro (COI)",
     "prequal.itemCOIDesc": "Sube un COI vigente y define la fecha de vencimiento.",
     "prequal.itemAgreement": "Acuerdo de Subcontratista",
     "prequal.itemAgreementDesc": "Revisa y firma tu acuerdo.",
+    "prequal.itemBusinessLicense": "Licencia Comercial",
+    "prequal.itemBusinessLicenseDesc": "Sube tu licencia comercial si aplica.",
+    "prequal.itemWorkersComp": "Exención de Compensación de Trabajadores",
+    "prequal.itemWorkersCompDesc": "Sube tu certificado de exención de compensación de trabajadores si aplica.",
+    "prequal.uploadFile": "Subir Archivo",
+    "prequal.uploadBtn": "Subir",
+    "prequal.currentFile": "Archivo Actual:",
+    "prequal.uploaded": "Subido:",
+    "prequal.download": "Descargar",
+    "prequal.fileHint": "Aceptado: PDF, PNG, JPG",
     "prequal.open": "Abrir",
     "prequal.updated": "Última actualización:",
     "prequal.whatTitle": "Qué significa “Precalificado”",
@@ -661,8 +693,8 @@ const I18N = {
     "support.resource3": "Preparación para Auditoría",
     "support.faqTitle": "Preguntas Frecuentes",
 
-    "dashboard.title": "Inicio",
-    "dashboard.subtitle": "¡Bienvenido de nuevo! Aquí tienes un resumen de tu cuenta.",
+    "dashboard.title": "¡Bienvenido de nuevo!",
+    "dashboard.subtitle": "Aquí tienes un resumen de tu cuenta y acceso rápido a tus herramientas.",
     "dashboard.accountInfo": "Información de la Cuenta",
     "dashboard.name": "Nombre:",
     "dashboard.email": "Correo:",
@@ -991,35 +1023,62 @@ function updatePrequalUI(data) {
   const w9 = !!data.w9Completed;
   const coi = !!data.coiCompleted;
   const agr = !!data.agreementCompleted;
+  const hasBusinessLicense = !!data.businessLicense;
+  const hasWorkersComp = !!data.workersComp;
 
-  // Update status dots
+  // Update status dots (both dashboard and card dots)
   const w9Dot = document.getElementById("w9Dot");
   const coiDot = document.getElementById("coiDot");
   const agreementDot = document.getElementById("agreementDot");
   const businessLicenseDot = document.getElementById("businessLicenseDot");
   const workersCompDot = document.getElementById("workersCompDot");
+  
+  // Dashboard dots
+  const dashboardW9Dot = document.getElementById("dashboardW9Dot");
+  const dashboardCoiDot = document.getElementById("dashboardCoiDot");
+  const dashboardAgreementDot = document.getElementById("dashboardAgreementDot");
+  const dashboardBusinessLicenseDot = document.getElementById("dashboardBusinessLicenseDot");
+  const dashboardWorkersCompDot = document.getElementById("dashboardWorkersCompDot");
 
   if (w9Dot) {
     w9Dot.classList.toggle("dot-on", w9);
     w9Dot.classList.toggle("dot-off", !w9);
   }
+  if (dashboardW9Dot) {
+    dashboardW9Dot.classList.toggle("dot-on", w9);
+    dashboardW9Dot.classList.toggle("dot-off", !w9);
+  }
   if (coiDot) {
     coiDot.classList.toggle("dot-on", coi);
     coiDot.classList.toggle("dot-off", !coi);
+  }
+  if (dashboardCoiDot) {
+    dashboardCoiDot.classList.toggle("dot-on", coi);
+    dashboardCoiDot.classList.toggle("dot-off", !coi);
   }
   if (agreementDot) {
     agreementDot.classList.toggle("dot-on", agr);
     agreementDot.classList.toggle("dot-off", !agr);
   }
+  if (dashboardAgreementDot) {
+    dashboardAgreementDot.classList.toggle("dot-on", agr);
+    dashboardAgreementDot.classList.toggle("dot-off", !agr);
+  }
   if (businessLicenseDot) {
-    const hasBusinessLicense = !!data.businessLicense;
     businessLicenseDot.classList.toggle("dot-on", hasBusinessLicense);
     businessLicenseDot.classList.toggle("dot-off", !hasBusinessLicense);
   }
+  if (dashboardBusinessLicenseDot) {
+    dashboardBusinessLicenseDot.classList.toggle("dot-on", hasBusinessLicense);
+    dashboardBusinessLicenseDot.classList.toggle("dot-off", !hasBusinessLicense);
+  }
   if (workersCompDot) {
-    const hasWorkersComp = !!data.workersComp;
     workersCompDot.classList.toggle("dot-on", hasWorkersComp);
     workersCompDot.classList.toggle("dot-off", !hasWorkersComp);
+  }
+  if (dashboardWorkersCompDot) {
+    dashboardWorkersCompDot.classList.toggle("dot-on", hasWorkersComp);
+    dashboardWorkersCompDot.classList.toggle("dot-off", !hasWorkersComp);
   }
 
   const expiresOn = data?.coi?.expiresOn;
@@ -1055,15 +1114,6 @@ function updatePrequalUI(data) {
 async function initPrequalPage(user) {
   const data = await loadPrequalStatus(user.uid);
   updatePrequalUI(data);
-
-  // Initialize W-9 form if present
-  await initW9Page(user);
-
-  // Initialize COI form if present
-  await initCoiPage(user);
-
-  // Initialize Agreement form if present
-  await initAgreementPage(user);
 
   // Initialize Business License upload
   initBusinessLicenseUpload(user);

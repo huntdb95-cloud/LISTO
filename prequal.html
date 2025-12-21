@@ -60,6 +60,49 @@
 <p class="muted small" id="prequalUpdatedAt" style="margin-top: 8px;"></p>
 </div>
 
+<!-- Completion Dashboard -->
+<div class="card pad mb">
+<h2 class="h2" data-i18n="prequal.dashboardTitle">Completion Status</h2>
+<div class="divider"></div>
+<div class="prequal-dashboard-grid">
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardW9Dot"></span>
+<span data-i18n="prequal.itemW9">W-9 Completed</span>
+</div>
+<a class="btn small primary" href="w9.html" data-i18n="prequal.completeBtn">Complete</a>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardCoiDot"></span>
+<span data-i18n="prequal.itemCOI">Certificate of Insurance (COI)</span>
+</div>
+<a class="btn small primary" href="coi.html" data-i18n="prequal.completeBtn">Complete</a>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardAgreementDot"></span>
+<span data-i18n="prequal.itemAgreement">Subcontractor Agreement</span>
+</div>
+<a class="btn small primary" href="agreement.html" data-i18n="prequal.completeBtn">Complete</a>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardBusinessLicenseDot"></span>
+<span data-i18n="prequal.itemBusinessLicense">Business License</span>
+<span class="muted small" data-i18n="prequal.optional">(Optional)</span>
+</div>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardWorkersCompDot"></span>
+<span data-i18n="prequal.itemWorkersComp">Workers Compensation Exemption</span>
+<span class="muted small" data-i18n="prequal.optional">(Optional)</span>
+</div>
+</div>
+</div>
+</div>
+
 <!-- Dashboard Grid -->
 <div class="dashboard-grid">
 <!-- W-9 Card -->
@@ -72,116 +115,7 @@
 </div>
 <div class="divider"></div>
 <p class="muted small" data-i18n="prequal.itemW9Desc">Fill and submit your W-9.</p>
-<form class="form-grid" id="w9Form" style="margin-top: 16px;">
-<label class="field">
-<span class="field-label">1) Name (as shown on your income tax return)</span>
-<input autocomplete="name" id="w9_name1" required="" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">2) Business name / disregarded entity name (if different)</span>
-<input id="w9_name2" type="text"/>
-</label>
-<fieldset class="fieldset">
-<legend class="field-label">3a) Federal tax classification (select one)</legend>
-<div class="radio-grid">
-<label class="radio">
-<input name="taxClass" required="" type="radio" value="individual"/>
-<span>Individual / Sole proprietor</span>
-</label>
-<label class="radio">
-<input name="taxClass" type="radio" value="c_corp"/>
-<span>C corporation</span>
-</label>
-<label class="radio">
-<input name="taxClass" type="radio" value="s_corp"/>
-<span>S corporation</span>
-</label>
-<label class="radio">
-<input name="taxClass" type="radio" value="partnership"/>
-<span>Partnership</span>
-</label>
-<label class="radio">
-<input name="taxClass" type="radio" value="trust_estate"/>
-<span>Trust / estate</span>
-</label>
-<label class="radio">
-<input name="taxClass" type="radio" value="llc"/>
-<span>LLC</span>
-</label>
-<label class="radio">
-<input name="taxClass" type="radio" value="other"/>
-<span>Other</span>
-</label>
-</div>
-<div class="grid-2 tight">
-<label class="field" id="llcTypeWrap">
-<span class="field-label">LLC classification (C / S / P)</span>
-<input id="w9_llcType" maxlength="1" placeholder="C, S, or P" type="text"/>
-</label>
-<label class="field" id="otherTypeWrap">
-<span class="field-label">Other classification (text)</span>
-<input id="w9_otherType" placeholder="(see instructions)" type="text"/>
-</label>
-</div>
-</fieldset>
-<div class="grid-2 tight">
-<label class="field">
-<span class="field-label">4) Exempt payee code (if any)</span>
-<input id="w9_exemptPayee" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">4) FATCA reporting code (if any)</span>
-<input id="w9_fatca" type="text"/>
-</label>
-</div>
-<label class="field">
-<span class="field-label">5) Address (number, street, apt/suite)</span>
-<input autocomplete="street-address" id="w9_address" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">6) City, state, and ZIP</span>
-<input autocomplete="postal-code" id="w9_cityStateZip" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">Requester's name and address (optional)</span>
-<input id="w9_requester" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">7) Account number(s) (optional)</span>
-<input id="w9_accounts" type="text"/>
-</label>
-<fieldset class="fieldset">
-<legend class="field-label">Taxpayer Identification Number (TIN)</legend>
-<div class="grid-2 tight">
-<label class="radio">
-<input checked="" name="tinType" type="radio" value="ssn"/>
-<span>SSN</span>
-</label>
-<label class="radio">
-<input name="tinType" type="radio" value="ein"/>
-<span>EIN</span>
-</label>
-</div>
-<label class="field">
-<span class="field-label">TIN number</span>
-<input id="w9_tin" placeholder="SSN or EIN" type="text"/>
-<span class="muted small">Tip: You can type numbers only; formatting can be added later.</span>
-</label>
-</fieldset>
-<div class="grid-2 tight">
-<label class="field">
-<span class="field-label">Signature of U.S. person</span>
-<input id="w9_signature" placeholder="Type full name" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">Date</span>
-<input id="w9_date" type="date"/>
-</label>
-</div>
-<button class="btn primary" id="w9SaveBtn" type="submit">Save W-9</button>
-<p aria-live="polite" class="muted small" id="w9Msg" role="status"></p>
-<p aria-live="polite" class="form-error" id="w9Err" role="alert"></p>
-</form>
+<a class="btn primary" href="w9.html" data-i18n="prequal.completeW9">Complete W-9</a>
 </div>
 
 <!-- COI Card -->
@@ -194,35 +128,7 @@
 </div>
 <div class="divider"></div>
 <p class="muted small" id="coiMetaText" data-i18n="prequal.itemCOIDesc">Upload an active COI and set the expiration date.</p>
-<form class="form-grid" id="coiForm" style="margin-top: 16px;">
-<label class="field">
-<span class="field-label" data-i18n="coi.fileLabel">COI File (PDF preferred)</span>
-<input accept=".pdf,.png,.jpg,.jpeg" id="coiFile" required="" type="file"/>
-<span class="muted small" data-i18n="coi.fileHint">Accepted: PDF, PNG, JPG</span>
-</label>
-<label class="field">
-<span class="field-label" data-i18n="coi.expLabel">Expiration date</span>
-<input id="coiExpires" required="" type="date"/>
-</label>
-<button class="btn primary" data-i18n="coi.uploadBtn" id="coiUploadBtn" type="submit">Upload & Save</button>
-<p aria-live="polite" class="muted small" id="coiMsg" role="status"></p>
-<p aria-live="polite" class="form-error" id="coiErr" role="alert"></p>
-</form>
-<div class="dashboard-current-file" id="coiCurrent" style="margin-top: 16px;" hidden>
-<div class="kv-row">
-<div class="muted" data-i18n="coi.currentFile">File</div>
-<div class="kv-val" id="coiCurrentFile">—</div>
-</div>
-<div class="kv-row">
-<div class="muted" data-i18n="coi.currentExp">Expires</div>
-<div class="kv-val" id="coiCurrentExp">—</div>
-</div>
-<div class="kv-row">
-<div class="muted" data-i18n="coi.currentUploaded">Uploaded</div>
-<div class="kv-val" id="coiCurrentUploaded">—</div>
-</div>
-<a class="mini-link" data-i18n="coi.download" href="#" id="coiDownloadLink" rel="noopener" target="_blank" hidden>Download</a>
-</div>
+<a class="btn primary" href="coi.html" data-i18n="prequal.completeCOI">Complete COI</a>
 </div>
 
 <!-- Agreement Card -->
@@ -235,38 +141,7 @@
 </div>
 <div class="divider"></div>
 <p class="muted small" data-i18n="prequal.itemAgreementDesc">Review and sign your agreement.</p>
-<p class="muted small" style="margin-top: 8px;">Your signature is stored to your account. This will mark your agreement as completed in Pre-Qualification.</p>
-<form class="form-grid" id="agreementForm" style="margin-top: 16px;">
-<label class="field">
-<span class="field-label">Subcontractor name</span>
-<input id="agreementSubName" required="" type="text"/>
-</label>
-<div class="grid-2 tight">
-<label class="field">
-<span class="field-label">Initials</span>
-<input id="agreementInitials" maxlength="4" placeholder="AB" required="" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">Title</span>
-<input id="agreementTitle" placeholder="Owner / Member / Manager" type="text"/>
-</label>
-</div>
-<label class="field">
-<span class="field-label">Signature (type full name)</span>
-<input id="agreementSignature" required="" type="text"/>
-</label>
-<label class="field">
-<span class="field-label">Date</span>
-<input id="agreementDate" required="" type="date"/>
-</label>
-<label class="checkline">
-<input id="agreementAccept" required="" type="checkbox"/>
-<span>I have read and agree to the terms of this subcontractor agreement.</span>
-</label>
-<button class="btn primary" id="agreementSignBtn" type="submit">Sign & Save</button>
-<p aria-live="polite" class="muted small" id="agreementMsg" role="status"></p>
-<p aria-live="polite" class="form-error" id="agreementErr" role="alert"></p>
-</form>
+<a class="btn primary" href="agreement.html" data-i18n="prequal.completeAgreement">Complete Agreement</a>
 </div>
 
 <!-- Business License Card -->
