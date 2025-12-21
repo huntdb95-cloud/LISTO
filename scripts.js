@@ -1295,6 +1295,75 @@ function initYear() {
   if (y) y.textContent = String(new Date().getFullYear());
 }
 
+/* ========== Header Avatar ========== */
+async function updateHeaderAvatar(user) {
+  const avatarEl = document.getElementById("headerAvatar");
+  const avatarImage = document.getElementById("headerAvatarImage");
+  const avatarInitials = document.getElementById("headerAvatarInitials");
+  
+  if (!avatarEl || !avatarImage || !avatarInitials) return;
+  
+  try {
+    // Try to load profile from Firestore
+    const profileRef = doc(db, "users", user.uid, "private", "profile");
+    const profileSnap = await getDoc(profileRef);
+    const profile = profileSnap.exists() ? profileSnap.data() : {};
+    
+    // Get logo URL from profile or auth user photoURL
+    const logoUrl = profile?.logoUrl || user.photoURL;
+    
+    if (logoUrl) {
+      avatarImage.src = logoUrl;
+      avatarImage.style.display = "block";
+      avatarInitials.style.display = "none";
+    } else {
+      avatarImage.style.display = "none";
+      avatarInitials.style.display = "flex";
+      
+      // Generate initials
+      let initials = "";
+      if (user.displayName) {
+        const parts = user.displayName.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        } else if (parts[0]) {
+          initials = parts[0].substring(0, 2).toUpperCase();
+        }
+      }
+      
+      if (!initials && user.email) {
+        initials = user.email.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, "");
+      }
+      
+      if (!initials) {
+        initials = "??";
+      }
+      
+      avatarInitials.textContent = initials;
+    }
+    
+    // Calculate relative path to account page
+    const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+    const depth = pathSegments.length;
+    const accountPath = depth > 0 ? "../".repeat(depth) + "account/account.html" : "account/account.html";
+    avatarEl.href = accountPath;
+    
+  } catch (err) {
+    console.error("Error loading avatar:", err);
+    // Fallback to initials from email
+    if (user.email) {
+      avatarInitials.textContent = user.email.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, "") || "??";
+      avatarInitials.style.display = "flex";
+      avatarImage.style.display = "none";
+    }
+  }
+}
+
+// Make function available globally for account.js to call
+if (typeof window !== 'undefined') {
+  window.updateHeaderAvatar = updateHeaderAvatar;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   initLanguage();
   initSidebarNav();
@@ -1306,6 +1375,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   onAuthStateChanged(auth, async (user) => {
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) logoutBtn.hidden = !user;
+    
+    const headerAvatar = document.getElementById("headerAvatar");
+    if (headerAvatar) headerAvatar.hidden = !user;
+    
+    if (user) {
+      await updateHeaderAvatar(user);
+    }
 
     requireAuthGuard(user);
     initAuthUI();

@@ -221,6 +221,11 @@ async function handleLogoUpload(e) {
     // Reload profile
     await loadProfile();
     
+    // Refresh header avatar if available
+    if (typeof window.updateHeaderAvatar === 'function') {
+      await window.updateHeaderAvatar(currentUser);
+    }
+    
     showMsg("logoMsg", "Logo uploaded successfully!", false);
     $("logoForm").reset();
     
@@ -267,6 +272,11 @@ async function handleRemoveLogo() {
     
     // Reload profile
     await loadProfile();
+    
+    // Refresh header avatar if available
+    if (typeof window.updateHeaderAvatar === 'function') {
+      await window.updateHeaderAvatar(currentUser);
+    }
     
     showMsg("logoMsg", "Logo removed successfully!", false);
     
