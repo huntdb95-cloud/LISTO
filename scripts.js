@@ -31,6 +31,7 @@ const I18N = {
   en: {
     "nav.menu": "Menu",
     "nav.home": "Home",
+    "nav.dashboard": "Dashboard",
     "nav.prequal": "Pre-Qualification",
     "nav.payroll": "Payroll",
     "nav.audit": "Audit Help",
@@ -41,8 +42,9 @@ const I18N = {
 
     "hero.title": "Focus on your work. We'll handle the paperwork.",
     "hero.subtitle": "Stop wasting time on business tasks. Listo automates payroll tracking, document management, invoicing, and compliance—so you can get back to what you do best.",
-    "hero.ctaPrimary": "Explore Tools",
-    "hero.ctaSecondary": "Get Started",
+    "hero.ctaPrimary": "Log In",
+    "hero.ctaSecondary": "Sign Up",
+    "landing.login": "Log In",
 
     "card.prequalTitle": "Pre-Qualification Checklist",
     "card.prequalDesc": "Complete these to earn a “Pre-Qualified” status.",
@@ -299,6 +301,19 @@ const I18N = {
     "support.resource2": "Payroll Tracker Help",
     "support.resource3": "Audit Preparation",
     "support.faqTitle": "Frequently Asked Questions",
+
+    "dashboard.title": "Dashboard",
+    "dashboard.subtitle": "Welcome back! Here's an overview of your account.",
+    "dashboard.accountInfo": "Account Information",
+    "dashboard.name": "Name:",
+    "dashboard.email": "Email:",
+    "dashboard.accountCreated": "Account Created:",
+    "dashboard.editAccount": "Edit Account",
+    "dashboard.quickLinks": "Quick Links",
+    "dashboard.prequalDesc": "Complete your pre-qualification checklist",
+    "dashboard.payrollDesc": "Track employee payments",
+    "dashboard.invoiceDesc": "Create and send invoices",
+    "dashboard.auditDesc": "Prepare for insurance audits",
     "support.faq1Q": "How do I become Pre-Qualified?",
     "support.faq1A": "Complete three items: fill out your W-9, upload an active Certificate of Insurance (COI), and sign the Subcontractor Agreement. Once all three are complete, you'll earn Pre-Qualified status.",
     "support.faq2Q": "How do I track payroll payments?",
@@ -319,6 +334,10 @@ const I18N = {
     "account.uploadLogo": "Upload Logo",
     "account.removeLogo": "Remove Logo",
     "account.infoTitle": "Account Information",
+    "account.nameTitle": "Name",
+    "account.nameDesc": "Your name as it will appear in your account.",
+    "account.nameLabel": "Full Name",
+    "account.updateName": "Update Name",
     "account.emailTitle": "Email Address",
     "account.currentEmail": "Current email:",
     "account.newEmailLabel": "New Email Address",
@@ -336,6 +355,7 @@ const I18N = {
   es: {
     "nav.menu": "Menú",
     "nav.home": "Inicio",
+    "nav.dashboard": "Panel de Control",
     "nav.prequal": "Precalificación",
     "nav.payroll": "Nómina",
     "nav.audit": "Ayuda de Auditoría",
@@ -345,8 +365,9 @@ const I18N = {
 
     "hero.title": "Precalifícate. Cobra. Sé elegido.",
     "hero.subtitle": "Listo ayuda a subcontratistas a completar requisitos de incorporación, estar listos para auditorías y crear un perfil confiable para contratistas generales.",
-    "hero.ctaPrimary": "Iniciar Precalificación",
-    "hero.ctaSecondary": "Obtener Soporte",
+    "hero.ctaPrimary": "Iniciar Sesión",
+    "hero.ctaSecondary": "Registrarse",
+    "landing.login": "Iniciar Sesión",
     "hero.pill1": "W-9 Completado",
     "hero.pill2": "COI Vigente Subido",
     "hero.pill3": "Contrato Firmado",
@@ -606,6 +627,19 @@ const I18N = {
     "support.resource2": "Ayuda del Rastreador de Nómina",
     "support.resource3": "Preparación para Auditoría",
     "support.faqTitle": "Preguntas Frecuentes",
+
+    "dashboard.title": "Panel de Control",
+    "dashboard.subtitle": "¡Bienvenido de nuevo! Aquí tienes un resumen de tu cuenta.",
+    "dashboard.accountInfo": "Información de la Cuenta",
+    "dashboard.name": "Nombre:",
+    "dashboard.email": "Correo:",
+    "dashboard.accountCreated": "Cuenta Creada:",
+    "dashboard.editAccount": "Editar Cuenta",
+    "dashboard.quickLinks": "Enlaces Rápidos",
+    "dashboard.prequalDesc": "Completa tu lista de precalificación",
+    "dashboard.payrollDesc": "Rastrea pagos de empleados",
+    "dashboard.invoiceDesc": "Crea y envía facturas",
+    "dashboard.auditDesc": "Prepárate para auditorías de seguro",
     "support.faq1Q": "¿Cómo me convierto en Precalificado?",
     "support.faq1A": "Completa tres elementos: completa tu W-9, sube un Certificado de Seguro (COI) activo y firma el Acuerdo de Subcontratista. Una vez que los tres estén completos, obtendrás el estatus de Precalificado.",
     "support.faq2Q": "¿Cómo registro los pagos de nómina?",
@@ -626,6 +660,10 @@ const I18N = {
     "account.uploadLogo": "Subir Logo",
     "account.removeLogo": "Eliminar Logo",
     "account.infoTitle": "Información de la Cuenta",
+    "account.nameTitle": "Nombre",
+    "account.nameDesc": "Tu nombre tal como aparecerá en tu cuenta.",
+    "account.nameLabel": "Nombre Completo",
+    "account.updateName": "Actualizar Nombre",
     "account.emailTitle": "Dirección de Correo",
     "account.currentEmail": "Correo actual:",
     "account.newEmailLabel": "Nueva Dirección de Correo",
@@ -736,8 +774,8 @@ function getNextUrl() {
     }
     return next;
   }
-  // Default: go to index.html
-  return "../index.html";
+  // Default: go to dashboard.html
+  return "../dashboard.html";
 }
 
 function requireAuthGuard(user) {
@@ -753,12 +791,17 @@ function requireAuthGuard(user) {
     const pathSegments = pathname.split("/").filter(p => p && !p.endsWith(".html"));
     const depth = pathSegments.length;
     const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
-    window.location.href = `${loginPath}?next=${encodeURIComponent(next || "/index.html")}`;
+    window.location.href = `${loginPath}?next=${encodeURIComponent(next || "/dashboard.html")}`;
     return;
   }
 
   if (user && (page === "login" || page === "signup")) {
     window.location.href = getNextUrl();
+  }
+
+  // Redirect authenticated users away from landing page to dashboard
+  if (user && page === "landing") {
+    window.location.href = "dashboard.html";
   }
 }
 
@@ -807,11 +850,11 @@ function initAuthUI() {
       const password = document.getElementById("signupPassword")?.value;
       try {
         await createUserWithEmailAndPassword(auth, email, password);
-        // Calculate relative path to index.html from current location
+        // Calculate relative path to dashboard.html from current location
         const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
         const depth = pathSegments.length;
-        const indexPath = depth > 0 ? "../".repeat(depth) + "index.html" : "index.html";
-        window.location.href = indexPath;
+        const dashboardPath = depth > 0 ? "../".repeat(depth) + "dashboard.html" : "dashboard.html";
+        window.location.href = dashboardPath;
       } catch (error) {
         if (err) err.textContent = readableAuthError(error);
       }
