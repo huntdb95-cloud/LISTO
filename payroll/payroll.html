@@ -17,7 +17,7 @@
     .grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; }
     .card { background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 16px; }
     .card h2 { margin: 0 0 10px; font-size: 1.1rem; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; align-items: start; }
     .row-3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
     label { display:block; font-weight: 600; margin: 0 0 6px; }
     input, select, button { width:100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.18); }
@@ -89,19 +89,19 @@
         <h2>Add Payment</h2>
 
         <form id="paymentForm" autocomplete="off">
-          <div class="row" style="align-items: flex-start;">
+          <div class="row">
             <div>
               <label for="employeeName">Employee</label>
               <!-- Type a name or select a saved employee -->
               <input id="employeeName" list="employeeList" placeholder="Start typing a name…" required />
               <datalist id="employeeList"></datalist>
-              <div class="muted" style="margin-top:6px; font-size: 0.85rem;">New names will be saved automatically.</div>
+              <div class="muted" style="margin-top:6px; font-size: 0.85rem; line-height: 1.4;">New names will be saved automatically.</div>
             </div>
 
             <div>
               <label for="payDate">Payment Date</label>
               <input id="payDate" type="date" required />
-              <div style="margin-top:6px; height: 1.2em;"></div>
+              <div class="muted" style="margin-top:6px; font-size: 0.85rem; line-height: 1.4; visibility: hidden;">Placeholder</div>
             </div>
           </div>
 
