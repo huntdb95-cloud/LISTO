@@ -37,6 +37,7 @@ const functions = getFunctions();
 
 // State
 let currentUid = null;
+let currentUser = null; // Firebase Auth user object
 let payrollData = []; // Filtered payroll entries
 let uploadedFiles = []; // { type, fileName, filePath, downloadURL }
 let auditData = null; // Saved audit data
@@ -328,7 +329,6 @@ async function loadAuditData() {
       if (auditData.policyStart) $("policyStart").value = auditData.policyStart;
       if (auditData.policyEnd) $("policyEnd").value = auditData.policyEnd;
       if (auditData.businessName) $("businessName").value = auditData.businessName;
-      if (auditData.copyEmail) $("copyEmail").value = auditData.copyEmail;
       if (auditData.auditorEmail) $("auditorEmail").value = auditData.auditorEmail;
       if (auditData.phone) $("phone").value = auditData.phone;
       if (auditData.policyNumber) $("policyNumber").value = auditData.policyNumber;
@@ -365,7 +365,7 @@ function generatePDF() {
   // Business Info
   const businessName = $("businessName").value || "Business Name";
   const phone = $("phone").value || "";
-  const copyEmail = $("copyEmail").value || "";
+  const copyEmail = currentUser?.email || "";
   const policyNumber = $("policyNumber").value || "";
   const taxId = $("taxId").value || "";
   
@@ -469,11 +469,12 @@ async function emailAuditPackage() {
     return;
   }
   
-  const copyEmail = $("copyEmail").value.trim();
-  if (!copyEmail) {
-    setMsg("finalErr", "Please enter a contact email.", true);
+  if (!currentUser?.email) {
+    setMsg("finalErr", "User email not found. Please sign in again.", true);
     return;
   }
+  
+  const copyEmail = currentUser.email;
   
   // Save all data first
   await saveQuestionnaire();
@@ -541,7 +542,6 @@ function clearForm() {
   $("policyStart").value = "";
   $("policyEnd").value = "";
   $("businessName").value = "";
-  $("copyEmail").value = "";
   $("auditorEmail").value = "";
   $("phone").value = "";
   $("policyNumber").value = "";
@@ -586,9 +586,11 @@ function init() {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUid = user.uid;
+      currentUser = user;
       await loadAuditData();
     } else {
       currentUid = null;
+      currentUser = null;
     }
   });
   
