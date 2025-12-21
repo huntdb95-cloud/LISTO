@@ -368,7 +368,11 @@ function initAuthUI() {
       const password = document.getElementById("signupPassword")?.value;
       try {
         await createUserWithEmailAndPassword(auth, email, password);
-        window.location.href = "index.html";
+        // Calculate relative path to index.html from current location
+        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+        const depth = pathSegments.length;
+        const indexPath = depth > 0 ? "../".repeat(depth) + "index.html" : "index.html";
+        window.location.href = indexPath;
       } catch (error) {
         if (err) err.textContent = readableAuthError(error);
       }
