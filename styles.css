@@ -1028,13 +1028,86 @@ input:focus, select:focus, textarea:focus{
    ============================ */
 
 .auth-page {
-  /* Layered background: brand-tinted gradients + soft vignette */
-  background:
-    radial-gradient(900px 520px at 18% 10%, rgba(77,167,99,0.22), transparent 60%),
-    radial-gradient(820px 520px at 85% 20%, rgba(47,139,74,0.14), transparent 62%),
-    radial-gradient(900px 700px at 50% 105%, rgba(21,31,28,0.16), transparent 58%),
-    linear-gradient(180deg, #f7faf8 0%, #f4f8f6 70%, #f7faf8 100%);
+  position: relative;
+  /* Base background color */
+  background: #f7faf8;
   color: var(--text);
+  overflow: hidden;
+}
+
+/* Masonry pattern background with BELISTO image */
+.auth-page::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  right: -10%;
+  bottom: -10%;
+  opacity: 0.035;
+  background-image: 
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png'),
+    url('images/belisto.png');
+  background-size: 
+    380px auto, 
+    420px auto, 
+    350px auto, 
+    400px auto, 
+    360px auto,
+    390px auto,
+    410px auto,
+    370px auto,
+    430px auto,
+    340px auto;
+  background-position: 
+    5% 8%,
+    45% 2%,
+    85% 12%,
+    15% 25%,
+    65% 22%,
+    35% 38%,
+    75% 35%,
+    8% 52%,
+    55% 48%,
+    92% 55%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  transform: rotate(-2deg);
+  animation: masonryFloat 60s ease-in-out infinite;
+}
+
+@keyframes masonryFloat {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50% { transform: rotate(-1.5deg) translateY(-20px); }
+}
+
+/* Add overlay for better content readability */
+.auth-page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(900px 520px at 18% 10%, rgba(77,167,99,0.12), transparent 60%),
+    radial-gradient(820px 520px at 85% 20%, rgba(47,139,74,0.08), transparent 62%),
+    linear-gradient(180deg, rgba(247,250,248,0.95) 0%, rgba(244,248,246,0.92) 70%, rgba(247,250,248,0.95) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.auth-page > * {
+  position: relative;
+  z-index: 2;
 }
 
 .auth-center{
