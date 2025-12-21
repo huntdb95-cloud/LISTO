@@ -85,17 +85,20 @@ img { max-width: 100%; display: block; }
 
 .header-inner{
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 260px 1fr auto;
   align-items: center;
-  padding: 18px 0;
+  padding: 18px 20px;
   gap: 18px;
   position: relative;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding-left: 14px;
 }
 
 .header-inner > .brand{
@@ -1325,6 +1328,12 @@ input:focus, select:focus, textarea:focus{
 
 /* Mobile: sidebar becomes off-canvas */
 @media (max-width: 920px){
+  .header-inner{
+    grid-template-columns: auto 1fr auto;
+  }
+  .header-left{
+    padding-left: 0;
+  }
   .layout{
     grid-template-columns: 1fr;
   }
