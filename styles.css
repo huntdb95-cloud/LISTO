@@ -367,12 +367,10 @@ img { max-width: 100%; display: block; }
 .prequal-dashboard-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  gap: 12px;
 }
 
 .prequal-dashboard-item .dashboard-status {

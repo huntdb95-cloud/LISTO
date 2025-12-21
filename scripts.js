@@ -1016,8 +1016,6 @@ async function loadPrequalStatus(uid) {
 }
 
 function updatePrequalUI(data) {
-  const badge = document.getElementById("prequalBadge");
-  const updatedAtEl = document.getElementById("prequalUpdatedAt");
   const coiMetaText = document.getElementById("coiMetaText");
 
   const w9 = !!data.w9Completed;
@@ -1086,28 +1084,6 @@ function updatePrequalUI(data) {
     const lang = document.documentElement.lang || "en";
     const label = (I18N[lang]?.["prequal.coiExpires"] || "Expires");
     coiMetaText.textContent = `${label}: ${formatDate(expiresOn)}`;
-  }
-
-  const allDone = w9 && coi && agr;
-  if (badge) {
-    badge.classList.remove("badge-ok", "badge-warn", "badge-wip");
-    if (allDone) {
-      badge.classList.add("badge-ok");
-      const key = "prequal.badge.prequalified";
-      badge.textContent = (I18N[document.documentElement.lang]?.[key] || I18N.en[key]);
-    } else {
-      badge.classList.add("badge-wip");
-      const key = "prequal.badge.incomplete";
-      badge.textContent = (I18N[document.documentElement.lang]?.[key] || I18N.en[key]);
-    }
-  }
-
-  if (updatedAtEl) {
-    const key = "prequal.updated";
-    const label = (I18N[document.documentElement.lang]?.[key] || I18N.en[key]);
-    updatedAtEl.textContent = data?.updatedAt?.toDate
-      ? `${label} ${data.updatedAt.toDate().toLocaleString()}`
-      : "";
   }
 }
 
