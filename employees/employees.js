@@ -88,28 +88,28 @@ function renderEmployeesList() {
     const workersCompLink = emp.workersCompUrl ? `<a href="${emp.workersCompUrl}" target="_blank" class="mini-link">View Workers Comp</a>` : `<span class="muted small">No Workers Comp uploaded</span>`;
     
     return `
-      <div class="employee-card" style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px;">
-        <div class="row-between" style="margin-bottom: 8px;">
+      <div class="employee-card" style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
+        <div class="row-between" style="margin-bottom: 6px;">
           <div>
-            <h3 class="h3" style="margin: 0;">${emp.name || "—"}</h3>
-            <div style="margin-top: 4px;">${typeBadge}</div>
+            <h3 class="h3" style="margin: 0; font-size: 1.1rem;">${emp.name || "—"}</h3>
+            <div style="margin-top: 3px;">${typeBadge}</div>
           </div>
           <div>
             <button class="btn small" onclick="editEmployee('${emp.id}')" data-i18n="employees.edit">Edit</button>
             <button class="btn small ghost" onclick="deleteEmployee('${emp.id}', '${(emp.name || "").replace(/'/g, "\\'")}')" data-i18n="employees.delete">Delete</button>
           </div>
         </div>
-        <div class="grid-2" style="margin-top: 12px; gap: 12px;">
+        <div class="grid-2" style="margin-top: 8px; gap: 10px;">
           <div>
             ${emp.email ? `<div class="small muted">Email: ${emp.email}</div>` : ""}
             ${emp.phone ? `<div class="small muted">Phone: ${emp.phone}</div>` : ""}
           </div>
           <div>
-            <div class="small muted" style="margin-bottom: 4px;"><strong>Documents:</strong></div>
-            <div class="small" style="margin-bottom: 2px;">W-9: ${w9Link}</div>
+            <div class="small muted" style="margin-bottom: 3px;"><strong>Documents:</strong></div>
+            <div class="small" style="margin-bottom: 1px;">W-9: ${w9Link}</div>
             ${emp.type === "subcontractor" ? `
-              <div class="small" style="margin-bottom: 2px;">COI: ${coiLink}</div>
-              <div class="small">Workers Comp: ${workersCompLink}</div>
+              <div class="small" style="margin-bottom: 1px;">COI: ${coiLink}</div>
+              <div class="small" style="margin-bottom: 1px;">Workers Comp: ${workersCompLink}</div>
             ` : ""}
           </div>
         </div>
