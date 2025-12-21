@@ -302,7 +302,7 @@ function requireAuthGuard(user) {
 
   if (requiresAuth && !user) {
     const next = window.location.pathname.split("/").pop() || "index.html";
-    window.location.href = `login.html?next=${encodeURIComponent(next)}`;
+    window.location.href = `login/login.html?next=${encodeURIComponent(next)}`;
     return;
   }
 
@@ -318,7 +318,7 @@ function initAuthUI() {
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        window.location.href = "login.html";
+        window.location.href = "login/login.html";
       } catch (e) {
         console.error(e);
       }

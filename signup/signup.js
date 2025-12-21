@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import { auth, db } from "./config.js";
+import { auth, db } from "../config.js";
 
 const form = document.getElementById("signupForm");
 const displayNameEl = document.getElementById("displayName");
@@ -62,7 +62,7 @@ form.addEventListener("submit", async (e) => {
       createdAt: serverTimestamp()
     });
 
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
   } catch (err) {
     console.error(err);
     setError(friendlyAuthError(err));

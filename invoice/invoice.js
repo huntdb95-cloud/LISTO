@@ -7,7 +7,7 @@
 //
 // This version adds: "Send Invoice (Email PDF)" via SendGrid backend.
 
-import { auth, db } from "./config.js";
+import { auth, db } from "../config.js";
 
 import {
   onAuthStateChanged

@@ -1,6 +1,6 @@
 // login.js
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { auth } from "./config.js";
+import { auth } from "../config.js";
 
 const form = document.getElementById("loginForm");
 const msg = document.getElementById("loginMsg");
@@ -27,7 +27,7 @@ form.addEventListener("submit", async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
   } catch (err) {
     console.error(err);
     setMsg(friendlyAuthError(err));

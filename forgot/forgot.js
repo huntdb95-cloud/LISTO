@@ -1,10 +1,10 @@
 // forgot.js
 import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { auth } from "./config.js";
+import { auth } from "../config.js";
 
 // ✅ Set this to your real deployed domain:
 const DOMAIN = "https://golisto.net"; // or "https://golist.net"
-const LOGIN_URL = `${DOMAIN}/login.html`;
+const LOGIN_URL = `${DOMAIN}/login/login.html`;
 
 const form = document.getElementById("forgotForm");
 const msg = document.getElementById("forgotMsg");
