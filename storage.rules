@@ -47,6 +47,30 @@ service firebase.storage {
       allow delete: if isOwnerPath(userId);
     }
 
+    // ========== Business License ==========
+    
+    // Business License: users/{uid}/businessLicense/*
+    match /users/{userId}/businessLicense/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // ========== Workers Compensation Exemption ==========
+    
+    // Workers Comp Exemption: users/{uid}/workersComp/*
+    match /users/{userId}/workersComp/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
     // ========== Contract Files ==========
     
     // Contract scanner files: users/{uid}/contracts/*

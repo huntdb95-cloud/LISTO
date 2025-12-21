@@ -459,6 +459,11 @@ function initSwipe() {
     return;
   }
 
+  // Guard: ensure container exists before proceeding
+  if (!container) {
+    return;
+  }
+
   // Update indicators
   function updateIndicators(slideIndex) {
     indicators.forEach((ind, idx) => {

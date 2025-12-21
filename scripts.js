@@ -33,7 +33,7 @@ const I18N = {
     "nav.home": "Home",
     "nav.prequal": "Pre-Qualification",
     "nav.payroll": "Payroll",
-    "nav.audit": "Insurance Audit Help",
+    "nav.audit": "Audit Help",
     "nav.contractScanner": "Contract Scanner",
     "nav.invoiceBuilder": "Invoice Builder",
     "nav.account": "My Account",
@@ -85,7 +85,7 @@ const I18N = {
     "tools.t4F1": "OCR scanning",
     "tools.t4F2": "Auto translate",
     "tools.t4F3": "Side-by-side view",
-    "tools.t5Title": "Insurance Audit Helper",
+    "tools.t5Title": "Audit Help",
     "tools.t5Badge": "Compliance",
     "tools.t5Desc": "Prepare for audits with organized document packages. Upload files, answer questions, and generate PDF reports.",
     "tools.t5F1": "Document upload",
@@ -186,16 +186,24 @@ const I18N = {
     "contractScanner.downloadEnglish": "Download English (.txt)",
     "contractScanner.downloadSpanish": "Download Spanish (.txt)",
 
-    "audit.title": "Audit Help Tool",
+    "audit.title": "Audit Help",
     "audit.subtitle": "Printer-friendly package • PDF 8.5×11 • SendGrid email",
-    "audit.description": "This tool helps you prepare an audit package by collecting your payroll summary (for your prior policy period), supporting documents, and a short questionnaire.",
-    "audit.expectationsTitle": "Audit expectations",
+    "audit.description": "Learn about insurance audits and prepare your audit package with our step-by-step tool.",
+    "audit.explanationTitle": "Audit Explanation",
+    "audit.whyTitle": "Why do insurance audits exist?",
+    "audit.whyDesc": "Insurance audits are a standard practice where your insurance carrier verifies the information you provided when you purchased your policy. Since workers' compensation premiums are based on your actual payroll, the carrier needs to confirm the amounts you paid during the policy period to calculate your final premium accurately.",
+    "audit.expectationsTitle": "What to expect",
     "audit.expectationsDesc": "Your insurance carrier is verifying <b>payroll paid during your previous policy period</b> so your premium can be calculated correctly.",
+    "audit.expectationsSubDesc": "During the audit, you'll typically need to provide:",
     "audit.expectations1": "Payroll amounts actually paid (by employee and totals)",
     "audit.expectations2": "Payment methods (check, cash, electronic)",
     "audit.expectations3": "Independent contractor payments (1099s) if applicable",
     "audit.expectations4": "Supporting bank statements and tax forms",
-    "audit.expectationsNote": "After you upload documents and complete the questionnaire, we compile everything into a printer-friendly PDF and email it with attachments.",
+    "audit.processTitle": "The audit process",
+    "audit.processDesc": "Most audits are straightforward. The auditor will review your payroll records, payment documentation, and any supporting materials you provide. They may ask clarifying questions about your business operations, payment methods, or subcontractor relationships. Being prepared with organized documentation makes the process smooth and helps ensure accurate premium calculations.",
+    "audit.processNote": "The Audit Packet tool below helps you organize all necessary documents and information before your audit, compiling everything into a printer-friendly PDF package that you can email directly to your auditor.",
+    "audit.packetTitle": "Audit Packet",
+    "audit.packetDesc": "Use this tool to prepare your audit package by collecting your payroll summary (for your prior policy period), supporting documents, and a short questionnaire.",
     "audit.periodTitle": "1) Audit period",
     "audit.policyStart": "Policy Start Date",
     "audit.policyEnd": "Policy End Date",
@@ -289,7 +297,7 @@ const I18N = {
     "support.resourcesDesc": "Quick links to help you get started and make the most of Listo.",
     "support.resource1": "Pre-Qualification Guide",
     "support.resource2": "Payroll Tracker Help",
-    "support.resource3": "Insurance Audit Preparation",
+    "support.resource3": "Audit Preparation",
     "support.faqTitle": "Frequently Asked Questions",
     "support.faq1Q": "How do I become Pre-Qualified?",
     "support.faq1A": "Complete three items: fill out your W-9, upload an active Certificate of Insurance (COI), and sign the Subcontractor Agreement. Once all three are complete, you'll earn Pre-Qualified status.",
@@ -330,7 +338,7 @@ const I18N = {
     "nav.home": "Inicio",
     "nav.prequal": "Precalificación",
     "nav.payroll": "Nómina",
-    "nav.audit": "Ayuda de Auditoría de Seguro",
+    "nav.audit": "Ayuda de Auditoría",
     "nav.contractScanner": "Escáner de Contratos",
     "nav.invoiceBuilder": "Generador de Facturas",
     "nav.support": "Soporte",
@@ -384,7 +392,7 @@ const I18N = {
     "tools.t4F1": "Escaneo OCR",
     "tools.t4F2": "Traducir automático",
     "tools.t4F3": "Vista lado a lado",
-    "tools.t5Title": "Ayudante de Auditoría de Seguro",
+    "tools.t5Title": "Ayuda de Auditoría",
     "tools.t5Badge": "Cumplimiento",
     "tools.t5Desc": "Prepárate para auditorías con paquetes de documentos organizados. Sube archivos, responde preguntas y genera informes PDF.",
     "tools.t5F1": "Subir documentos",
@@ -485,16 +493,24 @@ const I18N = {
     "contractScanner.downloadEnglish": "Descargar Inglés (.txt)",
     "contractScanner.downloadSpanish": "Descargar Español (.txt)",
 
-    "audit.title": "Herramienta de Ayuda de Auditoría",
+    "audit.title": "Ayuda de Auditoría",
     "audit.subtitle": "Paquete para imprimir • PDF 8.5×11 • Email SendGrid",
-    "audit.description": "Esta herramienta te ayuda a preparar un paquete de auditoría recopilando tu resumen de nómina (para tu período de póliza anterior), documentos de respaldo y un cuestionario corto.",
-    "audit.expectationsTitle": "Expectativas de auditoría",
+    "audit.description": "Aprende sobre las auditorías de seguro y prepara tu paquete de auditoría con nuestra herramienta paso a paso.",
+    "audit.explanationTitle": "Explicación de Auditoría",
+    "audit.whyTitle": "¿Por qué existen las auditorías de seguro?",
+    "audit.whyDesc": "Las auditorías de seguro son una práctica estándar donde tu aseguradora verifica la información que proporcionaste cuando compraste tu póliza. Dado que las primas de compensación de trabajadores se basan en tu nómina real, la aseguradora necesita confirmar las cantidades que pagaste durante el período de la póliza para calcular tu prima final con precisión.",
+    "audit.expectationsTitle": "Qué esperar",
     "audit.expectationsDesc": "Tu aseguradora está verificando <b>la nómina pagada durante tu período de póliza anterior</b> para que tu prima se calcule correctamente.",
+    "audit.expectationsSubDesc": "Durante la auditoría, típicamente necesitarás proporcionar:",
     "audit.expectations1": "Montos de nómina realmente pagados (por empleado y totales)",
     "audit.expectations2": "Métodos de pago (cheque, efectivo, electrónico)",
     "audit.expectations3": "Pagos a contratistas independientes (1099) si aplica",
     "audit.expectations4": "Estados bancarios y formularios fiscales de respaldo",
-    "audit.expectationsNote": "Después de subir documentos y completar el cuestionario, compilamos todo en un PDF para imprimir y lo enviamos por email con adjuntos.",
+    "audit.processTitle": "El proceso de auditoría",
+    "audit.processDesc": "La mayoría de las auditorías son sencillas. El auditor revisará tus registros de nómina, documentación de pagos y cualquier material de respaldo que proporciones. Pueden hacer preguntas aclaratorias sobre tus operaciones comerciales, métodos de pago o relaciones con subcontratistas. Estar preparado con documentación organizada hace que el proceso sea fluido y ayuda a garantizar cálculos precisos de primas.",
+    "audit.processNote": "La herramienta de Paquete de Auditoría a continuación te ayuda a organizar todos los documentos e información necesarios antes de tu auditoría, compilando todo en un paquete PDF para imprimir que puedes enviar por email directamente a tu auditor.",
+    "audit.packetTitle": "Paquete de Auditoría",
+    "audit.packetDesc": "Usa esta herramienta para preparar tu paquete de auditoría recopilando tu resumen de nómina (para tu período de póliza anterior), documentos de respaldo y un cuestionario corto.",
     "audit.periodTitle": "1) Período de auditoría",
     "audit.policyStart": "Fecha de Inicio de Póliza",
     "audit.policyEnd": "Fecha de Fin de Póliza",
@@ -588,7 +604,7 @@ const I18N = {
     "support.resourcesDesc": "Enlaces rápidos para ayudarte a comenzar y aprovechar al máximo Listo.",
     "support.resource1": "Guía de Precalificación",
     "support.resource2": "Ayuda del Rastreador de Nómina",
-    "support.resource3": "Preparación para Auditoría de Seguro",
+    "support.resource3": "Preparación para Auditoría",
     "support.faqTitle": "Preguntas Frecuentes",
     "support.faq1Q": "¿Cómo me convierto en Precalificado?",
     "support.faq1A": "Completa tres elementos: completa tu W-9, sube un Certificado de Seguro (COI) activo y firma el Acuerdo de Subcontratista. Una vez que los tres estén completos, obtendrás el estatus de Precalificado.",
@@ -632,16 +648,35 @@ function setPressedButtons(lang) {
     btn.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 }
+// Simple HTML sanitizer - only allows safe formatting tags
+// Whitelist approach: strip out any tags not in the allowed list
+function sanitizeHTML(html) {
+  // Only allow specific safe formatting tags: b, strong, i, em, u, br, p
+  const allowedTags = ["b", "strong", "i", "em", "u", "br", "p"];
+  const tagPattern = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;
+  
+  return html.replace(tagPattern, (match, tagName) => {
+    const lowerTag = tagName.toLowerCase();
+    // Only allow whitelisted tags, strip everything else
+    if (allowedTags.includes(lowerTag)) {
+      // Remove any attributes from allowed tags for safety
+      return match.replace(/\s+[^>]*/, "").replace(/<(\w+)[^>]*>/, "<$1>");
+    }
+    // Remove disallowed tags entirely
+    return "";
+  });
+}
+
 function applyTranslations(lang) {
   const dict = I18N[lang] || I18N.en;
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     if (dict[key]) {
-      // Use innerHTML if translation contains HTML tags, otherwise textContent
+      // Sanitize HTML to prevent XSS - only allow safe formatting tags
       const translation = dict[key];
       if (translation.includes("<") && translation.includes(">")) {
-        el.innerHTML = translation;
+        el.innerHTML = sanitizeHTML(translation);
       } else {
         el.textContent = translation;
       }
@@ -847,9 +882,6 @@ async function loadPrequalStatus(uid) {
 }
 
 function updatePrequalUI(data) {
-  const list = document.getElementById("statusList");
-  if (!list) return;
-
   const badge = document.getElementById("prequalBadge");
   const updatedAtEl = document.getElementById("prequalUpdatedAt");
   const coiMetaText = document.getElementById("coiMetaText");
@@ -858,17 +890,35 @@ function updatePrequalUI(data) {
   const coi = !!data.coiCompleted;
   const agr = !!data.agreementCompleted;
 
-  list.querySelectorAll(".status-item").forEach(li => {
-    const key = li.getAttribute("data-key");
-    const dot = li.querySelector(".dot");
-    const isOn =
-      (key === "w9Completed" && w9) ||
-      (key === "coiCompleted" && coi) ||
-      (key === "agreementCompleted" && agr);
+  // Update status dots
+  const w9Dot = document.getElementById("w9Dot");
+  const coiDot = document.getElementById("coiDot");
+  const agreementDot = document.getElementById("agreementDot");
+  const businessLicenseDot = document.getElementById("businessLicenseDot");
+  const workersCompDot = document.getElementById("workersCompDot");
 
-    dot?.classList.toggle("dot-on", isOn);
-    dot?.classList.toggle("dot-off", !isOn);
-  });
+  if (w9Dot) {
+    w9Dot.classList.toggle("dot-on", w9);
+    w9Dot.classList.toggle("dot-off", !w9);
+  }
+  if (coiDot) {
+    coiDot.classList.toggle("dot-on", coi);
+    coiDot.classList.toggle("dot-off", !coi);
+  }
+  if (agreementDot) {
+    agreementDot.classList.toggle("dot-on", agr);
+    agreementDot.classList.toggle("dot-off", !agr);
+  }
+  if (businessLicenseDot) {
+    const hasBusinessLicense = !!data.businessLicense;
+    businessLicenseDot.classList.toggle("dot-on", hasBusinessLicense);
+    businessLicenseDot.classList.toggle("dot-off", !hasBusinessLicense);
+  }
+  if (workersCompDot) {
+    const hasWorkersComp = !!data.workersComp;
+    workersCompDot.classList.toggle("dot-on", hasWorkersComp);
+    workersCompDot.classList.toggle("dot-off", !hasWorkersComp);
+  }
 
   const expiresOn = data?.coi?.expiresOn;
   if (coiMetaText && expiresOn) {
@@ -903,6 +953,21 @@ function updatePrequalUI(data) {
 async function initPrequalPage(user) {
   const data = await loadPrequalStatus(user.uid);
   updatePrequalUI(data);
+
+  // Initialize W-9 form if present
+  await initW9Page(user);
+
+  // Initialize COI form if present
+  await initCoiPage(user);
+
+  // Initialize Agreement form if present
+  await initAgreementPage(user);
+
+  // Initialize Business License upload
+  initBusinessLicenseUpload(user);
+
+  // Initialize Workers Comp upload
+  initWorkersCompUpload(user);
 }
 
 /* ========= COI page logic ========= */
@@ -916,6 +981,7 @@ async function renderCoiCurrent(user) {
   const upEl = document.getElementById("coiCurrentUploaded");
   const link = document.getElementById("coiDownloadLink");
   const note = document.getElementById("coiExpiryNote");
+  const coiCurrent = document.getElementById("coiCurrent");
 
   if (!coi) {
     if (fileEl) fileEl.textContent = "—";
@@ -923,9 +989,11 @@ async function renderCoiCurrent(user) {
     if (upEl) upEl.textContent = "—";
     if (link) link.hidden = true;
     if (note) note.hidden = true;
+    if (coiCurrent) coiCurrent.hidden = true;
     return;
   }
 
+  if (coiCurrent) coiCurrent.hidden = false;
   if (fileEl) fileEl.textContent = coi.fileName || "—";
   if (expEl) expEl.textContent = formatDate(coi.expiresOn);
   if (upEl) upEl.textContent = coi.uploadedAtMs ? new Date(coi.uploadedAtMs).toLocaleString() : "—";
@@ -1090,6 +1158,10 @@ async function initAgreementPage(user) {
       if (msg) msg.textContent = "Saving…";
       await saveAgreement(user, data);
       if (msg) msg.textContent = "Saved. Your agreement is now signed and stored in your account.";
+      
+      // Update prequal UI if on prequal page
+      const prequalData = await loadPrequalStatus(user.uid);
+      updatePrequalUI(prequalData);
     } catch (e2) {
       console.error(e2);
       if (err) err.textContent = "Save failed. Please try again.";
@@ -1243,9 +1315,181 @@ async function initW9Page(user) {
       if (msg) msg.textContent = "Saving…";
       await saveW9(user, data);
       if (msg) msg.textContent = "Saved. Your W-9 is stored in your account.";
+      
+      // Update prequal UI if on prequal page
+      const prequalData = await loadPrequalStatus(user.uid);
+      updatePrequalUI(prequalData);
     } catch (e2) {
       console.error(e2);
       if (err) err.textContent = "Save failed. Please try again.";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+/* ========= Business License Upload ========= */
+async function renderBusinessLicenseCurrent(user) {
+  const snap = await getDoc(getPrequalDocRef(user.uid));
+  const data = snap.exists() ? (snap.data() || {}) : {};
+  const businessLicense = data.businessLicense || null;
+  const currentDiv = document.getElementById("businessLicenseCurrent");
+  const fileNameEl = document.getElementById("businessLicenseFileName");
+  const uploadedEl = document.getElementById("businessLicenseUploaded");
+  const downloadLink = document.getElementById("businessLicenseDownloadLink");
+
+  if (!businessLicense) {
+    if (currentDiv) currentDiv.hidden = true;
+    return;
+  }
+
+  if (currentDiv) currentDiv.hidden = false;
+  if (fileNameEl) fileNameEl.textContent = businessLicense.fileName || "—";
+  if (uploadedEl) uploadedEl.textContent = businessLicense.uploadedAtMs ? new Date(businessLicense.uploadedAtMs).toLocaleString() : "—";
+
+  if (downloadLink && businessLicense.filePath) {
+    try {
+      const url = await getDownloadURL(ref(storage, businessLicense.filePath));
+      downloadLink.href = url;
+      downloadLink.hidden = false;
+    } catch {
+      downloadLink.hidden = true;
+    }
+  }
+}
+
+function initBusinessLicenseUpload(user) {
+  const form = document.getElementById("businessLicenseForm");
+  if (!form) return;
+
+  renderBusinessLicenseCurrent(user);
+
+  const fileInput = document.getElementById("businessLicenseFile");
+  const msg = document.getElementById("businessLicenseMsg");
+  const err = document.getElementById("businessLicenseErr");
+  const btn = document.getElementById("businessLicenseUploadBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (msg) msg.textContent = "";
+    if (err) err.textContent = "";
+
+    const file = fileInput?.files?.[0];
+    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+
+    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+    const path = `users/${user.uid}/businessLicense/${Date.now()}_${safeName}`;
+    const storageRef = ref(storage, path);
+
+    try {
+      if (btn) btn.disabled = true;
+      if (msg) msg.textContent = "Uploading…";
+
+      await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+
+      await setDoc(getPrequalDocRef(user.uid), {
+        businessLicense: {
+          fileName: file.name,
+          filePath: path,
+          uploadedAtMs: Date.now()
+        },
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      if (msg) msg.textContent = "Saved. Your business license is now on file.";
+      form.reset();
+      await renderBusinessLicenseCurrent(user);
+      
+      // Update prequal UI
+      const data = await loadPrequalStatus(user.uid);
+      updatePrequalUI(data);
+    } catch (e2) {
+      console.error(e2);
+      if (err) err.textContent = "Upload failed. Please try again.";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+/* ========= Workers Comp Exemption Upload ========= */
+async function renderWorkersCompCurrent(user) {
+  const snap = await getDoc(getPrequalDocRef(user.uid));
+  const data = snap.exists() ? (snap.data() || {}) : {};
+  const workersComp = data.workersComp || null;
+  const currentDiv = document.getElementById("workersCompCurrent");
+  const fileNameEl = document.getElementById("workersCompFileName");
+  const uploadedEl = document.getElementById("workersCompUploaded");
+  const downloadLink = document.getElementById("workersCompDownloadLink");
+
+  if (!workersComp) {
+    if (currentDiv) currentDiv.hidden = true;
+    return;
+  }
+
+  if (currentDiv) currentDiv.hidden = false;
+  if (fileNameEl) fileNameEl.textContent = workersComp.fileName || "—";
+  if (uploadedEl) uploadedEl.textContent = workersComp.uploadedAtMs ? new Date(workersComp.uploadedAtMs).toLocaleString() : "—";
+
+  if (downloadLink && workersComp.filePath) {
+    try {
+      const url = await getDownloadURL(ref(storage, workersComp.filePath));
+      downloadLink.href = url;
+      downloadLink.hidden = false;
+    } catch {
+      downloadLink.hidden = true;
+    }
+  }
+}
+
+function initWorkersCompUpload(user) {
+  const form = document.getElementById("workersCompForm");
+  if (!form) return;
+
+  renderWorkersCompCurrent(user);
+
+  const fileInput = document.getElementById("workersCompFile");
+  const msg = document.getElementById("workersCompMsg");
+  const err = document.getElementById("workersCompErr");
+  const btn = document.getElementById("workersCompUploadBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (msg) msg.textContent = "";
+    if (err) err.textContent = "";
+
+    const file = fileInput?.files?.[0];
+    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+
+    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+    const path = `users/${user.uid}/workersComp/${Date.now()}_${safeName}`;
+    const storageRef = ref(storage, path);
+
+    try {
+      if (btn) btn.disabled = true;
+      if (msg) msg.textContent = "Uploading…";
+
+      await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+
+      await setDoc(getPrequalDocRef(user.uid), {
+        workersComp: {
+          fileName: file.name,
+          filePath: path,
+          uploadedAtMs: Date.now()
+        },
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      if (msg) msg.textContent = "Saved. Your workers compensation exemption is now on file.";
+      form.reset();
+      await renderWorkersCompCurrent(user);
+      
+      // Update prequal UI
+      const data = await loadPrequalStatus(user.uid);
+      updatePrequalUI(data);
+    } catch (e2) {
+      console.error(e2);
+      if (err) err.textContent = "Upload failed. Please try again.";
     } finally {
       if (btn) btn.disabled = false;
     }
