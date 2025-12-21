@@ -89,30 +89,33 @@ function renderEmployeesList() {
     
     return `
       <div class="employee-card" style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
-        <div class="row-between" style="margin-bottom: 6px;">
-          <div>
-            <h3 class="h3" style="margin: 0; font-size: 1.1rem;">${emp.name || "—"}</h3>
-            <div style="margin-top: 3px;">${typeBadge}</div>
+        <div class="row-between" style="margin-bottom: 6px; align-items: flex-start;">
+          <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+              <h3 class="h3" style="margin: 0; font-size: 1.1rem;">${emp.name || "—"}</h3>
+              ${typeBadge}
+            </div>
+            <div class="small" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="muted"><strong>Documents:</strong></span>
+              <span>W-9: ${w9Link}</span>
+              ${emp.type === "subcontractor" ? `
+                <span>COI: ${coiLink}</span>
+                <span>Workers Comp: ${workersCompLink}</span>
+              ` : ""}
+            </div>
           </div>
-          <div>
+          <div style="flex-shrink: 0; margin-left: 12px;">
             <button class="btn small" onclick="editEmployee('${emp.id}')" data-i18n="employees.edit">Edit</button>
             <button class="btn small ghost" onclick="deleteEmployee('${emp.id}', '${(emp.name || "").replace(/'/g, "\\'")}')" data-i18n="employees.delete">Delete</button>
           </div>
         </div>
-        <div class="grid-2" style="margin-top: 8px; gap: 10px;">
-          <div>
-            ${emp.email ? `<div class="small muted">Email: ${emp.email}</div>` : ""}
-            ${emp.phone ? `<div class="small muted">Phone: ${emp.phone}</div>` : ""}
-          </div>
-          <div>
-            <div class="small muted" style="margin-bottom: 3px;"><strong>Documents:</strong></div>
-            <div class="small" style="margin-bottom: 1px;">W-9: ${w9Link}</div>
-            ${emp.type === "subcontractor" ? `
-              <div class="small" style="margin-bottom: 1px;">COI: ${coiLink}</div>
-              <div class="small" style="margin-bottom: 1px;">Workers Comp: ${workersCompLink}</div>
-            ` : ""}
-          </div>
+        ${(emp.email || emp.phone) ? `
+        <div class="small muted" style="margin-top: 6px;">
+          ${emp.email ? `<span>Email: ${emp.email}</span>` : ""}
+          ${emp.email && emp.phone ? ` • ` : ""}
+          ${emp.phone ? `<span>Phone: ${emp.phone}</span>` : ""}
         </div>
+        ` : ""}
       </div>
     `;
   }).join("");
