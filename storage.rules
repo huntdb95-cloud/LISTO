@@ -84,6 +84,38 @@ service firebase.storage {
       allow delete: if isOwnerPath(userId);
     }
 
+    // ========== Employee Documents ==========
+    
+    // Employee W9: users/{uid}/employees/{employeeId}/w9/*
+    match /users/{userId}/employees/{employeeId}/w9/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // Employee COI: users/{uid}/employees/{employeeId}/coi/*
+    match /users/{userId}/employees/{employeeId}/coi/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // Employee Workers Comp: users/{uid}/employees/{employeeId}/workersComp/*
+    match /users/{userId}/employees/{employeeId}/workersComp/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
     // ========== Default Deny ==========
     
     // Deny all other paths

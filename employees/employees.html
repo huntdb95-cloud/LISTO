@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — Employee Management</title>
+<meta content="Manage your employees and subcontractors, upload W9s, COIs, and Workers Compensation documents." name="description"/>
+<link href="../styles.css" rel="stylesheet"/>
+</head>
+<body data-page="employees" data-requires-auth="true">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner">
+<div class="header-left">
+<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+<img id="headerAvatarImage" alt="Profile" style="display: none;" />
+<span id="headerAvatarInitials" class="header-avatar-initials"></span>
+</a>
+</div>
+<a aria-label="Listo Home" class="brand" href="../dashboard.html">
+<img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
+</a>
+
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
+          Log out
+        </button>
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
+<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
+<a class="sidebar-link nav-link" data-i18n="nav.employees" href="../employees/employees.html">Employees</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
+</div></aside><main id="main">
+
+<section class="section">
+<div class="container">
+<div class="section-head">
+<h1 class="page-title" data-i18n="employees.title">Employee Management</h1>
+<p class="muted" data-i18n="employees.subtitle">
+            Add and manage your employees and subcontractors. Upload W9s, COIs, and Workers Compensation documents.
+          </p>
+</div>
+
+<!-- Add/Edit Employee Form -->
+<div class="card pad mb" id="employeeFormCard" style="display: none;">
+<h2 class="h2" id="formTitle" data-i18n="employees.addEmployee">Add Employee</h2>
+<div class="divider"></div>
+
+<form id="employeeForm">
+<input type="hidden" id="employeeId" />
+
+<div class="form-grid">
+<div class="form-group">
+<label for="empName" data-i18n="employees.name">Full Name *</label>
+<input type="text" id="empName" required placeholder="John Doe" />
+</div>
+
+<div class="form-group">
+<label for="empEmail" data-i18n="employees.email">Email</label>
+<input type="email" id="empEmail" placeholder="john@example.com" />
+</div>
+
+<div class="form-group">
+<label for="empPhone" data-i18n="employees.phone">Phone</label>
+<input type="tel" id="empPhone" placeholder="(555) 555-5555" />
+</div>
+
+<div class="form-group">
+<label for="empType" data-i18n="employees.type">Type *</label>
+<select id="empType" required>
+<option value="">Select type</option>
+<option value="employee" data-i18n="employees.typeEmployee">Employee</option>
+<option value="subcontractor" data-i18n="employees.typeSubcontractor">Subcontractor</option>
+</select>
+</div>
+</div>
+
+<!-- Subcontractor-specific fields -->
+<div id="subcontractorFields" style="display: none;">
+<div class="divider"></div>
+<h3 class="h3" data-i18n="employees.subcontractorDocs">Subcontractor Documents</h3>
+<p class="muted small" data-i18n="employees.subcontractorDocsDesc">Upload either a Certificate of Insurance (COI) or a Workers Compensation Exemption.</p>
+
+<div class="form-grid">
+<div class="form-group">
+<label for="empCoi" data-i18n="employees.coi">Certificate of Insurance (COI)</label>
+<input type="file" id="empCoi" accept=".pdf,.png,.jpg,.jpeg" />
+<div class="small muted" data-i18n="employees.coiHint">PDF, PNG, or JPG (max 10MB)</div>
+<div id="coiStatus" class="small muted" style="margin-top: 6px;"></div>
+</div>
+
+<div class="form-group">
+<label for="empWorkersComp" data-i18n="employees.workersComp">Workers Compensation Exemption</label>
+<input type="file" id="empWorkersComp" accept=".pdf,.png,.jpg,.jpeg" />
+<div class="small muted" data-i18n="employees.workersCompHint">PDF, PNG, or JPG (max 10MB)</div>
+<div id="workersCompStatus" class="small muted" style="margin-top: 6px;"></div>
+</div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- W9 Upload (for all types) -->
+<div class="form-group">
+<label for="empW9" data-i18n="employees.w9">W-9 Form</label>
+<input type="file" id="empW9" accept=".pdf,.png,.jpg,.jpeg" />
+<div class="small muted" data-i18n="employees.w9Hint">PDF, PNG, or JPG (max 10MB)</div>
+<div id="w9Status" class="small muted" style="margin-top: 6px;"></div>
+</div>
+
+<div class="btn-row" style="margin-top: 20px;">
+<button type="submit" class="btn primary" id="saveEmployeeBtn" data-i18n="employees.save">Save Employee</button>
+<button type="button" class="btn ghost" id="cancelBtn" data-i18n="employees.cancel">Cancel</button>
+</div>
+
+<div id="formMsg" class="form-msg" style="margin-top: 10px;"></div>
+<div id="formError" class="form-error" style="margin-top: 10px;"></div>
+</form>
+</div>
+
+<!-- Employee List -->
+<div class="card pad">
+<div class="row-between">
+<h2 class="h2" data-i18n="employees.listTitle">Employees & Subcontractors</h2>
+<button type="button" class="btn primary" id="addEmployeeBtn" data-i18n="employees.addEmployee">Add Employee</button>
+</div>
+<div class="divider"></div>
+
+<div id="employeesList" class="employees-list">
+<div class="muted" data-i18n="employees.loading">Loading...</div>
+</div>
+</div>
+</div>
+</section>
+
+<footer class="site-footer">
+<div class="container footer-inner">
+<div>
+<div class="brand footer-brand">
+<img alt="Listo" class="brand-logo footer-logo" src="../images/logo.png"/>
+</div>
+<p class="muted" data-i18n="footer.note">
+            Built to help subcontractors look sharp, stay compliant, and win more work.
+          </p>
+</div>
+<div class="footer-links">
+<a data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
+<a data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
+<a data-i18n="nav.audit" href="../audit/audit.html">Audit Help</a>
+<a data-i18n="nav.support" href="../support.html">Support</a>
+</div>
+</div>
+<div class="container footer-bottom">
+<span class="muted">© <span id="year"></span> Listo</span>
+</div>
+</footer>
+</main></div>
+
+<script src="../scripts.js" type="module"></script>
+<script type="module" src="./employees.js"></script>
+</body>
+</html>
+
