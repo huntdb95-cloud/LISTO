@@ -27,8 +27,8 @@
     .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .toolbar > * { flex: 1; min-width: 160px; }
     .stats { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top: 10px; }
-    .stat { padding: 12px; border: 1px solid rgba(0,0,0,.10); border-radius: 12px; }
-    .stat .k { font-size: .85rem; opacity: .7; }
+    .stat { padding: 12px; border: 1px solid rgba(0,0,0,.10); border-radius: 12px; display: flex; flex-direction: column; }
+    .stat .k { font-size: .85rem; opacity: .7; min-height: 2.4em; display: flex; align-items: flex-start; }
     .stat .v { font-size: 1.15rem; font-weight: 800; margin-top: 4px; }
     .table-wrap { overflow:auto; border: 1px solid rgba(0,0,0,.10); border-radius: 12px; }
     table { width:100%; border-collapse: collapse; min-width: 820px; }
@@ -89,18 +89,19 @@
         <h2>Add Payment</h2>
 
         <form id="paymentForm" autocomplete="off">
-          <div class="row">
+          <div class="row" style="align-items: flex-start;">
             <div>
               <label for="employeeName">Employee</label>
               <!-- Type a name or select a saved employee -->
               <input id="employeeName" list="employeeList" placeholder="Start typing a name…" required />
               <datalist id="employeeList"></datalist>
-              <div class="muted" style="margin-top:6px;">New names will be saved automatically.</div>
+              <div class="muted" style="margin-top:6px; font-size: 0.85rem;">New names will be saved automatically.</div>
             </div>
 
             <div>
               <label for="payDate">Payment Date</label>
               <input id="payDate" type="date" required />
+              <div style="margin-top:6px; height: 1.2em;"></div>
             </div>
           </div>
 
