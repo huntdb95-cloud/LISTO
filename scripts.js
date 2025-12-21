@@ -343,12 +343,12 @@ function initAuthUI() {
 
   const loginForm = document.getElementById("loginForm");
   if (loginForm && auth) {
-    const err = document.getElementById("loginError");
+    const err = document.getElementById("loginMsg");
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (err) err.textContent = "";
-      const email = document.getElementById("loginEmail")?.value?.trim();
-      const password = document.getElementById("loginPassword")?.value;
+      const email = document.getElementById("email")?.value?.trim();
+      const password = document.getElementById("password")?.value;
       try {
         await signInWithEmailAndPassword(auth, email, password);
         window.location.href = getNextUrl();
