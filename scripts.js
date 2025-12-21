@@ -292,7 +292,8 @@ async function initFirebase() {
 function getNextUrl() {
   const url = new URL(window.location.href);
   const next = url.searchParams.get("next");
-  return next && next.startsWith("/") === false ? next : "index.html";
+  // If next is provided and is an absolute path, use it; otherwise default to index
+  return next && next.startsWith("/") ? next : "/index.html";
 }
 
 function requireAuthGuard(user) {
@@ -301,10 +302,10 @@ function requireAuthGuard(user) {
   const page = body?.getAttribute("data-page");
 
   if (requiresAuth && !user) {
-    // Get full path relative to root (remove leading slash if present)
+    // Get full absolute path (keep leading slash) for next parameter
     const pathname = window.location.pathname;
-    const next = pathname.startsWith("/") ? pathname.substring(1) : pathname;
-    window.location.href = `/login/login.html?next=${encodeURIComponent(next || "index.html")}`;
+    const next = pathname.startsWith("/") ? pathname : `/${pathname}`;
+    window.location.href = `/login/login.html?next=${encodeURIComponent(next || "/index.html")}`;
     return;
   }
 
@@ -320,12 +321,8 @@ function initAuthUI() {
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        // Calculate relative path to root, then to login page
-        // Count directory segments (excluding empty first segment and HTML file)
-        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
-        const depth = pathSegments.length;
-        const rootPath = depth > 0 ? "../".repeat(depth) : "./";
-        window.location.href = `${rootPath}login/login.html`;
+        // Use absolute path to ensure it works from any page location
+        window.location.href = "/login/login.html";
       } catch (e) {
         console.error(e);
       }

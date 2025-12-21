@@ -104,7 +104,10 @@ img { max-width: 100%; display: block; }
   width: auto;
   display: block;
 }
-.footer-logo{ height: 38px; }
+.footer-brand .footer-logo,
+.footer-logo{ 
+  height: 38px; 
+}
 
 .brand-mark{
   width: 34px;
@@ -830,7 +833,7 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* Header tweaks */
-.layout .brand-logo{
+.layout .brand-logo:not(.footer-logo){
   height: 32px;
   width: auto;
 }
