@@ -520,13 +520,21 @@ async function initFirebase() {
 function getNextUrl() {
   const url = new URL(window.location.href);
   const next = url.searchParams.get("next");
-  // next parameter is relative to root (without leading slash)
-  // From login page at /login/login.html, we need to go up one level
-  if (next && !next.startsWith("/") && !next.startsWith("../") && !next.startsWith("./")) {
-    return `../${next}`;
+  // next parameter is absolute path (with leading slash)
+  // From login page at /login/login.html, prepend relative path
+  if (next) {
+    if (next.startsWith("/")) {
+      // Absolute path: go up one level from /login/ to root
+      return `..${next}`;
+    }
+    // Legacy: handle relative paths for backward compatibility
+    if (!next.startsWith("../") && !next.startsWith("./")) {
+      return `../${next}`;
+    }
+    return next;
   }
-  // If it's already a relative path or absolute, use as-is, otherwise default
-  return next || "../index.html";
+  // Default: go to index.html
+  return "../index.html";
 }
 
 function requireAuthGuard(user) {
@@ -535,14 +543,14 @@ function requireAuthGuard(user) {
   const page = body?.getAttribute("data-page");
 
   if (requiresAuth && !user) {
-    // Get path relative to root (without leading slash) for next parameter
+    // Store absolute path (with leading slash) for next parameter
     const pathname = window.location.pathname;
-    const next = pathname.startsWith("/") ? pathname.substring(1) : pathname;
+    const next = pathname.startsWith("/") ? pathname : `/${pathname}`;
     // Calculate relative path to login page from current location
     const pathSegments = pathname.split("/").filter(p => p && !p.endsWith(".html"));
     const depth = pathSegments.length;
     const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
-    window.location.href = `${loginPath}?next=${encodeURIComponent(next || "index.html")}`;
+    window.location.href = `${loginPath}?next=${encodeURIComponent(next || "/index.html")}`;
     return;
   }
 
