@@ -8,7 +8,7 @@
 <meta content="Manage your account settings, upload your logo, and update your email or password." name="description"/>
 <link href="../styles.css" rel="stylesheet"/>
 </head>
-<body data-page="account" data-requires-auth="true">
+<body data-page="account" data-requires-auth="true" class="account-page">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
 <div class="container header-inner">
@@ -65,18 +65,18 @@
 </div>
 </div>
 
-<form id="logoForm" style="margin-top: 20px;">
+<form id="logoForm">
 <div class="form-group">
 <label for="logoFile" data-i18n="account.logoLabel">Logo File</label>
 <input type="file" id="logoFile" accept="image/*" />
-<div class="small muted" style="margin-top: 6px;" data-i18n="account.logoHint">Accepted: JPG, PNG, GIF, WebP (max 5MB)</div>
+<div class="small muted" data-i18n="account.logoHint">Accepted: JPG, PNG, GIF, WebP (max 5MB)</div>
 </div>
 <button type="submit" class="btn primary" id="logoUploadBtn" data-i18n="account.uploadLogo">Upload Logo</button>
-<div id="logoMsg" class="form-msg" style="margin-top: 10px;"></div>
-<div id="logoError" class="form-error" style="margin-top: 10px;"></div>
+<div id="logoMsg" class="form-msg"></div>
+<div id="logoError" class="form-error"></div>
 </form>
 
-<button type="button" class="btn ghost" id="removeLogoBtn" style="margin-top: 12px; display: none;" data-i18n="account.removeLogo">Remove Logo</button>
+<button type="button" class="btn ghost" id="removeLogoBtn" style="display: none; margin-top: 16px;" data-i18n="account.removeLogo">Remove Logo</button>
 </div>
 
 <!-- Account Information Section -->
@@ -88,14 +88,14 @@
 <h3 data-i18n="account.nameTitle">Name</h3>
 <p class="muted small" data-i18n="account.nameDesc">Your name as it will appear in your account.</p>
 
-<form id="nameForm" style="margin-top: 12px;">
+<form id="nameForm">
 <div class="form-group">
 <label for="userName" data-i18n="account.nameLabel">Full Name</label>
 <input type="text" id="userName" placeholder="John Doe" />
 </div>
 <button type="submit" class="btn primary" id="nameUpdateBtn" data-i18n="account.updateName">Update Name</button>
-<div id="nameMsg" class="form-msg" style="margin-top: 10px;"></div>
-<div id="nameError" class="form-error" style="margin-top: 10px;"></div>
+<div id="nameMsg" class="form-msg"></div>
+<div id="nameError" class="form-error"></div>
 </form>
 </div>
 
@@ -105,7 +105,7 @@
 <div class="form-section">
 <h3 data-i18n="account.emailTitle">Email Address</h3>
 <p class="muted small" data-i18n="account.currentEmail">Current email:</p>
-<p style="font-weight: 600; margin: 4px 0 16px;" id="currentEmail">—</p>
+<p class="current-email-display" id="currentEmail">—</p>
 
 <form id="emailForm">
 <div class="form-group">
@@ -117,8 +117,8 @@
 <input type="password" id="emailPassword" required />
 </div>
 <button type="submit" class="btn primary" id="emailUpdateBtn" data-i18n="account.updateEmail">Update Email</button>
-<div id="emailMsg" class="form-msg" style="margin-top: 10px;"></div>
-<div id="emailError" class="form-error" style="margin-top: 10px;"></div>
+<div id="emailMsg" class="form-msg"></div>
+<div id="emailError" class="form-error"></div>
 </form>
 </div>
 
@@ -129,7 +129,7 @@
 <h3 data-i18n="account.passwordTitle">Password</h3>
 <p class="muted small" data-i18n="account.passwordDesc">Change your password to keep your account secure.</p>
 
-<form id="passwordForm" style="margin-top: 12px;">
+<form id="passwordForm">
 <div class="form-group">
 <label for="currentPassword" data-i18n="account.currentPasswordLabel">Current Password</label>
 <input type="password" id="currentPassword" required />
@@ -137,15 +137,15 @@
 <div class="form-group">
 <label for="newPassword" data-i18n="account.newPasswordLabel">New Password</label>
 <input type="password" id="newPassword" required minlength="6" />
-<div class="small muted" style="margin-top: 6px;" data-i18n="account.passwordHint">Minimum 6 characters</div>
+<div class="small muted" data-i18n="account.passwordHint">Minimum 6 characters</div>
 </div>
 <div class="form-group">
 <label for="confirmPassword" data-i18n="account.confirmPasswordLabel">Confirm New Password</label>
 <input type="password" id="confirmPassword" required minlength="6" />
 </div>
 <button type="submit" class="btn primary" id="passwordUpdateBtn" data-i18n="account.updatePassword">Update Password</button>
-<div id="passwordMsg" class="form-msg" style="margin-top: 10px;"></div>
-<div id="passwordError" class="form-error" style="margin-top: 10px;"></div>
+<div id="passwordMsg" class="form-msg"></div>
+<div id="passwordError" class="form-error"></div>
 </form>
 </div>
 </div>
