@@ -367,12 +367,10 @@ img { max-width: 100%; display: block; }
 .prequal-dashboard-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  gap: 12px;
 }
 
 .prequal-dashboard-item .dashboard-status {
@@ -1515,13 +1513,16 @@ input:focus, select:focus, textarea:focus{
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sidebar-nav{
   display: flex;
   flex-direction: column;
   height: 100%;
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
   gap: 0;
   width: 100%;
   margin: 0;
@@ -1543,6 +1544,7 @@ input:focus, select:focus, textarea:focus{
   position: relative;
   flex: 1 1 0;
   min-height: 0;
+  max-height: none;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
