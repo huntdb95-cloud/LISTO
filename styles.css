@@ -375,6 +375,7 @@ img { max-width: 100%; display: block; }
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  min-height: 44px;
 }
 
 .prequal-dashboard-item .dashboard-status {
@@ -382,10 +383,16 @@ img { max-width: 100%; display: block; }
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 
 .prequal-dashboard-item .dashboard-status span:not(.dot) {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+  min-width: 0;
 }
 
 .prequal-dashboard-item .btn {
@@ -1079,6 +1086,7 @@ input:focus, select:focus, textarea:focus{
 .bullets {
   list-style: none;
   padding: 0;
+  padding-left: 8px;
   margin: 0;
   display: grid;
   gap: 8px;
