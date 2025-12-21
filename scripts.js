@@ -301,8 +301,10 @@ function requireAuthGuard(user) {
   const page = body?.getAttribute("data-page");
 
   if (requiresAuth && !user) {
-    const next = window.location.pathname.split("/").pop() || "index.html";
-    window.location.href = `login/login.html?next=${encodeURIComponent(next)}`;
+    // Get full path relative to root (remove leading slash if present)
+    const pathname = window.location.pathname;
+    const next = pathname.startsWith("/") ? pathname.substring(1) : pathname;
+    window.location.href = `/login/login.html?next=${encodeURIComponent(next || "index.html")}`;
     return;
   }
 
@@ -318,7 +320,9 @@ function initAuthUI() {
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        window.location.href = "login/login.html";
+        // Use root-relative path to ensure it works from any page location
+        const rootPath = window.location.pathname.split("/").slice(0, -window.location.pathname.split("/").filter(p => p && !p.includes(".")).length || 1).join("/") || "";
+        window.location.href = `${rootPath}/login/login.html`;
       } catch (e) {
         console.error(e);
       }
