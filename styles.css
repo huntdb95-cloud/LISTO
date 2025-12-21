@@ -1029,8 +1029,40 @@ input:focus, select:focus, textarea:focus{
   margin-top: 32px;
 }
 
+.dashboard-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.account-info-card {
+  min-width: 0;
+}
+
+.facebook-feed-card {
+  min-width: 0;
+}
+
+.facebook-feed-container {
+  width: 100%;
+  min-height: 400px;
+  overflow: hidden;
+}
+
+.facebook-feed-container iframe {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .dashboard-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .quick-links-section {
-  margin-top: 32px;
+  margin-top: 0;
 }
 
 .faq-item {

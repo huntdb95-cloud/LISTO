@@ -53,8 +53,10 @@
           </p>
 </div>
 
+<!-- Account Info and Facebook Feed -->
+<div class="dashboard-top-grid">
 <!-- Account Info Card -->
-<div class="card pad mb">
+<div class="card pad account-info-card">
 <h2 class="h2" data-i18n="dashboard.accountInfo">Account Information</h2>
 <div class="divider"></div>
 <div class="grid-2">
@@ -81,6 +83,30 @@
 </div>
 <div style="margin-top: 16px;">
 <a class="btn primary" href="account/account.html" data-i18n="dashboard.editAccount">Edit Account</a>
+</div>
+</div>
+
+<!-- Facebook Feed Card -->
+<div class="card pad facebook-feed-card">
+<h2 class="h2" data-i18n="dashboard.facebookFeed">News & Updates</h2>
+<div class="divider"></div>
+<div class="facebook-feed-container">
+<!-- Facebook Page Plugin -->
+<!-- Replace YOUR_FACEBOOK_PAGE_URL with your actual Facebook page URL -->
+<div class="fb-page" 
+     data-href="https://www.facebook.com/YOUR_FACEBOOK_PAGE_URL" 
+     data-tabs="timeline" 
+     data-width="500" 
+     data-height="600" 
+     data-small-header="false" 
+     data-adapt-container-width="true" 
+     data-hide-cover="false" 
+     data-show-facepile="true">
+<blockquote cite="https://www.facebook.com/YOUR_FACEBOOK_PAGE_URL" class="fb-xfbml-parse-ignore">
+<a href="https://www.facebook.com/YOUR_FACEBOOK_PAGE_URL">Listo</a>
+</blockquote>
+</div>
+</div>
 </div>
 </div>
 
@@ -132,6 +158,10 @@
 </div>
 </footer>
 </main></div>
+
+<!-- Facebook SDK -->
+<div id="fb-root"></div>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0"></script>
 
 <script src="scripts.js" type="module"></script>
 <script type="module" src="dashboard.js"></script>
