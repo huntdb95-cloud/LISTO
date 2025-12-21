@@ -201,7 +201,7 @@ const I18N = {
     "audit.emailPackage": "Email audit package",
 
     "invoice.title": "Invoice Builder",
-    "invoice.description": "Create, save, export, and send invoices (PDF attached via SendGrid).",
+    "invoice.pageDescription": "Create, save, export, and send invoices (PDF attached via SendGrid).",
     "invoice.new": "New",
     "invoice.save": "Save",
     "invoice.downloadPdf": "Download PDF",
@@ -415,7 +415,7 @@ const I18N = {
     "audit.emailPackage": "Enviar paquete de auditoría por email",
 
     "invoice.title": "Generador de Facturas",
-    "invoice.description": "Crea, guarda, exporta y envía facturas (PDF adjunto vía SendGrid).",
+    "invoice.pageDescription": "Crea, guarda, exporta y envía facturas (PDF adjunto vía SendGrid).",
     "invoice.new": "Nuevo",
     "invoice.save": "Guardar",
     "invoice.downloadPdf": "Descargar PDF",
