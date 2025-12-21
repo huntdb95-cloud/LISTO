@@ -89,15 +89,15 @@
 <a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
 <a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
 <a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
-<a class="sidebar-link nav-link" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
-<a class="sidebar-link nav-link" href="../invoice/invoice.html">Invoice Builder</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
 <a class="sidebar-link nav-link" data-i18n="nav.directory" href="../directory.html">Directory</a>
 </div></aside><main id="main">
   <div class="page-wrap">
     <div class="card">
-      <h1 style="margin-top:0;">Contract Scanner</h1>
-      <div class="pill">Google OCR • English ↔ Spanish Translation</div>
-      <p class="muted" style="margin-bottom:0;">
+      <h1 style="margin-top:0;" data-i18n="contractScanner.title">Contract Scanner</h1>
+      <div class="pill" data-i18n="contractScanner.subtitle">Google OCR • English ↔ Spanish Translation</div>
+      <p class="muted" style="margin-bottom:0;" data-i18n="contractScanner.description">
         Upload a contract document (PDF, HEIC, JPG, or PNG) to extract text using Google OCR and translate it into Spanish. 
         View the original English text alongside the Spanish translation.
       </p>
@@ -105,20 +105,20 @@
 
     <!-- File Upload -->
     <div class="card">
-      <h2 style="margin-top:0;">1) Upload Contract Document</h2>
+      <h2 style="margin-top:0;" data-i18n="contractScanner.uploadTitle">1) Upload Contract Document</h2>
       <div class="grid">
         <div class="col-12">
-          <label>Contract File</label>
+          <label data-i18n="contractScanner.fileLabel">Contract File</label>
           <input id="contractFile" type="file" accept=".pdf,.heic,.jpg,.jpeg,.png" />
-          <div class="small muted" style="margin-top:6px;">
+          <div class="small muted" style="margin-top:6px;" data-i18n="contractScanner.fileHint">
             Supported formats: PDF, HEIC, JPG, JPEG, PNG
           </div>
         </div>
       </div>
 
       <div class="btn-row" style="margin-top: 16px;">
-        <button id="btnScan" class="btn btn-primary" type="button">Scan & Translate Contract</button>
-        <button id="btnClear" class="btn btn-secondary" type="button">Clear</button>
+        <button id="btnScan" class="btn btn-primary" type="button" data-i18n="contractScanner.scanBtn">Scan & Translate Contract</button>
+        <button id="btnClear" class="btn btn-secondary" type="button" data-i18n="contractScanner.clearBtn">Clear</button>
       </div>
 
       <div id="statusMsg" class="small muted" style="margin-top:10px;"></div>
@@ -129,25 +129,25 @@
 
     <!-- Results: Side-by-Side Comparison -->
     <div class="card" id="resultsCard" style="display:none;">
-      <h2 style="margin-top:0;">2) Translated Contract</h2>
-      <p class="muted">English text (left) and Spanish translation (right)</p>
+      <h2 style="margin-top:0;" data-i18n="contractScanner.resultsTitle">2) Translated Contract</h2>
+      <p class="muted" data-i18n="contractScanner.resultsDesc">English text (left) and Spanish translation (right)</p>
 
       <div class="comparison-view">
         <div class="text-panel">
-          <h3>English (Original)</h3>
+          <h3 data-i18n="contractScanner.englishTitle">English (Original)</h3>
           <div id="englishText" class="text-content"></div>
         </div>
         <div class="text-panel">
-          <h3>Español (Traducción)</h3>
+          <h3 data-i18n="contractScanner.spanishTitle">Español (Traducción)</h3>
           <div id="spanishText" class="text-content"></div>
         </div>
       </div>
 
       <div class="btn-row" style="margin-top: 16px;">
-        <button id="btnCopyEnglish" class="btn btn-secondary" type="button">Copy English Text</button>
-        <button id="btnCopySpanish" class="btn btn-secondary" type="button">Copy Spanish Text</button>
-        <button id="btnDownloadEnglish" class="btn btn-secondary" type="button">Download English (.txt)</button>
-        <button id="btnDownloadSpanish" class="btn btn-secondary" type="button">Download Spanish (.txt)</button>
+        <button id="btnCopyEnglish" class="btn btn-secondary" type="button" data-i18n="contractScanner.copyEnglish">Copy English Text</button>
+        <button id="btnCopySpanish" class="btn btn-secondary" type="button" data-i18n="contractScanner.copySpanish">Copy Spanish Text</button>
+        <button id="btnDownloadEnglish" class="btn btn-secondary" type="button" data-i18n="contractScanner.downloadEnglish">Download English (.txt)</button>
+        <button id="btnDownloadSpanish" class="btn btn-secondary" type="button" data-i18n="contractScanner.downloadSpanish">Download Spanish (.txt)</button>
       </div>
     </div>
 

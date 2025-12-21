@@ -59,15 +59,15 @@
 <a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
 <a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
 <a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
-<a class="sidebar-link nav-link" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
-<a class="sidebar-link nav-link" href="../invoice/invoice.html">Invoice Builder</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
 <a class="sidebar-link nav-link" data-i18n="nav.directory" href="../directory.html">Directory</a>
 </div></aside><main id="main">
   <div class="page-wrap">
     <div class="card">
-      <h1 style="margin-top:0;">Audit Help Tool</h1>
-      <div class="pill">Printer-friendly package • PDF 8.5×11 • SendGrid email</div>
-      <p class="muted" style="margin-bottom:0;">
+      <h1 style="margin-top:0;" data-i18n="audit.title">Audit Help Tool</h1>
+      <div class="pill" data-i18n="audit.subtitle">Printer-friendly package • PDF 8.5×11 • SendGrid email</div>
+      <p class="muted" style="margin-bottom:0;" data-i18n="audit.description">
         This tool helps you prepare an audit package by collecting your payroll summary (for your prior policy period),
         supporting documents, and a short questionnaire.
       </p>
@@ -75,38 +75,38 @@
 
     <!-- Audit expectations -->
     <div class="card">
-      <h2 style="margin-top:0;">Audit expectations</h2>
-      <p>
+      <h2 style="margin-top:0;" data-i18n="audit.expectationsTitle">Audit expectations</h2>
+      <p data-i18n="audit.expectationsDesc">
         Your insurance carrier is verifying <b>payroll paid during your previous policy period</b> so your premium can be calculated correctly.
       </p>
       <ul>
-        <li>Payroll amounts actually paid (by employee and totals)</li>
-        <li>Payment methods (check, cash, electronic)</li>
-        <li>Independent contractor payments (1099s) if applicable</li>
-        <li>Supporting bank statements and tax forms</li>
+        <li data-i18n="audit.expectations1">Payroll amounts actually paid (by employee and totals)</li>
+        <li data-i18n="audit.expectations2">Payment methods (check, cash, electronic)</li>
+        <li data-i18n="audit.expectations3">Independent contractor payments (1099s) if applicable</li>
+        <li data-i18n="audit.expectations4">Supporting bank statements and tax forms</li>
       </ul>
-      <p class="muted" style="margin-bottom:0;">
+      <p class="muted" style="margin-bottom:0;" data-i18n="audit.expectationsNote">
         After you upload documents and complete the questionnaire, we compile everything into a printer-friendly PDF and email it with attachments.
       </p>
     </div>
 
     <!-- Audit Period -->
     <div class="card">
-      <h2 style="margin-top:0;">1) Audit period</h2>
+      <h2 style="margin-top:0;" data-i18n="audit.periodTitle">1) Audit period</h2>
       <div class="grid">
         <div class="col-4">
-          <label>Policy Start Date</label>
+          <label data-i18n="audit.policyStart">Policy Start Date</label>
           <input id="policyStart" type="date" />
         </div>
         <div class="col-4">
-          <label>Policy End Date</label>
+          <label data-i18n="audit.policyEnd">Policy End Date</label>
           <input id="policyEnd" type="date" />
         </div>
         <div class="col-4">
-          <label class="muted">Quick actions</label>
+          <label class="muted" data-i18n="audit.quickActions">Quick actions</label>
           <div class="btn-row">
-            <button id="btnLoadPayroll" class="btn btn-secondary" type="button">Load payroll summary</button>
-            <button id="btnClear" class="btn btn-secondary" type="button">Clear</button>
+            <button id="btnLoadPayroll" class="btn btn-secondary" type="button" data-i18n="audit.loadPayroll">Load payroll summary</button>
+            <button id="btnClear" class="btn btn-secondary" type="button" data-i18n="audit.clear">Clear</button>
           </div>
         </div>
       </div>
@@ -115,22 +115,22 @@
 
     <!-- Business info -->
     <div class="card">
-      <h2 style="margin-top:0;">2) Business info</h2>
+      <h2 style="margin-top:0;" data-i18n="audit.businessTitle">2) Business information</h2>
       <div class="grid">
         <div class="col-6">
-          <label>Business / Insured Name</label>
+          <label data-i18n="audit.businessName">Business Name</label>
           <input id="businessName" type="text" placeholder="ABC Construction LLC" />
         </div>
         <div class="col-6">
-          <label>Primary Contact Email (send copy here)</label>
+          <label data-i18n="audit.copyEmail">Copy Email (for audit package)</label>
           <input id="copyEmail" type="email" placeholder="you@company.com" />
         </div>
         <div class="col-6">
-          <label>Agent / Auditor Email (optional)</label>
+          <label data-i18n="audit.auditorEmail">Auditor Email</label>
           <input id="auditorEmail" type="email" placeholder="agent@agency.com" />
         </div>
         <div class="col-6">
-          <label>Phone (optional)</label>
+          <label data-i18n="audit.phone">Phone</label>
           <input id="phone" type="text" placeholder="(555) 555-5555" />
         </div>
       </div>
@@ -138,24 +138,24 @@
 
     <!-- Payroll Summary -->
     <div class="card">
-      <h2 style="margin-top:0;">3) Payroll summary (from Payroll Tracker)</h2>
-      <p class="muted">Loads payroll entries that fall within the audit period and generates a summary table.</p>
+      <h2 style="margin-top:0;" data-i18n="audit.payrollTitle">3) Payroll summary</h2>
+      <p class="muted" data-i18n="audit.payrollDesc">Summary of payroll entries for the audit period</p>
       <div id="payrollStatus" class="small muted"></div>
 
       <div style="overflow:auto; margin-top: 10px;">
         <table id="payrollTable" aria-label="Payroll summary table">
           <thead>
             <tr>
-              <th>Worker</th>
-              <th>Payment Type</th>
-              <th>Total Paid</th>
-              <th># Payments</th>
+              <th data-i18n="audit.tableWorker">Worker</th>
+              <th data-i18n="audit.tablePaymentType">Payment Type</th>
+              <th data-i18n="audit.tableTotalPaid">Total Paid</th>
+              <th data-i18n="audit.tablePayments"># Payments</th>
             </tr>
           </thead>
           <tbody></tbody>
           <tfoot>
             <tr>
-              <td colspan="2"><b>Grand Total</b></td>
+              <td colspan="2"><b data-i18n="audit.tableGrandTotal">Grand Total</b></td>
               <td id="grandTotal"><b>$0.00</b></td>
               <td id="grandCount"><b>0</b></td>
             </tr>
@@ -166,8 +166,8 @@
 
     <!-- Document Uploads -->
     <div class="card">
-      <h2 style="margin-top:0;">4) Upload supporting documents</h2>
-      <p class="muted">Upload PDFs or images. Bank statements should cover the months inside the audit period.</p>
+      <h2 style="margin-top:0;" data-i18n="audit.uploadTitle">3) Upload supporting documents</h2>
+      <p class="muted" data-i18n="audit.uploadDesc">Upload documents like Schedule C, bank statements, payroll summaries, or other supporting documents.</p>
 
       <div class="grid">
         <div class="col-6">
@@ -193,24 +193,25 @@
 
         <div class="col-12">
           <div class="btn-row">
-            <button id="btnUploadDocs" class="btn btn-secondary" type="button">Upload documents</button>
+            <button id="btnUploadDocs" class="btn btn-secondary" type="button" data-i18n="audit.uploadBtn">Upload Document</button>
             <span id="uploadMsg" class="small muted"></span>
           </div>
         </div>
       </div>
 
       <div style="margin-top:12px;">
-        <h3 style="margin: 10px 0 6px;">Uploaded files</h3>
+        <h3 style="margin: 10px 0 6px;" data-i18n="audit.uploadedTitle">Uploaded Documents</h3>
         <div id="uploadedList" class="small"></div>
       </div>
     </div>
 
     <!-- Questionnaire -->
     <div class="card">
-      <h2 style="margin-top:0;">5) Audit questionnaire</h2>
+      <h2 style="margin-top:0;" data-i18n="audit.questionnaireTitle">5) Audit questionnaire</h2>
+      <p class="muted" style="margin-bottom: 12px;" data-i18n="audit.questionnaireDesc">Answer these questions to help complete your audit package.</p>
       <div class="grid">
         <div class="col-6">
-          <label>Did you pay any workers in cash?</label>
+          <label data-i18n="audit.qCash">Were any payments made in cash?</label>
           <select id="qCash">
             <option value="">Select</option>
             <option value="no">No</option>
@@ -218,12 +219,12 @@
           </select>
         </div>
         <div class="col-6">
-          <label>If yes, explain (who, approx amounts, frequency)</label>
+          <label data-i18n="audit.qCashExplain">If yes, explain</label>
           <textarea id="qCashExplain" placeholder="Example: Occasional weekend labor, approx $300-$600/month"></textarea>
         </div>
 
         <div class="col-6">
-          <label>Did you use any subcontractors (1099 contractors)?</label>
+          <label data-i18n="audit.qSubs">Did you pay any subcontractors (1099)?</label>
           <select id="qSubs">
             <option value="">Select</option>
             <option value="no">No</option>
@@ -231,7 +232,7 @@
           </select>
         </div>
         <div class="col-6">
-          <label>If yes, were they insured / did you collect COIs?</label>
+          <label data-i18n="audit.qCOI">Did you collect COIs from subcontractors?</label>
           <select id="qCOI">
             <option value="">Select</option>
             <option value="yes">Yes</option>
@@ -241,7 +242,7 @@
         </div>
 
         <div class="col-6">
-          <label>Did the owner perform hands-on labor?</label>
+          <label data-i18n="audit.qOwnerLabor">Did you perform any owner labor?</label>
           <select id="qOwnerLabor">
             <option value="">Select</option>
             <option value="no">No</option>
@@ -249,32 +250,32 @@
           </select>
         </div>
         <div class="col-6">
-          <label>Any changes in business operations during period?</label>
+          <label data-i18n="audit.qChanges">Any changes to your business during the period?</label>
           <textarea id="qChanges" placeholder="Example: Added painting services; hired 2 new workers"></textarea>
         </div>
 
         <div class="col-12">
-          <label>Additional notes for auditor (optional)</label>
+          <label data-i18n="audit.qNotes">Additional notes for auditor (optional)</label>
           <textarea id="qNotes" placeholder="Anything you'd like to clarify for the audit"></textarea>
         </div>
       </div>
 
       <div class="btn-row" style="margin-top: 10px;">
-        <button id="btnSaveQuestionnaire" class="btn btn-secondary" type="button">Save questionnaire</button>
+        <button id="btnSaveQuestionnaire" class="btn btn-secondary" type="button" data-i18n="audit.saveQuestionnaire">Save questionnaire</button>
         <span id="qMsg" class="small muted"></span>
       </div>
     </div>
 
     <!-- Final: Generate + Email -->
     <div class="card">
-      <h2 style="margin-top:0;">6) Generate PDF + email audit package</h2>
-      <p class="muted">
+      <h2 style="margin-top:0;" data-i18n="audit.generateTitle">6) Generate PDF + email audit package</h2>
+      <p class="muted" data-i18n="audit.generateDesc">
         This generates a printer-friendly PDF and sends it (plus uploaded documents) via SendGrid.
       </p>
 
       <div class="btn-row">
-        <button id="btnGeneratePdf" class="btn btn-secondary" type="button">Generate PDF preview</button>
-        <button id="btnEmailPackage" class="btn btn-primary" type="button">Email audit package</button>
+        <button id="btnGeneratePdf" class="btn btn-secondary" type="button" data-i18n="audit.generatePdf">Generate PDF preview</button>
+        <button id="btnEmailPackage" class="btn btn-primary" type="button" data-i18n="audit.emailPackage">Email audit package</button>
       </div>
 
       <div id="finalMsg" class="small muted" style="margin-top:10px;"></div>
