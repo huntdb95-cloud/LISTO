@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — Dashboard</title>
+<meta content="Your Listo dashboard - view your account information and access all tools." name="description"/>
+<link href="styles.css" rel="stylesheet"/>
+</head>
+<body data-page="dashboard" data-requires-auth="true">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner">
+<div class="header-left">
+<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a href="account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+<img id="headerAvatarImage" alt="Profile" style="display: none;" />
+<span id="headerAvatarInitials" class="header-avatar-initials"></span>
+</a>
+</div>
+<a aria-label="Listo Home" class="brand" href="dashboard.html">
+<img alt="Listo" class="brand-logo" src="images/logo2.png"/>
+</a>
+
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
+          Log out
+        </button>
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="dashboard.html">Dashboard</a>
+<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
+<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="payroll/payroll.html">Payroll</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="audit/audit.html">Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">Contract Scanner</a>
+<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">Invoice Builder</a>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">Support</a>
+</div></aside><main id="main">
+
+<section class="section">
+<div class="container">
+<div class="section-head">
+<h1 class="page-title" data-i18n="dashboard.title">Dashboard</h1>
+<p class="muted" data-i18n="dashboard.subtitle">
+            Welcome back! Here's an overview of your account.
+          </p>
+</div>
+
+<!-- Account Info Card -->
+<div class="card pad mb">
+<h2 class="h2" data-i18n="dashboard.accountInfo">Account Information</h2>
+<div class="divider"></div>
+<div class="grid-2">
+<div>
+<div class="kv-row">
+<div class="muted" data-i18n="dashboard.name">Name:</div>
+<div class="kv-val" id="dashboardName">—</div>
+</div>
+<div class="kv-row">
+<div class="muted" data-i18n="dashboard.email">Email:</div>
+<div class="kv-val" id="dashboardEmail">—</div>
+</div>
+<div class="kv-row">
+<div class="muted" data-i18n="dashboard.accountCreated">Account Created:</div>
+<div class="kv-val" id="dashboardCreated">—</div>
+</div>
+</div>
+<div class="profile-picture-container" style="justify-content: center;">
+<div class="profile-avatar" id="dashboardAvatar" style="width: 120px; height: 120px;">
+<img id="dashboardAvatarImage" alt="Profile" style="display: none;" />
+<span id="dashboardAvatarInitials" class="avatar-initials"></span>
+</div>
+</div>
+</div>
+<div style="margin-top: 16px;">
+<a class="btn primary" href="account/account.html" data-i18n="dashboard.editAccount">Edit Account</a>
+</div>
+</div>
+
+<!-- Quick Links -->
+<div class="card pad">
+<h2 class="h2" data-i18n="dashboard.quickLinks">Quick Links</h2>
+<div class="divider"></div>
+<div class="dashboard-grid">
+<a class="dashboard-card" href="prequal.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.prequal">Pre-Qualification</h3>
+<p class="muted small" data-i18n="dashboard.prequalDesc">Complete your pre-qualification checklist</p>
+</a>
+<a class="dashboard-card" href="payroll/payroll.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.payroll">Payroll</h3>
+<p class="muted small" data-i18n="dashboard.payrollDesc">Track employee payments</p>
+</a>
+<a class="dashboard-card" href="invoice/invoice.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.invoiceBuilder">Invoice Builder</h3>
+<p class="muted small" data-i18n="dashboard.invoiceDesc">Create and send invoices</p>
+</a>
+<a class="dashboard-card" href="audit/audit.html" style="text-decoration: none; color: inherit;">
+<h3 class="h3" data-i18n="nav.audit">Audit Help</h3>
+<p class="muted small" data-i18n="dashboard.auditDesc">Prepare for insurance audits</p>
+</a>
+</div>
+</div>
+</div>
+</section>
+
+<footer class="site-footer">
+<div class="container footer-inner">
+<div>
+<div class="brand footer-brand">
+<img alt="Listo" class="brand-logo footer-logo" src="images/logo.png"/>
+</div>
+<p class="muted" data-i18n="footer.note">
+            Built to help subcontractors look sharp, stay compliant, and win more work.
+          </p>
+</div>
+<div class="footer-links">
+<a data-i18n="nav.prequal" href="prequal.html">Pre-Qualification</a>
+<a data-i18n="nav.payroll" href="payroll/payroll.html">Payroll</a>
+<a data-i18n="nav.audit" href="audit/audit.html">Audit Help</a>
+<a data-i18n="nav.support" href="support.html">Support</a>
+</div>
+</div>
+<div class="container footer-bottom">
+<span class="muted">© <span id="year"></span> Listo</span>
+</div>
+</footer>
+</main></div>
+
+<script src="scripts.js" type="module"></script>
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>
+
