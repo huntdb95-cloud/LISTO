@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — My Account</title>
+<meta content="Manage your account settings, upload your logo, and update your email or password." name="description"/>
+<link href="../styles.css" rel="stylesheet"/>
+</head>
+<body data-page="account" data-requires-auth="true">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner"><button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a aria-label="Listo Home" class="brand" href="../index.html">
+<img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
+</a>
+
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
+          Log out
+        </button>
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.home" href="../index.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
+<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
+<a class="sidebar-link nav-link" data-i18n="nav.account" href="../account/account.html">My Account</a>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
+</div></aside><main id="main">
+
+<div class="page-wrap">
+<div class="page-title">
+<div>
+<h1 data-i18n="account.title">My Account</h1>
+<div class="muted" data-i18n="account.subtitle">Manage your account settings and profile information.</div>
+</div>
+</div>
+
+<div class="grid">
+<!-- Profile Picture Section -->
+<div class="card">
+<h2 data-i18n="account.profileTitle">Profile Picture</h2>
+<p class="muted" data-i18n="account.profileDesc">Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.</p>
+
+<div class="profile-picture-container">
+<div class="profile-avatar" id="profileAvatar">
+<img id="avatarImage" alt="Profile" style="display: none;" />
+<span id="avatarInitials" class="avatar-initials"></span>
+</div>
+</div>
+
+<form id="logoForm" style="margin-top: 20px;">
+<div class="form-group">
+<label for="logoFile" data-i18n="account.logoLabel">Logo File</label>
+<input type="file" id="logoFile" accept="image/*" />
+<div class="small muted" style="margin-top: 6px;" data-i18n="account.logoHint">Accepted: JPG, PNG, GIF, WebP (max 5MB)</div>
+</div>
+<button type="submit" class="btn primary" id="logoUploadBtn" data-i18n="account.uploadLogo">Upload Logo</button>
+<div id="logoMsg" class="form-msg" style="margin-top: 10px;"></div>
+<div id="logoError" class="form-error" style="margin-top: 10px;"></div>
+</form>
+
+<button type="button" class="btn ghost" id="removeLogoBtn" style="margin-top: 12px; display: none;" data-i18n="account.removeLogo">Remove Logo</button>
+</div>
+
+<!-- Account Information Section -->
+<div class="card">
+<h2 data-i18n="account.infoTitle">Account Information</h2>
+
+<!-- Email Change -->
+<div class="form-section">
+<h3 data-i18n="account.emailTitle">Email Address</h3>
+<p class="muted small" data-i18n="account.currentEmail">Current email:</p>
+<p style="font-weight: 600; margin: 4px 0 16px;" id="currentEmail">—</p>
+
+<form id="emailForm">
+<div class="form-group">
+<label for="newEmail" data-i18n="account.newEmailLabel">New Email Address</label>
+<input type="email" id="newEmail" required placeholder="newemail@example.com" />
+</div>
+<div class="form-group">
+<label for="emailPassword" data-i18n="account.passwordConfirm">Current Password (required)</label>
+<input type="password" id="emailPassword" required />
+</div>
+<button type="submit" class="btn primary" id="emailUpdateBtn" data-i18n="account.updateEmail">Update Email</button>
+<div id="emailMsg" class="form-msg" style="margin-top: 10px;"></div>
+<div id="emailError" class="form-error" style="margin-top: 10px;"></div>
+</form>
+</div>
+
+<div class="divider"></div>
+
+<!-- Password Change -->
+<div class="form-section">
+<h3 data-i18n="account.passwordTitle">Password</h3>
+<p class="muted small" data-i18n="account.passwordDesc">Change your password to keep your account secure.</p>
+
+<form id="passwordForm" style="margin-top: 12px;">
+<div class="form-group">
+<label for="currentPassword" data-i18n="account.currentPasswordLabel">Current Password</label>
+<input type="password" id="currentPassword" required />
+</div>
+<div class="form-group">
+<label for="newPassword" data-i18n="account.newPasswordLabel">New Password</label>
+<input type="password" id="newPassword" required minlength="6" />
+<div class="small muted" style="margin-top: 6px;" data-i18n="account.passwordHint">Minimum 6 characters</div>
+</div>
+<div class="form-group">
+<label for="confirmPassword" data-i18n="account.confirmPasswordLabel">Confirm New Password</label>
+<input type="password" id="confirmPassword" required minlength="6" />
+</div>
+<button type="submit" class="btn primary" id="passwordUpdateBtn" data-i18n="account.updatePassword">Update Password</button>
+<div id="passwordMsg" class="form-msg" style="margin-top: 10px;"></div>
+<div id="passwordError" class="form-error" style="margin-top: 10px;"></div>
+</form>
+</div>
+</div>
+</div>
+</div>
+</main></div>
+
+<script type="module" src="../scripts.js"></script>
+<script type="module" src="./account.js"></script>
+
+</body>
+</html>
+

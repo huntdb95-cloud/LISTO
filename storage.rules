@@ -1,0 +1,71 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper function: Check if user is authenticated and owns the path
+    function isOwner() {
+      return request.auth != null && request.auth.uid != null;
+    }
+    
+    function isOwnerPath(userId) {
+      return isOwner() && request.auth.uid == userId;
+    }
+
+    // ========== Profile Images ==========
+    
+    // Profile logo: users/{uid}/profile/logo_*
+    match /users/{userId}/profile/logo_{timestamp}_{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 5 * 1024 * 1024  // 5MB max
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // ========== COI Documents ==========
+    
+    // Certificate of Insurance: users/{uid}/coi/*
+    match /users/{userId}/coi/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // ========== Audit Documents ==========
+    
+    // Audit documents: users/{uid}/audit/*
+    match /users/{userId}/audit/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*') ||
+            request.resource.contentType.matches('application/octet-stream'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // ========== Contract Files ==========
+    
+    // Contract scanner files: users/{uid}/contracts/*
+    match /users/{userId}/contracts/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 20 * 1024 * 1024  // 20MB max (for PDFs, images, HEIC)
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*') ||
+            request.resource.contentType.matches('application/octet-stream'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // ========== Default Deny ==========
+    
+    // Deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
