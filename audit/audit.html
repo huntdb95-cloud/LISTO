@@ -141,8 +141,8 @@
             <input id="businessName" type="text" placeholder="ABC Construction LLC" />
           </div>
           <div class="col-6">
-            <label data-i18n="audit.copyEmail">Copy Email (for audit package)</label>
-            <input id="copyEmail" type="email" placeholder="you@company.com" />
+            <label data-i18n="audit.auditorEmail">Auditor Email</label>
+            <input id="auditorEmail" type="email" placeholder="agent@agency.com" />
           </div>
           <div class="col-4">
             <label data-i18n="audit.policyStart">Policy Start Date</label>
@@ -165,13 +165,8 @@
             <input id="phone" type="text" placeholder="(555) 555-5555" />
           </div>
           <div class="col-6">
-            <label data-i18n="audit.auditorEmail">Auditor Email</label>
-            <input id="auditorEmail" type="email" placeholder="agent@agency.com" />
-          </div>
-          <div class="col-6">
             <label class="muted" data-i18n="audit.quickActions">Quick actions</label>
             <div class="btn-row">
-              <button id="btnLoadPayroll" class="btn btn-secondary" type="button" data-i18n="audit.loadPayroll">Load payroll summary</button>
               <button id="btnClear" class="btn btn-secondary" type="button" data-i18n="audit.clear">Clear</button>
             </div>
           </div>
@@ -242,8 +237,13 @@
 
       <!-- Payroll Summary -->
       <div class="card" style="margin-top: 20px;">
-      <h2 style="margin-top:0;" data-i18n="audit.payrollTitle">3) Payroll summary</h2>
-      <p class="muted" data-i18n="audit.payrollDesc">Summary of payroll entries for the audit period</p>
+      <div class="row-between" style="margin-bottom: 12px;">
+        <div>
+          <h2 style="margin-top:0;" data-i18n="audit.payrollTitle">3) Payroll summary</h2>
+          <p class="muted" data-i18n="audit.payrollDesc">Summary of payroll entries for the audit period</p>
+        </div>
+        <button id="btnLoadPayroll" class="btn btn-secondary" type="button" data-i18n="audit.loadPayroll">Load payroll summary</button>
+      </div>
       <div id="payrollStatus" class="small muted"></div>
 
       <div style="overflow:auto; margin-top: 10px;">
