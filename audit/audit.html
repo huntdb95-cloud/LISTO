@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Audit Help Tool</title>
+  <title>Audit Help</title>
 
   <link rel="stylesheet" href="../styles.css" />
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -65,41 +65,75 @@
 <a class="sidebar-link nav-link" data-i18n="nav.home" href="../index.html">Home</a>
 <a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
 <a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
-<a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
+<a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Audit Help</a>
 <a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
 <a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
 <a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
 </div></aside><main id="main">
   <div class="page-wrap">
+    <!-- Page Title -->
     <div class="card">
-      <h1 style="margin-top:0;" data-i18n="audit.title">Audit Help Tool</h1>
-      <div class="pill" data-i18n="audit.subtitle">Printer-friendly package • PDF 8.5×11 • SendGrid email</div>
+      <h1 style="margin-top:0;" data-i18n="audit.title">Audit Help</h1>
       <p class="muted" style="margin-bottom:0;" data-i18n="audit.description">
-        This tool helps you prepare an audit package by collecting your payroll summary (for your prior policy period),
+        Learn about insurance audits and prepare your audit package with our step-by-step tool.
+      </p>
+    </div>
+
+    <!-- Part 1: Audit Explanation -->
+    <div class="card" style="margin-bottom: 32px;">
+      <h2 style="margin-top:0; margin-bottom: 16px;" data-i18n="audit.explanationTitle">Audit Explanation</h2>
+      
+      <div style="margin-bottom: 20px;">
+        <h3 style="margin-top:0; margin-bottom: 12px;" data-i18n="audit.whyTitle">Why do insurance audits exist?</h3>
+        <p data-i18n="audit.whyDesc">
+          Insurance audits are a standard practice where your insurance carrier verifies the information you provided when you purchased your policy. 
+          Since workers' compensation premiums are based on your actual payroll, the carrier needs to confirm the amounts you paid during the policy period 
+          to calculate your final premium accurately.
+        </p>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h3 style="margin-top:0; margin-bottom: 12px;" data-i18n="audit.expectationsTitle">What to expect</h3>
+        <p data-i18n="audit.expectationsDesc">
+          Your insurance carrier is verifying <b>payroll paid during your previous policy period</b> so your premium can be calculated correctly.
+        </p>
+        <p data-i18n="audit.expectationsSubDesc">
+          During the audit, you'll typically need to provide:
+        </p>
+        <ul>
+          <li data-i18n="audit.expectations1">Payroll amounts actually paid (by employee and totals)</li>
+          <li data-i18n="audit.expectations2">Payment methods (check, cash, electronic)</li>
+          <li data-i18n="audit.expectations3">Independent contractor payments (1099s) if applicable</li>
+          <li data-i18n="audit.expectations4">Supporting bank statements and tax forms</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 style="margin-top:0; margin-bottom: 12px;" data-i18n="audit.processTitle">The audit process</h3>
+        <p data-i18n="audit.processDesc">
+          Most audits are straightforward. The auditor will review your payroll records, payment documentation, and any supporting materials you provide. 
+          They may ask clarifying questions about your business operations, payment methods, or subcontractor relationships. 
+          Being prepared with organized documentation makes the process smooth and helps ensure accurate premium calculations.
+        </p>
+        <p class="muted" style="margin-bottom:0;" data-i18n="audit.processNote">
+          The Audit Packet tool below helps you organize all necessary documents and information before your audit, 
+          compiling everything into a printer-friendly PDF package that you can email directly to your auditor.
+        </p>
+      </div>
+    </div>
+
+    <!-- Part 2: Audit Packet -->
+    <div class="card" style="border-top: 3px solid #111; padding-top: 24px;">
+      <h2 style="margin-top:0; margin-bottom: 16px;" data-i18n="audit.packetTitle">Audit Packet</h2>
+      <div class="pill" data-i18n="audit.subtitle">Printer-friendly package • PDF 8.5×11 • SendGrid email</div>
+      <p class="muted" style="margin-bottom: 20px;" data-i18n="audit.packetDesc">
+        Use this tool to prepare your audit package by collecting your payroll summary (for your prior policy period),
         supporting documents, and a short questionnaire.
       </p>
-    </div>
 
-    <!-- Audit expectations -->
-    <div class="card">
-      <h2 style="margin-top:0;" data-i18n="audit.expectationsTitle">Audit expectations</h2>
-      <p data-i18n="audit.expectationsDesc">
-        Your insurance carrier is verifying <b>payroll paid during your previous policy period</b> so your premium can be calculated correctly.
-      </p>
-      <ul>
-        <li data-i18n="audit.expectations1">Payroll amounts actually paid (by employee and totals)</li>
-        <li data-i18n="audit.expectations2">Payment methods (check, cash, electronic)</li>
-        <li data-i18n="audit.expectations3">Independent contractor payments (1099s) if applicable</li>
-        <li data-i18n="audit.expectations4">Supporting bank statements and tax forms</li>
-      </ul>
-      <p class="muted" style="margin-bottom:0;" data-i18n="audit.expectationsNote">
-        After you upload documents and complete the questionnaire, we compile everything into a printer-friendly PDF and email it with attachments.
-      </p>
-    </div>
-
-    <!-- Audit Period -->
-    <div class="card">
-      <h2 style="margin-top:0;" data-i18n="audit.periodTitle">1) Audit period</h2>
+      <!-- Audit Period -->
+      <div class="card" style="margin-top: 20px;">
+        <h2 style="margin-top:0;" data-i18n="audit.periodTitle">1) Audit period</h2>
       <div class="grid">
         <div class="col-4">
           <label data-i18n="audit.policyStart">Policy Start Date</label>
@@ -117,11 +151,11 @@
           </div>
         </div>
       </div>
-      <div id="periodMsg" class="small muted" style="margin-top:10px;"></div>
-    </div>
+        <div id="periodMsg" class="small muted" style="margin-top:10px;"></div>
+      </div>
 
-    <!-- Business info -->
-    <div class="card">
+      <!-- Business info -->
+      <div class="card" style="margin-top: 20px;">
       <h2 style="margin-top:0;" data-i18n="audit.businessTitle">2) Business information</h2>
       <div class="grid">
         <div class="col-6">
@@ -141,10 +175,10 @@
           <input id="phone" type="text" placeholder="(555) 555-5555" />
         </div>
       </div>
-    </div>
+      </div>
 
-    <!-- Payroll Summary -->
-    <div class="card">
+      <!-- Payroll Summary -->
+      <div class="card" style="margin-top: 20px;">
       <h2 style="margin-top:0;" data-i18n="audit.payrollTitle">3) Payroll summary</h2>
       <p class="muted" data-i18n="audit.payrollDesc">Summary of payroll entries for the audit period</p>
       <div id="payrollStatus" class="small muted"></div>
@@ -169,10 +203,10 @@
           </tfoot>
         </table>
       </div>
-    </div>
+      </div>
 
-    <!-- Document Uploads -->
-    <div class="card">
+      <!-- Document Uploads -->
+      <div class="card" style="margin-top: 20px;">
       <h2 style="margin-top:0;" data-i18n="audit.uploadTitle">3) Upload supporting documents</h2>
       <p class="muted" data-i18n="audit.uploadDesc">Upload documents like Schedule C, bank statements, payroll summaries, or other supporting documents.</p>
 
@@ -210,10 +244,10 @@
         <h3 style="margin: 10px 0 6px;" data-i18n="audit.uploadedTitle">Uploaded Documents</h3>
         <div id="uploadedList" class="small"></div>
       </div>
-    </div>
+      </div>
 
-    <!-- Questionnaire -->
-    <div class="card">
+      <!-- Questionnaire -->
+      <div class="card" style="margin-top: 20px;">
       <h2 style="margin-top:0;" data-i18n="audit.questionnaireTitle">5) Audit questionnaire</h2>
       <p class="muted" style="margin-bottom: 12px;" data-i18n="audit.questionnaireDesc">Answer these questions to help complete your audit package.</p>
       <div class="grid">
@@ -271,10 +305,10 @@
         <button id="btnSaveQuestionnaire" class="btn btn-secondary" type="button" data-i18n="audit.saveQuestionnaire">Save questionnaire</button>
         <span id="qMsg" class="small muted"></span>
       </div>
-    </div>
+      </div>
 
-    <!-- Final: Generate + Email -->
-    <div class="card">
+      <!-- Final: Generate + Email -->
+      <div class="card" style="margin-top: 20px;">
       <h2 style="margin-top:0;" data-i18n="audit.generateTitle">6) Generate PDF + email audit package</h2>
       <p class="muted" data-i18n="audit.generateDesc">
         This generates a printer-friendly PDF and sends it (plus uploaded documents) via SendGrid.
@@ -287,6 +321,7 @@
 
       <div id="finalMsg" class="small muted" style="margin-top:10px;"></div>
       <div id="finalErr" class="small danger" style="margin-top:10px;"></div>
+      </div>
     </div>
 
   </div>
