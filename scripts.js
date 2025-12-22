@@ -2295,6 +2295,29 @@ function initWorkersCompUpload(user) {
 function initSidebarNav() {
   const sidebar = document.querySelector(".sidebar");
   if (!sidebar) return;
+  
+  // Align sidebar top with header bottom
+  const updateSidebarPosition = () => {
+    const header = document.querySelector(".site-header");
+    if (header && sidebar) {
+      const headerHeight = header.offsetHeight;
+      document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
+      sidebar.style.top = `${headerHeight}px`;
+      sidebar.style.height = `calc(100vh - ${headerHeight}px)`;
+    }
+  };
+  
+  // Update on init
+  updateSidebarPosition();
+  
+  // Update on window resize (in case header height changes)
+  if (typeof window !== 'undefined') {
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateSidebarPosition, 100);
+    });
+  }
 
   // Initialize submenu toggles (new structure)
   const submenuItems = document.querySelectorAll(".submenu_item");
@@ -2316,14 +2339,95 @@ function initSidebarNav() {
     item.dataset.listenerAttached = "true";
   });
 
-  // Mark active link
-  const path = window.location.pathname.split("/").pop() || "index.html";
-  const allLinks = sidebar.querySelectorAll("a.nav_link");
+  // Handle old sidebar submenu toggles (for backward compatibility)
+  const oldSubmenuToggles = sidebar.querySelectorAll(".sidebar-submenu-toggle");
+  oldSubmenuToggles.forEach(btn => {
+    if (btn.dataset.listenerAttached === "true") return;
+    
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const submenu = btn.closest(".sidebar-submenu");
+      if (submenu) {
+        submenu.classList.toggle("open");
+      }
+    });
+    
+    btn.dataset.listenerAttached = "true";
+  });
+
+  // Mark active link - improved path matching for both old and new structures
+  const currentPath = window.location.pathname;
+  const currentUrl = window.location.href;
+  
+  // Get all links from both old and new structures
+  const newLinks = sidebar.querySelectorAll("a.nav_link");
+  const oldLinks = sidebar.querySelectorAll("a.sidebar-link");
+  const allLinks = [...newLinks, ...oldLinks];
+  
+  // Remove all active classes first
+  allLinks.forEach(a => a.classList.remove("active"));
+  
   allLinks.forEach(a => {
-    const href = (a.getAttribute("href") || "").split("/").pop();
-    if (href === path || (path === "" && href === "dashboard.html")) {
+    const href = a.getAttribute("href") || "";
+    if (!href) return;
+    
+    // Resolve relative href to absolute for comparison
+    let absoluteHref = href;
+    try {
+      absoluteHref = new URL(href, window.location.origin).pathname;
+    } catch {
+      // If href is relative, construct absolute path
+      const basePath = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
+      if (href.startsWith("../")) {
+        const levels = (href.match(/\.\.\//g) || []).length;
+        const pathParts = currentPath.split("/").filter(p => p);
+        const resolvedPath = "/" + pathParts.slice(0, -levels).join("/") + "/" + href.replace(/\.\.\//g, "");
+        absoluteHref = resolvedPath.replace(/\/+/g, "/");
+      } else if (href.startsWith("./")) {
+        absoluteHref = basePath + href.substring(2);
+      } else if (!href.startsWith("/")) {
+        absoluteHref = basePath + href;
+      }
+    }
+    
+    // Normalize paths
+    const currentPathNormalized = currentPath.replace(/\/$/, "").toLowerCase();
+    const hrefNormalized = absoluteHref.replace(/\/$/, "").toLowerCase();
+    
+    // Get filenames
+    const currentFile = currentPath.split("/").pop() || "";
+    const hrefFile = href.split("/").pop() || "";
+    
+    // Match conditions - improved matching logic
+    let isMatch = false;
+    
+    // Exact path match
+    if (currentPathNormalized === hrefNormalized) {
+      isMatch = true;
+    }
+    // Filename match (most common case)
+    else if (currentFile && hrefFile && currentFile.toLowerCase() === hrefFile.toLowerCase()) {
+      isMatch = true;
+    }
+    // Path ends with href (for nested paths)
+    else if (currentPathNormalized.endsWith(hrefNormalized) && hrefNormalized !== "") {
+      isMatch = true;
+    }
+    // Dashboard special case
+    else if ((currentPathNormalized === "" || currentPathNormalized.endsWith("/dashboard") || currentPathNormalized.endsWith("/dashboard.html")) && 
+             (hrefFile === "dashboard.html" || hrefNormalized.includes("dashboard"))) {
+      isMatch = true;
+    }
+    // Check if current URL contains the href (for relative paths)
+    else if (currentUrl.includes(href.replace(/^\.\.\//g, "").replace(/^\.\//g, ""))) {
+      isMatch = true;
+    }
+    
+    if (isMatch) {
       a.classList.add("active");
-      // If it's a submenu link, open the parent submenu
+      
+      // Handle new structure submenu
       const submenuItem = a.closest("li.item");
       if (submenuItem) {
         const submenuParent = submenuItem.querySelector(".submenu_item");
@@ -2331,36 +2435,16 @@ function initSidebarNav() {
           submenuParent.classList.add("show_submenu");
         }
       }
+      
+      // Handle old structure submenu
+      const oldSubmenu = a.closest(".sidebar-submenu");
+      if (oldSubmenu) {
+        oldSubmenu.classList.add("open");
+      }
     }
   });
 
-  // Mobile behavior (keep existing mobile sidebar toggle if needed)
-  const toggle = document.querySelector(".sidebar-toggle");
-  if (toggle && window.innerWidth <= 920) {
-    const setOpen = (open) => {
-      sidebar.classList.toggle("open", open);
-      if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    };
-
-    toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("open")));
-    
-    // Close after clicking a link (mobile)
-    allLinks.forEach(a => {
-      a.addEventListener("click", () => {
-        if (window.innerWidth <= 920) {
-          setOpen(false);
-        }
-      });
-    });
-
-    // Close when clicking outside (mobile)
-    document.addEventListener("click", (e) => {
-      if (window.innerWidth > 920) return;
-      if (!sidebar.classList.contains("open")) return;
-      if (sidebar.contains(e.target) || (toggle && toggle.contains(e.target))) return;
-      setOpen(false);
-    });
-  }
+  // No mobile behavior needed - sidebar is completely hidden on mobile
 }
 
 
@@ -2587,6 +2671,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();
   initYear();
   initMobileBottomNav();
+  
+  // Re-initialize sidebar nav after a short delay to ensure all elements are ready
+  setTimeout(() => {
+    initSidebarNav();
+  }, 100);
 
   // Initialize language immediately for auth pages (login, signup, forgot)
   const page = document.body?.getAttribute("data-page");
