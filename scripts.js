@@ -1922,8 +1922,10 @@ function initSidebarNav() {
     toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("open")));
   }
 
-  // Close after clicking a link (mobile)
-  sideNav.querySelectorAll("a").forEach(a => a.addEventListener("click", () => setOpen(false)));
+  // Close after clicking a link (mobile) - but not submenu links
+  sideNav.querySelectorAll("a.sidebar-link:not(.sidebar-submenu-link)").forEach(a => a.addEventListener("click", () => setOpen(false)));
+  // Also close when clicking submenu links
+  sideNav.querySelectorAll("a.sidebar-submenu-link").forEach(a => a.addEventListener("click", () => setOpen(false)));
 
   // Close when clicking outside
   document.addEventListener("click", (e) => {
@@ -1933,17 +1935,30 @@ function initSidebarNav() {
   });
 
   // Initialize submenu toggles
-  const submenuToggles = document.querySelectorAll(".sidebar-submenu-toggle");
-  submenuToggles.forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const submenu = btn.closest(".sidebar-submenu");
-      if (submenu) {
-        submenu.classList.toggle("open");
-      }
+  function initSubmenuToggles() {
+    const submenuToggles = document.querySelectorAll(".sidebar-submenu-toggle");
+    submenuToggles.forEach(btn => {
+      // Check if already has listener
+      if (btn.dataset.listenerAttached === "true") return;
+      
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const submenu = btn.closest(".sidebar-submenu");
+        if (submenu) {
+          submenu.classList.toggle("open");
+        }
+      });
+      
+      btn.dataset.listenerAttached = "true";
     });
-  });
+  }
+  
+  // Initialize immediately
+  initSubmenuToggles();
+  
+  // Re-initialize after a short delay to catch dynamically added elements
+  setTimeout(initSubmenuToggles, 100);
 
   // Mark active link
   const path = window.location.pathname.split("/").pop() || "index.html";
