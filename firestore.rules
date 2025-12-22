@@ -180,6 +180,47 @@ service cloud.firestore {
       // Stores questionnaire data, uploaded documents metadata, etc.
     }
 
+    // ========== Contracts System ==========
+    
+    // Builder contracts: /users/{uid}/contracts/{contractId}
+    match /users/{userId}/contracts/{contractId} {
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['builderName', 'isActive', 'createdAt'])
+        && request.resource.data.builderName is string
+        && request.resource.data.builderName.size() >= 1
+        && request.resource.data.builderName.size() <= 100
+        && request.resource.data.isActive is bool
+        && request.resource.data.createdAt is timestamp;
+      
+      allow update: if isOwner(userId)
+        && request.resource.data.builderName is string
+        && request.resource.data.builderName.size() >= 1
+        && request.resource.data.builderName.size() <= 100;
+      
+      allow delete: if isOwner(userId);
+      
+      // Jobs subcollection: /users/{uid}/contracts/{contractId}/jobs/{jobId}
+      match /jobs/{jobId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasAll(['jobName', 'createdAt'])
+          && request.resource.data.jobName is string
+          && request.resource.data.jobName.size() >= 1
+          && request.resource.data.jobName.size() <= 200
+          && request.resource.data.createdAt is timestamp;
+        
+        allow update: if isOwner(userId)
+          && request.resource.data.jobName is string
+          && request.resource.data.jobName.size() >= 1
+          && request.resource.data.jobName.size() <= 200;
+        
+        allow delete: if isOwner(userId);
+      }
+    }
+
     // ========== Default Deny ==========
     
     // Deny all other paths

@@ -73,7 +73,7 @@ service firebase.storage {
 
     // ========== Contract Files ==========
     
-    // Contract scanner files: users/{uid}/contracts/*
+    // Contract scanner files: users/{uid}/contracts/* (legacy - for contract scanner)
     match /users/{userId}/contracts/{fileName} {
       allow read: if isOwnerPath(userId);
       allow write: if isOwnerPath(userId)
@@ -81,6 +81,36 @@ service firebase.storage {
         && (request.resource.contentType.matches('application/pdf') ||
             request.resource.contentType.matches('image/.*') ||
             request.resource.contentType.matches('application/octet-stream'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // Builder contract documents: users/{uid}/contracts/{contractId}/builderCoi/*
+    match /users/{userId}/contracts/{contractId}/builderCoi/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // Builder subagreement: users/{uid}/contracts/{contractId}/subAgreement/*
+    match /users/{userId}/contracts/{contractId}/subAgreement/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // Project COI: users/{uid}/contracts/{contractId}/jobs/{jobId}/projectCoi/*
+    match /users/{userId}/contracts/{contractId}/jobs/{jobId}/projectCoi/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
       allow delete: if isOwnerPath(userId);
     }
 
