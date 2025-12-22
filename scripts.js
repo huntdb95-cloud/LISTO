@@ -427,6 +427,10 @@ const I18N = {
     "contracts.jobDescription": "Description of Work",
     "contracts.projectCoi": "Project COI",
     "contracts.saveJob": "Save Job",
+    "contracts.paid": "Paid",
+    "contracts.unpaid": "Unpaid",
+    
+    "invoice.selectBuilder": "Select Builder (Optional)",
 
     "support.faq1Q": "How do I become Pre-Qualified?",
     "support.faq1A": "Complete three items: fill out your W-9, upload an active Certificate of Insurance (COI), and sign the Subcontractor Agreement. Once all three are complete, you'll earn Pre-Qualified status.",
@@ -867,6 +871,10 @@ const I18N = {
     "contracts.jobDescription": "Descripción del Trabajo",
     "contracts.projectCoi": "COI del Proyecto",
     "contracts.saveJob": "Guardar Trabajo",
+    "contracts.paid": "Pagado",
+    "contracts.unpaid": "No Pagado",
+    
+    "invoice.selectBuilder": "Seleccionar Constructor (Opcional)",
 
     "support.faq1Q": "¿Cómo me convierto en Precalificado?",
     "support.faq1A": "Completa tres elementos: completa tu W-9, sube un Certificado de Seguro (COI) activo y firma el Acuerdo de Subcontratista. Una vez que los tres estén completos, obtendrás el estatus de Precalificado.",

@@ -216,6 +216,7 @@ service cloud.firestore {
           && request.resource.data.jobName is string
           && request.resource.data.jobName.size() >= 1
           && request.resource.data.jobName.size() <= 200;
+        // Note: isPaid field is optional boolean
         
         allow delete: if isOwner(userId);
       }

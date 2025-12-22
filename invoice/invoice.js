@@ -20,9 +20,11 @@ import {
   getDoc,
   doc,
   deleteDoc,
+  updateDoc,
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  where
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 import {
@@ -292,6 +294,111 @@ function fillInvoice(data) {
 function invoicesCol() {
   if (!state.uid) throw new Error("Not authenticated.");
   return collection(db, "users", state.uid, "invoices");
+}
+
+function contractsCol() {
+  if (!state.uid) throw new Error("Not authenticated.");
+  return collection(db, "users", state.uid, "contracts");
+}
+
+async function loadContracts() {
+  if (!state.uid) return [];
+  try {
+    const q = query(contractsCol(), orderBy("builderName"));
+    const snap = await getDocs(q);
+    // Filter for active contracts (isActive !== false)
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(c => c.isActive !== false);
+  } catch (err) {
+    console.error("Error loading contracts:", err);
+    return [];
+  }
+}
+
+async function loadJobs(contractId) {
+  if (!state.uid || !contractId) return [];
+  try {
+    const jobsCol = collection(db, "users", state.uid, "contracts", contractId, "jobs");
+    const q = query(jobsCol, orderBy("jobName"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error("Error loading jobs:", err);
+    return [];
+  }
+}
+
+async function refreshBuilderSelect() {
+  const select = el("selectBuilder");
+  const jobSelect = el("selectJob");
+  if (!select) return;
+  
+  const contracts = await loadContracts();
+  select.innerHTML = '<option value="">— Select a builder —</option>';
+  jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+  jobSelect.style.display = "none";
+  
+  contracts.forEach(contract => {
+    const opt = document.createElement("option");
+    opt.value = contract.id;
+    opt.textContent = contract.builderName || "Unnamed Builder";
+    select.appendChild(opt);
+  });
+}
+
+async function refreshJobSelect(contractId) {
+  const jobSelect = el("selectJob");
+  if (!jobSelect) return;
+  
+  if (!contractId) {
+    jobSelect.style.display = "none";
+    jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+    return;
+  }
+  
+  const jobs = await loadJobs(contractId);
+  jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+  jobSelect.style.display = "block";
+  
+  jobs.forEach(job => {
+    const opt = document.createElement("option");
+    opt.value = job.id;
+    opt.textContent = job.jobName || "Unnamed Job";
+    opt.dataset.address = job.address || "";
+    opt.dataset.description = job.description || "";
+    jobSelect.appendChild(opt);
+  });
+}
+
+async function fillCustomerFromBuilder(contractId, jobId = null) {
+  if (!contractId) return;
+  
+  try {
+    const contractRef = doc(db, "users", state.uid, "contracts", contractId);
+    const contractSnap = await getDoc(contractRef);
+    
+    if (!contractSnap.exists()) return;
+    
+    const contract = contractSnap.data();
+    
+    // Fill customer name with builder name
+    el("toName").value = contract.builderName || "";
+    
+    // If job is selected, fill project name and address
+    if (jobId) {
+      const jobRef = doc(db, "users", state.uid, "contracts", contractId, "jobs", jobId);
+      const jobSnap = await getDoc(jobRef);
+      
+      if (jobSnap.exists()) {
+        const job = jobSnap.data();
+        el("projectName").value = job.jobName || "";
+        el("toAddress").value = job.address || "";
+      }
+    }
+  } catch (err) {
+    console.error("Error filling customer info:", err);
+  }
 }
 
 async function refreshSavedInvoices() {
@@ -588,9 +695,36 @@ function addListeners() {
   });
   el("btnPdf").addEventListener("click", downloadPdf);
   el("btnSendEmail").addEventListener("click", sendInvoiceEmail);
-  el("btnNew").addEventListener("click", newInvoice);
+  el("btnNew").addEventListener("click", () => {
+    newInvoice();
+    el("selectBuilder").value = "";
+    el("selectJob").value = "";
+    el("selectJob").style.display = "none";
+  });
   el("btnLoad").addEventListener("click", loadInvoice);
   el("btnDelete").addEventListener("click", deleteInvoice);
+  
+  // Builder/Job selection handlers
+  el("selectBuilder").addEventListener("change", async (e) => {
+    const contractId = e.target.value;
+    await refreshJobSelect(contractId);
+    await fillCustomerFromBuilder(contractId);
+  });
+  
+  el("selectJob").addEventListener("change", async (e) => {
+    const contractId = el("selectBuilder").value;
+    const jobId = e.target.value;
+    await fillCustomerFromBuilder(contractId, jobId);
+    
+    // Also fill project name and address from job
+    if (jobId && e.target.selectedOptions[0]) {
+      const opt = e.target.selectedOptions[0];
+      const address = opt.dataset.address || "";
+      
+      if (address) el("toAddress").value = address;
+      if (opt.textContent) el("projectName").value = opt.textContent;
+    }
+  });
 
   ["taxRate", "discount", "deposit"].forEach((id) => {
     el(id).addEventListener("input", () => {
@@ -618,6 +752,9 @@ onAuthStateChanged(auth, async (user) => {
     state.uid = null;
     setStatus("Sign in required", "warn");
     newInvoice(); // still usable locally (PDF download), but no saving/sending
+    el("selectBuilder").innerHTML = '<option value="">— Select a builder —</option>';
+    el("selectJob").innerHTML = '<option value="">— Select a job (optional) —</option>';
+    el("selectJob").style.display = "none";
     return;
   }
 
@@ -628,6 +765,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!el("invoiceNumber").value) el("invoiceNumber").value = makeInvoiceNumber();
 
   await refreshSavedInvoices();
+  await refreshBuilderSelect();
 });
 
 // Boot

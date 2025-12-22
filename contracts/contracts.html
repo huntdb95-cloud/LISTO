@@ -94,6 +94,27 @@
     font-size: 0.9rem;
   }
   
+  /* Job Status Badge */
+  .job-status-badge {
+    display: inline-block;
+    transition: all 0.2s;
+  }
+  
+  .job-status-badge.paid {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+  }
+  
+  .job-status-badge.unpaid {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+  }
+  
+  .job-status-badge:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  
   /* Modal Styles */
   .modal-overlay {
     position: fixed;
