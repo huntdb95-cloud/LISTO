@@ -84,10 +84,10 @@
 </div>
 </div>
 
-<div class="grid">
-<!-- Profile Picture Section -->
-<div class="card">
-<h2 data-i18n="account.profileTitle">Profile Picture</h2>
+<div class="account-layout">
+<!-- Profile Section -->
+<div class="card account-profile-card">
+<h2 data-i18n="account.profileTitle">Profile</h2>
 <p class="muted" data-i18n="account.profileDesc">Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.</p>
 
 <div class="profile-picture-container">
@@ -109,11 +109,8 @@
 </form>
 
 <button type="button" class="btn ghost" id="removeLogoBtn" style="display: none; margin-top: 16px;" data-i18n="account.removeLogo">Remove Logo</button>
-</div>
 
-<!-- Account Information Section -->
-<div class="card">
-<h2 data-i18n="account.infoTitle">Account Information</h2>
+<div class="divider"></div>
 
 <!-- Name -->
 <div class="form-section">
@@ -130,8 +127,11 @@
 <div id="nameError" class="form-error"></div>
 </form>
 </div>
+</div>
 
-<div class="divider"></div>
+<!-- Security Section -->
+<div class="card account-security-card">
+<h2 data-i18n="account.infoTitle">Security</h2>
 
 <!-- Email Change -->
 <div class="form-section">
@@ -180,8 +180,11 @@
 <div id="passwordError" class="form-error"></div>
 </form>
 </div>
+</div>
 
-<div class="divider"></div>
+<!-- Preferences Section -->
+<div class="card account-preferences-card">
+<h2>Preferences</h2>
 
 <!-- Language Preference -->
 <div class="form-section">
@@ -203,7 +206,7 @@
 </div>
 
 <!-- Pre-Qualification Documents Section -->
-<div class="card">
+<div class="card account-prequal-card">
 <h2 data-i18n="prequal.sectionTitle">Pre-Qualification Documents</h2>
 <p class="muted" data-i18n="prequal.sectionDesc">Complete these documents to become pre-qualified for work with general contractors.</p>
 

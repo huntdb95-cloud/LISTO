@@ -1384,12 +1384,101 @@ input:focus, select:focus, textarea:focus{
   margin-top: 4px;
 }
 
-/* Account page grid layout */
+/* Account page grid layout - OLD (kept for backward compatibility) */
 .account-page .grid {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
   gap: 24px;
   align-items: start;
+}
+
+/* New improved account layout for desktop */
+.account-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* Desktop: Better organized 2-column layout */
+@media (min-width: 901px) {
+  .account-layout {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  
+  /* Profile card spans full width on desktop for better prominence */
+  .account-profile-card {
+    grid-column: 1 / -1;
+  }
+  
+  /* Security and Preferences side by side */
+  .account-security-card,
+  .account-preferences-card {
+    grid-column: span 1;
+  }
+  
+  /* Better spacing for desktop */
+  .account-page .page-wrap {
+    max-width: 1200px;
+    padding: 32px 24px;
+  }
+  
+  /* Improved card styling for desktop */
+  .account-page .card {
+    padding: 28px;
+  }
+  
+  /* Better form section spacing on desktop */
+  .account-page .form-section {
+    margin-bottom: 28px;
+  }
+  
+  .account-page .form-section:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* Tighter dividers on desktop */
+  .account-page .divider {
+    margin: 20px 0;
+  }
+  
+  /* Profile picture container better centered */
+  .profile-picture-container {
+    margin: 20px 0 24px;
+  }
+  
+  /* Better visual hierarchy for form sections */
+  .account-page .form-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  
+  /* More compact form groups on desktop */
+  .account-page .form-group {
+    margin-bottom: 18px;
+  }
+  
+  /* Better button spacing */
+  .account-page .btn {
+    margin-top: 8px;
+  }
+  
+  /* Improved card headers */
+  .account-page .card h2 {
+    font-size: 1.4rem;
+    margin-bottom: 12px;
+  }
+  
+  .account-page .card .muted {
+    margin-bottom: 20px;
+  }
+  
+  /* Pre-qualification section spans full width on desktop */
+  .account-prequal-card {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
 }
 
 @media (max-width: 900px) {
