@@ -8,35 +8,13 @@
 <meta content="Manage your pre-qualification documents and active builder contracts with jobs." name="description"/>
 <link href="../styles.css" rel="stylesheet"/>
 <style>
-  .tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-    border-bottom: 2px solid rgba(0,0,0,.1);
-  }
-  .tab {
-    padding: 12px 24px;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--muted);
-    transition: all 0.2s;
-  }
-  .tab:hover {
-    color: var(--brand-dark);
-  }
-  .tab.active {
-    color: var(--brand-dark);
-    border-bottom-color: var(--brand);
-  }
-  .tab-content {
-    display: none;
-  }
-  .tab-content.active {
-    display: block;
-  }
+  /* Tab styles - matching Bookkeeping page exactly */
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid rgba(0,0,0,.1); }
+  .tab { padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--muted); transition: all 0.2s; }
+  .tab:hover { color: var(--brand-dark); }
+  .tab.active { color: var(--brand-dark); border-bottom-color: var(--brand); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
   .contract-card {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
