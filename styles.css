@@ -135,11 +135,17 @@ body[data-page="landing"] .lang-switch-mobile {
     display: inline-flex;
   }
   
+  /* Increase header height on mobile for landing page to prevent logo cutoff */
+  body[data-page="landing"] .site-header {
+    min-height: auto;
+  }
+  
   /* Ensure logo stays centered on mobile for index page */
   body[data-page="landing"] .header-inner {
     grid-template-columns: 1fr;
     position: relative;
-    padding-right: 120px; /* Add padding to prevent overlap with translate button */
+    padding: 24px 140px 24px 20px; /* Increased top/bottom padding and right padding for translate button */
+    min-height: 132px; /* Ensure enough height for 84px logo + padding */
   }
   
   body[data-page="landing"] .header-inner > .brand {
@@ -151,10 +157,10 @@ body[data-page="landing"] .lang-switch-mobile {
     width: auto;
   }
   
-  /* Position language toggle absolutely on the right with proper spacing */
+  /* Position language toggle absolutely on the right with more spacing from logo */
   body[data-page="landing"] .lang-switch-mobile {
     position: absolute;
-    right: 20px;
+    right: 10px; /* Moved further right */
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
