@@ -152,6 +152,10 @@ const I18N = {
     "auth.sideTitle": "Private. Secure. Built for onboarding.",
     "auth.sideBody": "Your documents and uploads are protected behind your login.",
     "auth.logout": "Log out",
+    "logout.confirmTitle": "Are you sure you want to log out?",
+    "logout.confirmMessage": "You will need to log in again to access your account.",
+    "logout.cancel": "Cancel",
+    "logout.confirm": "Log Out",
 
     "prequal.title": "Pre-Qualification",
     "prequal.subtitle": "Complete the items below to earn your “Pre-Qualified” status.",
@@ -618,6 +622,10 @@ const I18N = {
     "auth.sideTitle": "Privado. Seguro. Hecho para incorporación.",
     "auth.sideBody": "Tus documentos y cargas están protegidos con tu inicio de sesión.",
     "auth.logout": "Cerrar sesión",
+    "logout.confirmTitle": "¿Estás seguro de que quieres cerrar sesión?",
+    "logout.confirmMessage": "Necesitarás iniciar sesión nuevamente para acceder a tu cuenta.",
+    "logout.cancel": "Cancelar",
+    "logout.confirm": "Cerrar sesión",
 
     "prequal.title": "Precalificación",
     "prequal.subtitle": "Completa los elementos abajo para obtener tu estado de “Precalificado”.",
@@ -2132,6 +2140,82 @@ if (typeof window !== 'undefined') {
   window.updateHeaderAvatar = updateHeaderAvatar;
 }
 
+/* ========== Logout Confirmation Modal ========== */
+function showLogoutConfirmation() {
+  // Create modal if it doesn't exist
+  let modal = document.getElementById("logoutConfirmationModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "logoutConfirmationModal";
+    modal.className = "logout-modal-overlay";
+    modal.innerHTML = `
+      <div class="logout-modal-content">
+        <div class="logout-modal-header">
+          <h3 data-i18n="logout.confirmTitle">Are you sure you want to log out?</h3>
+        </div>
+        <div class="logout-modal-body">
+          <p data-i18n="logout.confirmMessage">You will need to log in again to access your account.</p>
+        </div>
+        <div class="logout-modal-footer">
+          <button type="button" class="btn ghost" id="logoutCancelBtn" data-i18n="logout.cancel">Cancel</button>
+          <button type="button" class="btn primary" id="logoutConfirmBtn" data-i18n="logout.confirm">Log Out</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Set up event listeners
+    const cancelBtn = document.getElementById("logoutCancelBtn");
+    const confirmBtn = document.getElementById("logoutConfirmBtn");
+    
+    cancelBtn.addEventListener("click", hideLogoutConfirmation);
+    confirmBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        // Calculate relative path to login page from current location
+        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+        const depth = pathSegments.length;
+        const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : (window.location.pathname.includes("/settings/") ? "../login/login.html" : "login/login.html");
+        window.location.href = loginPath;
+      } catch (e) {
+        console.error("Logout error:", e);
+        hideLogoutConfirmation();
+      }
+    });
+    
+    // Close on overlay click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        hideLogoutConfirmation();
+      }
+    });
+    
+    // Close on Escape key
+    const escapeHandler = (e) => {
+      if (e.key === "Escape" && modal.classList.contains("show")) {
+        hideLogoutConfirmation();
+        document.removeEventListener("keydown", escapeHandler);
+      }
+    };
+    document.addEventListener("keydown", escapeHandler);
+  }
+  
+  // Show modal
+  modal.classList.add("show");
+  // Apply translations
+  if (typeof applyTranslations === "function") {
+    const currentLang = window.currentLang || localStorage.getItem("listo_lang") || "en";
+    applyTranslations(currentLang);
+  }
+}
+
+function hideLogoutConfirmation() {
+  const modal = document.getElementById("logoutConfirmationModal");
+  if (modal) {
+    modal.classList.remove("show");
+  }
+}
+
 /* ========== Mobile Bottom Navigation ========== */
 function initMobileBottomNav() {
   const bottomNav = document.querySelector(".mobile-bottom-nav");
@@ -2188,17 +2272,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Set up logout handler only once
       if (!logoutHandlerAttached && auth) {
         logoutHandlerAttached = true;
-        logoutBtn.addEventListener("click", async () => {
-          try {
-            await signOut(auth);
-            // Calculate relative path to login page from current location
-            const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
-            const depth = pathSegments.length;
-            const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
-            window.location.href = loginPath;
-          } catch (e) {
-            console.error("Logout error:", e);
-          }
+        logoutBtn.addEventListener("click", () => {
+          showLogoutConfirmation();
         });
       }
     }
@@ -2211,17 +2286,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Set up mobile logout handler only once
       if (!mobileLogoutBtn.dataset.handlerAttached && auth) {
         mobileLogoutBtn.dataset.handlerAttached = "true";
-        mobileLogoutBtn.addEventListener("click", async () => {
-          try {
-            await signOut(auth);
-            // Calculate relative path to login page from current location
-            const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
-            const depth = pathSegments.length;
-            const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "../login/login.html";
-            window.location.href = loginPath;
-          } catch (e) {
-            console.error("Logout error:", e);
-          }
+        mobileLogoutBtn.addEventListener("click", () => {
+          showLogoutConfirmation();
         });
       }
     }
