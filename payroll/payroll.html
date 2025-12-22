@@ -110,7 +110,6 @@
 <header class="site-header">
 <div class="container header-inner">
 <div class="header-left">
-<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
 <a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
 <img id="headerAvatarImage" alt="Profile" style="display: none;" />
 <span id="headerAvatarInitials" class="header-avatar-initials"></span>
@@ -124,18 +123,9 @@
 </div>
 </div>
 </header>
-<div class="layout">
-<aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
-<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">Dashboard</a>
-<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
-<a class="sidebar-link nav-link" data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
-<a class="sidebar-link nav-link" data-i18n="nav.employees" href="../employees/employees.html">Employees</a>
-<a class="sidebar-link nav-link" data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
-<a class="sidebar-link nav-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
-<a class="sidebar-link nav-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
-<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
-</div></aside>
-<main id="main">
+<div class="app-layout">
+  <div id="sidebar"></div>
+  <main id="main">
 
   <div class="page-wrap">
     <div class="page-title">
@@ -265,8 +255,9 @@
 
   <!-- If you're already loading firebase elsewhere globally, remove these script tags and keep payroll.js -->
   
-</main>
+  </main>
 </div>
+<script src="../sidebar.js"></script>
 <script type="module" src="../scripts.js"></script>
 <script type="module" src="./payroll.js"></script>
 
