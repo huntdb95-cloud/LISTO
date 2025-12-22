@@ -1181,22 +1181,11 @@ function requireAuthGuard(user) {
 }
 
 /* ========= Auth UI ========= */
+let logoutHandlerAttached = false;
+
 function initAuthUI() {
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn && auth) {
-    logoutBtn.addEventListener("click", async () => {
-      try {
-        await signOut(auth);
-        // Calculate relative path to login page from current location
-        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
-        const depth = pathSegments.length;
-        const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
-        window.location.href = loginPath;
-      } catch (e) {
-        console.error(e);
-      }
-    });
-  }
+  // Logout handler is now set up in onAuthStateChanged to ensure auth is initialized
+  // This function is kept for backward compatibility
 
   const loginForm = document.getElementById("loginForm");
   if (loginForm && auth) {
@@ -2040,7 +2029,10 @@ async function updateHeaderAvatar(user) {
   const avatarImage = document.getElementById("headerAvatarImage");
   const avatarInitials = document.getElementById("headerAvatarInitials");
   
-  if (!avatarEl || !avatarImage || !avatarInitials) return;
+  if (!avatarEl || !avatarImage || !avatarInitials) {
+    console.warn("Avatar elements not found");
+    return;
+  }
   
   try {
     // Try to load profile from Firestore
@@ -2059,10 +2051,12 @@ async function updateHeaderAvatar(user) {
       avatarImage.style.display = "none";
       avatarInitials.style.display = "flex";
       
-      // Generate initials
+      // Generate initials - prioritize profile name, then displayName, then email
       let initials = "";
-      if (user.displayName) {
-        const parts = user.displayName.trim().split(/\s+/);
+      const nameToUse = profile?.name || user.displayName || "";
+      
+      if (nameToUse) {
+        const parts = nameToUse.trim().split(/\s+/);
         if (parts.length >= 2) {
           initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
         } else if (parts[0]) {
@@ -2089,12 +2083,25 @@ async function updateHeaderAvatar(user) {
     
   } catch (err) {
     console.error("Error loading avatar:", err);
-    // Fallback to initials from email
-    if (user.email) {
-      avatarInitials.textContent = user.email.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, "") || "??";
-      avatarInitials.style.display = "flex";
-      avatarImage.style.display = "none";
+    // Fallback to initials from email or displayName
+    let initials = "";
+    if (user.displayName) {
+      const parts = user.displayName.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts[0]) {
+        initials = parts[0].substring(0, 2).toUpperCase();
+      }
     }
+    if (!initials && user.email) {
+      initials = user.email.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, "") || "??";
+    }
+    if (!initials) {
+      initials = "??";
+    }
+    avatarInitials.textContent = initials;
+    avatarInitials.style.display = "flex";
+    avatarImage.style.display = "none";
   }
 }
 
@@ -2119,7 +2126,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   onAuthStateChanged(auth, async (user) => {
     const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) logoutBtn.hidden = !user;
+    if (logoutBtn) {
+      logoutBtn.hidden = !user;
+      
+      // Set up logout handler only once
+      if (!logoutHandlerAttached && auth) {
+        logoutHandlerAttached = true;
+        logoutBtn.addEventListener("click", async () => {
+          try {
+            await signOut(auth);
+            // Calculate relative path to login page from current location
+            const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+            const depth = pathSegments.length;
+            const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
+            window.location.href = loginPath;
+          } catch (e) {
+            console.error("Logout error:", e);
+          }
+        });
+      }
+    }
     
     const headerAvatar = document.getElementById("headerAvatar");
     if (headerAvatar) headerAvatar.hidden = !user;
