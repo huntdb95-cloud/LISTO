@@ -705,6 +705,8 @@ function init() {
       const coiSection = $("coiDocumentSection");
       if (e.target.value === "Subcontractor") {
         coiSection.style.display = "block";
+        // Initialize COI section state to clear any stale remove buttons from previously edited laborer
+        renderDocumentStatus("coi", null);
       } else {
         coiSection.style.display = "none";
       }
