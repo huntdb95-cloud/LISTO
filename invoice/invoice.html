@@ -14,39 +14,101 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
-    .card { background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px; }
-    .grid { display: grid; gap: 12px; }
-    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .row { display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
-    label { display:block; font-size: 0.9rem; opacity: .85; margin-bottom: 6px; }
-    input, textarea, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.15); background: #fff; }
-    textarea { min-height: 90px; resize: vertical; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid rgba(0,0,0,.1); padding: 10px; vertical-align: top; }
-    th { text-align:left; font-size: .9rem; opacity: .8; }
-    .num { text-align: right; white-space: nowrap; }
-    .btn {
+    /* Invoice page scoped styles */
+    .invoice-page-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+    .invoice-card { background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px; }
+    .invoice-grid { display: grid; gap: 12px; }
+    .invoice-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .invoice-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .invoice-row { display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
+    .invoice-label { display:block; font-size: 0.9rem; opacity: .85; margin-bottom: 6px; }
+    .invoice-input, .invoice-textarea, .invoice-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.15); background: #fff; box-sizing: border-box; }
+    .invoice-textarea { min-height: 90px; resize: vertical; }
+    
+    /* Line Items Table - Desktop */
+    .invoice-items-table-wrapper { overflow-x: auto; }
+    .invoice-items-table { width:100%; border-collapse: collapse; }
+    .invoice-items-table th, .invoice-items-table td { border-bottom: 1px solid rgba(0,0,0,.1); padding: 12px 10px; vertical-align: top; }
+    .invoice-items-table th { text-align:left; font-size: .9rem; opacity: .8; font-weight: 600; background: rgba(0,0,0,.02); }
+    .invoice-items-table td input { width: 100%; padding: 8px 10px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+    .invoice-num { text-align: right; white-space: nowrap; }
+    
+    /* Line Items Cards - Mobile */
+    .invoice-items-cards { display: none; }
+    .invoice-item-card { background: #fff; border: 1px solid rgba(0,0,0,.1); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .invoice-item-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 12px; }
+    .invoice-item-card-desc { flex: 1; min-width: 0; }
+    .invoice-item-card-desc input { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+    .invoice-item-card-remove { flex-shrink: 0; }
+    .invoice-item-card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .invoice-item-card-field { display: flex; flex-direction: column; gap: 6px; }
+    .invoice-item-card-field label { font-size: 0.85rem; opacity: .7; font-weight: 500; }
+    .invoice-item-card-field input { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+    .invoice-item-card-total { border-top: 2px solid rgba(0,0,0,.1); padding-top: 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .invoice-item-card-total-label { font-weight: 600; font-size: 0.95rem; }
+    .invoice-item-card-total-value { font-weight: 700; font-size: 1.1rem; color: #111827; }
+    
+    .invoice-btn {
       border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer;
-      background: #111827; color: #fff; font-weight: 600;
+      background: #111827; color: #fff; font-weight: 600; font-size: 0.95rem;
+      transition: background 0.2s ease;
     }
-    .btn.secondary { background: #374151; }
-    .btn.ghost { background: transparent; color: #111827; border: 1px solid rgba(0,0,0,.15); }
-    .btn.danger { background: #b91c1c; }
-    .btn:disabled { opacity: .6; cursor: not-allowed; }
-    .muted { opacity:.8; font-size:.92rem; }
-    .totals { margin-left: auto; min-width: 320px; }
-    .totals .line { display:flex; justify-content: space-between; padding: 6px 0; }
-    .totals .grand { font-weight: 800; font-size: 1.1rem; border-top: 1px solid rgba(0,0,0,.15); padding-top: 10px; margin-top: 8px; }
-    .topbar { display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-    .pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(17,24,39,.08); }
-    .pill.ok { background: rgba(16,185,129,.14); }
-    .pill.warn { background: rgba(245,158,11,.18); }
-    .pill.err { background: rgba(239,68,68,.18); }
+    .invoice-btn:hover:not(:disabled) { background: #374151; }
+    .invoice-btn.secondary, 
+    .invoice-card .btn.secondary { background: #374151; }
+    .invoice-btn.secondary:hover:not(:disabled),
+    .invoice-card .btn.secondary:hover:not(:disabled) { background: #4b5563; }
+    .invoice-btn.ghost,
+    .invoice-card .btn.ghost { background: transparent; color: #111827; border: 1px solid rgba(0,0,0,.15); }
+    .invoice-btn.ghost:hover:not(:disabled),
+    .invoice-card .btn.ghost:hover:not(:disabled) { background: rgba(0,0,0,.05); }
+    .invoice-btn.danger,
+    .invoice-card .btn.danger,
+    #itemsTable .invoice-btn.danger { background: #b91c1c; color: #fff; }
+    .invoice-btn.danger:hover:not(:disabled),
+    .invoice-card .btn.danger:hover:not(:disabled),
+    #itemsTable .invoice-btn.danger:hover:not(:disabled) { background: #991b1b; }
+    .invoice-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .invoice-muted { opacity:.8; font-size:.92rem; }
+    
+    /* Totals Section */
+    .invoice-totals-wrapper { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 16px; }
+    .invoice-adjustments { flex: 1; min-width: 280px; }
+    .invoice-totals { flex: 0 0 auto; min-width: 280px; max-width: 100%; }
+    .invoice-totals .line { display:flex; justify-content: space-between; padding: 8px 0; font-size: 0.95rem; }
+    .invoice-totals .grand { font-weight: 800; font-size: 1.2rem; border-top: 2px solid rgba(0,0,0,.15); padding-top: 12px; margin-top: 8px; }
+    .invoice-topbar { display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+    .invoice-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .invoice-pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(17,24,39,.08); font-size: 0.9rem; }
+    .invoice-pill.ok { background: rgba(16,185,129,.14); color: #059669; }
+    .invoice-pill.warn { background: rgba(245,158,11,.18); color: #d97706; }
+    .invoice-pill.err { background: rgba(239,68,68,.18); color: #dc2626; }
+    
+    /* Responsive Breakpoints */
     @media (max-width: 860px){
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-      .totals { min-width: 100%; }
+      .invoice-grid-2, .invoice-grid-3 { grid-template-columns: 1fr; }
+      .invoice-topbar { flex-direction: column; }
+      .invoice-topbar-actions { width: 100%; }
+      .invoice-topbar-actions .invoice-btn { flex: 1; min-width: 120px; }
+      .invoice-totals-wrapper { flex-direction: column; }
+      .invoice-adjustments, .invoice-totals { width: 100%; max-width: 100%; }
+      
+      /* Hide table, show cards on mobile */
+      .invoice-items-table-wrapper { display: none; }
+      .invoice-items-cards { display: block; }
+    }
+    
+    @media (min-width: 861px) {
+      .invoice-items-cards { display: none; }
+      .invoice-items-table-wrapper { display: block; }
+    }
+    
+    @media (max-width: 640px) {
+      .invoice-page-wrap { padding: 12px; }
+      .invoice-card { padding: 12px; }
+      .invoice-item-card-fields { grid-template-columns: 1fr; }
+      .invoice-topbar-actions { flex-direction: column; }
+      .invoice-topbar-actions .invoice-btn { width: 100%; }
     }
   </style>
 </head>
@@ -72,73 +134,73 @@
 <div class="app-layout">
   <div id="sidebar"></div>
   <main id="main">
-  <div class="page-wrap">
-    <div class="topbar">
+  <div class="page-wrap invoice-page-wrap">
+    <div class="invoice-topbar">
       <div>
         <h1 style="margin:0 0 6px 0;" data-i18n="invoice.title">Invoice Builder</h1>
-        <div class="muted" data-i18n="invoice.pageDescription">Create, save, export, and send invoices (PDF attached via SendGrid).</div>
+        <div class="invoice-muted" data-i18n="invoice.pageDescription">Create, save, export, and send invoices (PDF attached via SendGrid).</div>
       </div>
 
-      <div class="row">
-        <button class="btn ghost" id="btnNew" data-i18n="invoice.new">New</button>
-        <button class="btn secondary" id="btnSave" data-i18n="invoice.save">Save</button>
-        <button class="btn" id="btnPdf" data-i18n="invoice.downloadPdf">Download PDF</button>
-        <button class="btn" id="btnSendEmail" data-i18n="invoice.sendEmail">Send Invoice (Email PDF)</button>
+      <div class="invoice-topbar-actions">
+        <button class="invoice-btn ghost" id="btnNew" data-i18n="invoice.new">New</button>
+        <button class="invoice-btn secondary" id="btnSave" data-i18n="invoice.save">Save</button>
+        <button class="invoice-btn" id="btnPdf" data-i18n="invoice.downloadPdf">Download PDF</button>
+        <button class="invoice-btn" id="btnSendEmail" data-i18n="invoice.sendEmail">Send Invoice</button>
       </div>
     </div>
 
     <div style="height:12px;"></div>
 
-    <div class="card grid grid-2">
+    <div class="card invoice-card invoice-grid invoice-grid-2" style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px;">
       <div>
         <h3 style="margin:0 0 10px 0;" data-i18n="invoice.yourCompany">Your Company</h3>
-        <div class="grid">
+        <div class="invoice-grid">
           <div>
-            <label data-i18n="invoice.companyName">Company / Contractor Name</label>
-            <input id="fromName" placeholder="ABC Construction LLC" />
+            <label class="invoice-label" data-i18n="invoice.companyName">Company / Contractor Name</label>
+            <input class="invoice-input" id="fromName" placeholder="ABC Construction LLC" />
           </div>
           <div>
-            <label data-i18n="invoice.replyEmail">Email (Reply-To)</label>
-            <input id="fromEmail" placeholder="billing@yourcompany.com" />
+            <label class="invoice-label" data-i18n="invoice.replyEmail">Email (Reply-To)</label>
+            <input class="invoice-input" id="fromEmail" type="email" placeholder="billing@yourcompany.com" />
           </div>
           <div>
-            <label data-i18n="invoice.phone">Phone</label>
-            <input id="fromPhone" placeholder="(555) 555-5555" />
+            <label class="invoice-label" data-i18n="invoice.phone">Phone</label>
+            <input class="invoice-input" id="fromPhone" type="tel" placeholder="(555) 555-5555" />
           </div>
           <div>
-            <label data-i18n="invoice.address">Address</label>
-            <textarea id="fromAddress" placeholder="Street&#10;City, State ZIP"></textarea>
+            <label class="invoice-label" data-i18n="invoice.address">Address</label>
+            <textarea class="invoice-textarea" id="fromAddress" placeholder="Street&#10;City, State ZIP"></textarea>
           </div>
         </div>
       </div>
 
       <div>
         <h3 style="margin:0 0 10px 0;" data-i18n="invoice.customer">Customer</h3>
-        <div class="grid">
+        <div class="invoice-grid">
           <div style="grid-column: 1 / -1;">
-            <label data-i18n="invoice.selectBuilder">Select Builder (Optional)</label>
-            <select id="selectBuilder" style="margin-bottom: 8px;">
+            <label class="invoice-label" data-i18n="invoice.selectBuilder">Select Builder (Optional)</label>
+            <select class="invoice-select" id="selectBuilder" style="margin-bottom: 8px;">
               <option value="">— Select a builder —</option>
             </select>
-            <select id="selectJob" style="display: none;">
+            <select class="invoice-select" id="selectJob" style="display: none;">
               <option value="">— Select a job (optional) —</option>
             </select>
           </div>
           <div>
-            <label data-i18n="invoice.customerName">Customer Name</label>
-            <input id="toName" placeholder="Customer Name" />
+            <label class="invoice-label" data-i18n="invoice.customerName">Customer Name</label>
+            <input class="invoice-input" id="toName" placeholder="Customer Name" />
           </div>
           <div>
-            <label data-i18n="invoice.customerEmail">Customer Email</label>
-            <input id="toEmail" placeholder="customer@email.com" />
+            <label class="invoice-label" data-i18n="invoice.customerEmail">Customer Email</label>
+            <input class="invoice-input" id="toEmail" type="email" placeholder="customer@email.com" />
           </div>
           <div>
-            <label data-i18n="invoice.customerPhone">Customer Phone</label>
-            <input id="toPhone" placeholder="(555) 555-5555" />
+            <label class="invoice-label" data-i18n="invoice.customerPhone">Customer Phone</label>
+            <input class="invoice-input" id="toPhone" type="tel" placeholder="(555) 555-5555" />
           </div>
           <div>
-            <label data-i18n="invoice.customerAddress">Customer Address</label>
-            <textarea id="toAddress" placeholder="Street&#10;City, State ZIP"></textarea>
+            <label class="invoice-label" data-i18n="invoice.customerAddress">Customer Address</label>
+            <textarea class="invoice-textarea" id="toAddress" placeholder="Street&#10;City, State ZIP"></textarea>
           </div>
         </div>
       </div>
@@ -146,46 +208,45 @@
 
     <div style="height:12px;"></div>
 
-    <div class="card grid grid-3">
+    <div class="card invoice-card invoice-grid invoice-grid-3" style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px;">
       <div>
-        <label data-i18n="invoice.invoiceNumber">Invoice #</label>
-        <input id="invoiceNumber" placeholder="INV-1001" />
+        <label class="invoice-label" data-i18n="invoice.invoiceNumber">Invoice #</label>
+        <input class="invoice-input" id="invoiceNumber" placeholder="INV-1001" />
       </div>
       <div>
-        <label data-i18n="invoice.invoiceDate">Invoice Date</label>
-        <input id="invoiceDate" type="date" />
+        <label class="invoice-label" data-i18n="invoice.invoiceDate">Invoice Date</label>
+        <input class="invoice-input" id="invoiceDate" type="date" />
       </div>
       <div>
-        <label data-i18n="invoice.dueDate">Due Date</label>
-        <input id="dueDate" type="date" />
+        <label class="invoice-label" data-i18n="invoice.dueDate">Due Date</label>
+        <input class="invoice-input" id="dueDate" type="date" />
       </div>
 
-      <div class="grid" style="grid-column: 1 / -1;">
+      <div class="invoice-grid" style="grid-column: 1 / -1;">
         <div>
-          <label data-i18n="invoice.projectName">Project / Description</label>
-          <input id="projectName" placeholder="Kitchen remodel - phase 1" />
+          <label class="invoice-label" data-i18n="invoice.projectName">Project / Description</label>
+          <input class="invoice-input" id="projectName" placeholder="Kitchen remodel - phase 1" />
         </div>
       </div>
     </div>
 
     <div style="height:12px;"></div>
 
-    <div class="card">
-      <div class="row" style="justify-content: space-between;">
+    <div class="card invoice-card" style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px;">
+      <div class="invoice-row" style="justify-content: space-between; margin-bottom: 16px;">
         <h3 style="margin:0;" data-i18n="invoice.lineItems">Line Items</h3>
-        <button class="btn ghost" id="btnAddItem" data-i18n="invoice.addItem">+ Add Item</button>
+        <button class="invoice-btn ghost" id="btnAddItem" data-i18n="invoice.addItem">+ Add Item</button>
       </div>
 
-      <div style="height:10px;"></div>
-
-      <div style="overflow:auto;">
-        <table id="itemsTable">
+      <!-- Desktop Table View -->
+      <div class="invoice-items-table-wrapper">
+        <table id="itemsTable" class="invoice-items-table">
           <thead>
             <tr>
               <th style="min-width:260px;" data-i18n="invoice.description">Description</th>
-              <th style="width:90px;" class="num" data-i18n="invoice.quantity">Qty</th>
-              <th style="width:140px;" class="num" data-i18n="invoice.unitPrice">Unit Price</th>
-              <th style="width:140px;" class="num" data-i18n="invoice.lineTotal">Line Total</th>
+              <th style="width:90px;" class="invoice-num" data-i18n="invoice.quantity">Qty</th>
+              <th style="width:140px;" class="invoice-num" data-i18n="invoice.unitPrice">Unit Price</th>
+              <th style="width:140px;" class="invoice-num" data-i18n="invoice.lineTotal">Line Total</th>
               <th style="width:90px;"></th>
             </tr>
           </thead>
@@ -193,64 +254,67 @@
         </table>
       </div>
 
+      <!-- Mobile Card View -->
+      <div class="invoice-items-cards" id="itemsCards"></div>
+
       <div style="height:14px;"></div>
 
-      <div class="row">
-        <div class="grid grid-3" style="flex:1; min-width: 320px;">
+      <div class="invoice-totals-wrapper">
+        <div class="invoice-adjustments invoice-grid invoice-grid-3">
           <div>
-            <label data-i18n="invoice.taxRate">Tax %</label>
-            <input id="taxRate" type="number" step="0.01" min="0" placeholder="0" />
+            <label class="invoice-label" data-i18n="invoice.taxRate">Tax %</label>
+            <input class="invoice-input" id="taxRate" type="number" step="0.01" min="0" placeholder="0" />
           </div>
           <div>
-            <label data-i18n="invoice.discount">Discount ($)</label>
-            <input id="discount" type="number" step="0.01" min="0" placeholder="0" />
+            <label class="invoice-label" data-i18n="invoice.discount">Discount ($)</label>
+            <input class="invoice-input" id="discount" type="number" step="0.01" min="0" placeholder="0" />
           </div>
           <div>
-            <label data-i18n="invoice.deposit">Deposit Paid ($)</label>
-            <input id="deposit" type="number" step="0.01" min="0" placeholder="0" />
+            <label class="invoice-label" data-i18n="invoice.deposit">Deposit Paid ($)</label>
+            <input class="invoice-input" id="deposit" type="number" step="0.01" min="0" placeholder="0" />
           </div>
         </div>
 
-        <div class="totals">
+        <div class="invoice-totals">
           <div class="line"><span data-i18n="invoice.subtotal">Subtotal</span><span id="subtotalOut">$0.00</span></div>
           <div class="line"><span data-i18n="invoice.tax">Tax</span><span id="taxOut">$0.00</span></div>
           <div class="line"><span data-i18n="invoice.discountLabel">Discount</span><span id="discountOut">$0.00</span></div>
           <div class="line"><span data-i18n="invoice.depositLabel">Deposit</span><span id="depositOut">$0.00</span></div>
           <div class="line grand"><span data-i18n="invoice.totalDue">Total Due</span><span id="totalOut">$0.00</span></div>
 
-          <div style="margin-top:8px;" class="muted">
-            <span class="pill" id="statusPill">Not saved</span>
+          <div style="margin-top:12px;">
+            <span class="invoice-pill" id="statusPill">Not saved</span>
           </div>
 
-          <div style="margin-top:8px;" class="muted" id="sendResult"></div>
+          <div style="margin-top:8px;" class="invoice-muted" id="sendResult"></div>
         </div>
       </div>
 
       <div style="height:12px;"></div>
 
-      <div class="grid grid-2">
+      <div class="invoice-grid invoice-grid-2">
         <div>
-          <label data-i18n="invoice.notes">Notes</label>
-          <textarea id="notes" placeholder="Thank you for your business."></textarea>
+          <label class="invoice-label" data-i18n="invoice.notes">Notes</label>
+          <textarea class="invoice-textarea" id="notes" placeholder="Thank you for your business."></textarea>
         </div>
         <div>
-          <label data-i18n="invoice.paymentInstructions">Payment Instructions</label>
-          <textarea id="paymentInstructions" placeholder="Zelle: your@email.com&#10;Check payable to: ..."></textarea>
+          <label class="invoice-label" data-i18n="invoice.paymentInstructions">Payment Instructions</label>
+          <textarea class="invoice-textarea" id="paymentInstructions" placeholder="Zelle: your@email.com&#10;Check payable to: ..."></textarea>
         </div>
       </div>
 
       <div style="height:12px;"></div>
 
       <div>
-        <label data-i18n="invoice.recentInvoices">Recent Saved Invoices</label>
-        <div class="row">
-          <select id="savedInvoicesSelect" style="max-width:520px;">
+        <label class="invoice-label" data-i18n="invoice.recentInvoices">Recent Saved Invoices</label>
+        <div class="invoice-row" style="flex-wrap: wrap; gap: 8px;">
+          <select class="invoice-select" id="savedInvoicesSelect" style="flex: 1; min-width: 200px;">
             <option value="">— Load a saved invoice —</option>
           </select>
-          <button class="btn ghost" id="btnLoad" data-i18n="invoice.loadInvoice">Load</button>
-          <button class="btn danger" id="btnDelete" data-i18n="invoice.deleteInvoice">Delete</button>
+          <button class="invoice-btn ghost" id="btnLoad" data-i18n="invoice.loadInvoice">Load</button>
+          <button class="invoice-btn danger" id="btnDelete" data-i18n="invoice.deleteInvoice">Delete</button>
         </div>
-        <div class="muted" style="margin-top:8px;" data-i18n="invoice.sendNote">
+        <div class="invoice-muted" style="margin-top:8px;" data-i18n="invoice.sendNote">
           "Send Invoice" emails a PDF attachment through your Firebase backend + SendGrid.
         </div>
       </div>

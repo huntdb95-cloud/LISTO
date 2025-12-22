@@ -12,7 +12,7 @@ service cloud.firestore {
     }
     
     function isValidMethod(m) {
-      return m in ['Cash', 'Check', 'Zelle'];
+      return m in ['Cash', 'Check', 'Zelle', 'ACH', 'Other'];
     }
     
     function isValidDateString(s) {
@@ -282,6 +282,51 @@ service cloud.firestore {
         
         allow delete: if isOwner(userId);
       }
+    }
+
+    // ========== 1099 Bookkeeping System ==========
+    
+    // Laborers: /users/{uid}/laborers/{laborerId}
+    match /users/{userId}/laborers/{laborerId} {
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['displayName', 'laborerType', 'createdAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 200
+        && request.resource.data.laborerType in ['Worker', 'Subcontractor']
+        && request.resource.data.createdAt is timestamp;
+      
+      allow update: if isOwner(userId)
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 200
+        && request.resource.data.laborerType in ['Worker', 'Subcontractor'];
+      
+      allow delete: if isOwner(userId);
+    }
+    
+    // Payments: /users/{uid}/payments/{paymentId}
+    match /users/{userId}/payments/{paymentId} {
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['laborerId', 'datePaid', 'amount', 'method', 'createdAt'])
+        && request.resource.data.laborerId is string
+        && request.resource.data.laborerId.size() >= 1
+        && isValidDateString(request.resource.data.datePaid)
+        && isValidMoney(request.resource.data.amount)
+        && isValidMethod(request.resource.data.method)
+        && request.resource.data.createdAt is timestamp;
+      
+      allow update: if isOwner(userId)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidDateString(request.resource.data.datePaid)
+        && isValidMoney(request.resource.data.amount)
+        && isValidMethod(request.resource.data.method);
+      
+      allow delete: if isOwner(userId);
     }
 
     // ========== Default Deny ==========

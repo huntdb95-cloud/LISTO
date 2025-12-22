@@ -146,6 +146,28 @@ service firebase.storage {
       allow delete: if isOwnerPath(userId);
     }
 
+    // ========== Laborer Documents (1099 Bookkeeping) ==========
+    
+    // Laborer W-9: users/{uid}/laborers/{laborerId}/documents/w9/*
+    match /users/{userId}/laborers/{laborerId}/documents/w9/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 15 * 1024 * 1024  // 15MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
+    // Laborer COI: users/{uid}/laborers/{laborerId}/documents/coi/*
+    match /users/{userId}/laborers/{laborerId}/documents/coi/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 15 * 1024 * 1024  // 15MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+
     // ========== Default Deny ==========
     
     // Deny all other paths
