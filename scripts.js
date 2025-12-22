@@ -2203,6 +2203,29 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
     
+    // Handle mobile logout button (mobile only)
+    const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
+    if (mobileLogoutBtn) {
+      mobileLogoutBtn.hidden = !user;
+      
+      // Set up mobile logout handler only once
+      if (!mobileLogoutBtn.dataset.handlerAttached && auth) {
+        mobileLogoutBtn.dataset.handlerAttached = "true";
+        mobileLogoutBtn.addEventListener("click", async () => {
+          try {
+            await signOut(auth);
+            // Calculate relative path to login page from current location
+            const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+            const depth = pathSegments.length;
+            const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "../login/login.html";
+            window.location.href = loginPath;
+          } catch (e) {
+            console.error("Logout error:", e);
+          }
+        });
+      }
+    }
+    
     const headerAvatar = document.getElementById("headerAvatar");
     if (headerAvatar) headerAvatar.hidden = !user;
     
