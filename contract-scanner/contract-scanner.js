@@ -26,8 +26,10 @@ const functions = getFunctions();
 // State
 let currentUid = null;
 let currentFile = null;
+let currentFileUrl = null;
 let englishText = "";
 let spanishText = "";
+let currentView = "document"; // "document" or "english"
 
 // Helpers
 function setMsg(elId, text, isError = false) {
@@ -47,60 +49,98 @@ function setBusy(isBusy) {
   }
 }
 
-function showPreview(file) {
-  const preview = $("filePreview");
-  if (!preview) return;
+function showDocument(file, fileUrl = null) {
+  const documentDisplay = $("documentDisplay");
+  if (!documentDisplay) return;
   
-  preview.innerHTML = "";
+  documentDisplay.innerHTML = "";
+  
+  const url = fileUrl || URL.createObjectURL(file);
   
   if (file.type.startsWith("image/")) {
     const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    img.alt = "Contract preview";
-    preview.appendChild(img);
+    img.src = url;
+    img.alt = "Contract document";
+    documentDisplay.appendChild(img);
   } else if (file.type === "application/pdf") {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <div style="padding: 20px; text-align: center; background: #f5f5f5; border-radius: 8px;">
-        <div style="font-size: 48px; margin-bottom: 8px;">📄</div>
-        <div><strong>${file.name}</strong></div>
-        <div class="small muted">PDF Document</div>
-      </div>
-    `;
-    preview.appendChild(div);
+    const iframe = document.createElement("iframe");
+    iframe.src = url;
+    iframe.title = "Contract PDF";
+    documentDisplay.appendChild(iframe);
   } else {
     const div = document.createElement("div");
+    div.className = "pdf-placeholder";
     div.innerHTML = `
-      <div style="padding: 20px; text-align: center; background: #f5f5f5; border-radius: 8px;">
-        <div><strong>${file.name}</strong></div>
-        <div class="small muted">File ready for processing</div>
-      </div>
+      <div style="font-size: 48px; margin-bottom: 8px;">📄</div>
+      <div><strong>${file.name}</strong></div>
+      <div class="small muted">Document ready for viewing</div>
     `;
-    preview.appendChild(div);
+    documentDisplay.appendChild(div);
   }
 }
 
-function showResults(english, spanish) {
+function showResults(english, spanish, fileUrl = null) {
   englishText = english || "";
   spanishText = spanish || "";
   
-  $("englishText").textContent = englishText;
-  $("spanishText").textContent = spanishText;
-  
-  const resultsCard = $("resultsCard");
-  if (resultsCard) {
-    resultsCard.style.display = "block";
-    resultsCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if (fileUrl) {
+    currentFileUrl = fileUrl;
   }
+  
+  // Update text displays
+  const englishTextEl = $("englishText");
+  const spanishTextEl = $("spanishText");
+  if (englishTextEl) englishTextEl.textContent = englishText;
+  if (spanishTextEl) spanishTextEl.textContent = spanishText;
+  
+  // Show document if we have a file
+  if (currentFile && currentFileUrl) {
+    showDocument(currentFile, currentFileUrl);
+  } else if (currentFile) {
+    showDocument(currentFile);
+  }
+  
+  // Show comparison container
+  const comparisonContainer = $("comparisonContainer");
+  if (comparisonContainer) {
+    comparisonContainer.style.display = "block";
+    comparisonContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  
+  // Set initial view to document
+  switchView("document");
 }
 
 function hideResults() {
-  const resultsCard = $("resultsCard");
-  if (resultsCard) {
-    resultsCard.style.display = "none";
+  const comparisonContainer = $("comparisonContainer");
+  if (comparisonContainer) {
+    comparisonContainer.style.display = "none";
   }
   englishText = "";
   spanishText = "";
+  currentFileUrl = null;
+  currentView = "document";
+}
+
+function switchView(view) {
+  currentView = view;
+  
+  const documentView = $("documentView");
+  const englishView = $("englishView");
+  const btnShowDocument = $("btnShowDocument");
+  const btnShowEnglish = $("btnShowEnglish");
+  
+  if (view === "document") {
+    if (documentView) documentView.classList.add("active");
+    if (englishView) englishView.classList.remove("active");
+    if (btnShowDocument) btnShowDocument.classList.add("active");
+    if (btnShowEnglish) btnShowEnglish.classList.remove("active");
+  } else {
+    if (documentView) documentView.classList.remove("active");
+    if (englishView) englishView.classList.add("active");
+    if (btnShowDocument) btnShowDocument.classList.remove("active");
+    if (btnShowEnglish) btnShowEnglish.classList.add("active");
+  }
 }
 
 // Copy text to clipboard
@@ -177,8 +217,6 @@ async function scanAndTranslate() {
   hideResults();
   
   try {
-    // Show file preview
-    showPreview(file);
     currentFile = file;
     
     // Upload file to Firebase Storage first
@@ -222,8 +260,8 @@ async function scanAndTranslate() {
       throw new Error("No text was extracted from the document. Please ensure the document contains readable text.");
     }
     
-    // Show results
-    showResults(english || "", spanish || "");
+    // Show results with the download URL for document display
+    showResults(english || "", spanish || "", downloadURL);
     
     setMsg("statusMsg", "Contract scanned and translated successfully!", false);
     
@@ -242,13 +280,15 @@ function clearForm() {
   const fileInput = $("contractFile");
   if (fileInput) fileInput.value = "";
   
-  const preview = $("filePreview");
-  if (preview) preview.innerHTML = "";
+  const documentDisplay = $("documentDisplay");
+  if (documentDisplay) documentDisplay.innerHTML = "";
   
   hideResults();
   currentFile = null;
+  currentFileUrl = null;
   englishText = "";
   spanishText = "";
+  currentView = "document";
   
   setMsg("statusMsg", "");
   setMsg("errorMsg", "");
@@ -277,16 +317,19 @@ function init() {
     downloadText(spanishText, filename);
   });
   
-  // Show preview when file is selected
+  // File input change handler
   $("contractFile").addEventListener("change", (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      showPreview(file);
       hideResults();
       setMsg("statusMsg", "");
       setMsg("errorMsg", "");
     }
   });
+  
+  // Toggle view buttons
+  $("btnShowDocument").addEventListener("click", () => switchView("document"));
+  $("btnShowEnglish").addEventListener("click", () => switchView("english"));
   
   // Auth state listener
   onAuthStateChanged(auth, (user) => {
