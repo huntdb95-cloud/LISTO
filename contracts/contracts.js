@@ -559,11 +559,12 @@ function renderJobsTable() {
 
 function renderJobsSection() {
   const tbody = $("jobsSectionTableBody");
+  const container = $("jobsSectionContainer");
   const titleEl = $("jobsSectionTitle");
   const newJobBtn = $("newJobBtnStandalone");
   const emptyEl = $("jobsSectionEmpty");
   
-  if (!tbody) return;
+  if (!tbody || !container) return;
   
   // Filter jobs by selected builder
   const builderJobs = selectedBuilderId 
@@ -592,6 +593,9 @@ function renderJobsSection() {
         <td colspan="9" class="contracts-empty-state">Select a builder to view jobs.</td>
       </tr>
     `;
+    // Clear mobile cards
+    const mobileContainer = container.querySelector(".contracts-jobs-mobile");
+    if (mobileContainer) mobileContainer.innerHTML = "";
     return;
   }
   
@@ -601,9 +605,13 @@ function renderJobsSection() {
         <td colspan="9" class="contracts-empty-state">No jobs found for this builder.</td>
       </tr>
     `;
+    // Clear mobile cards
+    const mobileContainer = container.querySelector(".contracts-jobs-mobile");
+    if (mobileContainer) mobileContainer.innerHTML = "";
     return;
   }
   
+  // Render desktop table
   tbody.innerHTML = builderJobs.map(job => {
     const startDate = formatDate(job.startDate);
     const dueDateFormatted = formatDate(job.dueDate);
@@ -645,6 +653,74 @@ function renderJobsSection() {
       </tr>
     `;
   }).join("");
+  
+  // Render mobile cards
+  let mobileContainer = container.querySelector(".contracts-jobs-mobile");
+  if (!mobileContainer) {
+    mobileContainer = document.createElement("div");
+    mobileContainer.className = "contracts-jobs-mobile";
+    container.appendChild(mobileContainer);
+  }
+  
+  mobileContainer.innerHTML = builderJobs.map(job => {
+    const startDate = formatDate(job.startDate);
+    const dueDateFormatted = formatDate(job.dueDate);
+    // Check if job is overdue
+    let isOverdue = false;
+    if (job.dueDate && !["completed", "paid"].includes(job.status)) {
+      const dueDateObj = job.dueDate.toDate ? job.dueDate.toDate() : new Date(job.dueDate);
+      const today = new Date();
+      const dueDateOnly = new Date(dueDateObj.getFullYear(), dueDateObj.getMonth(), dueDateObj.getDate());
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      isOverdue = dueDateOnly < todayOnly;
+    }
+    
+    return `
+      <div class="contracts-job-card ${isOverdue ? "overdue" : ""}">
+        <div class="contracts-job-card-header">
+          <h3 class="contracts-job-card-title">${escapeHtml(job.jobName || "—")}</h3>
+          <div class="contracts-job-card-status">
+            <span class="contracts-status-badge contracts-status-badge-${job.status || "not-started"}">
+              ${formatStatus(job.status || "not-started")}
+            </span>
+          </div>
+        </div>
+        <div class="contracts-job-card-field">
+          <span class="contracts-job-card-label">Contract:</span>
+          <span class="contracts-job-card-value">${escapeHtml(job.contractTitle || "—")}</span>
+        </div>
+        <div class="contracts-job-card-field">
+          <span class="contracts-job-card-label">Address:</span>
+          <span class="contracts-job-card-value">${escapeHtml(job.jobAddress || "—")}</span>
+        </div>
+        <div class="contracts-job-card-field">
+          <span class="contracts-job-card-label">Start Date:</span>
+          <span class="contracts-job-card-value">${startDate}</span>
+        </div>
+        <div class="contracts-job-card-field">
+          <span class="contracts-job-card-label">Due Date:</span>
+          <span class="contracts-job-card-value ${isOverdue ? "contracts-overdue-text" : ""}">${dueDateFormatted}</span>
+        </div>
+        <div class="contracts-job-card-field">
+          <span class="contracts-job-card-label">Progress:</span>
+          <span class="contracts-job-card-value">
+            <div class="contracts-progress-bar" style="margin-top: 4px;">
+              <div class="contracts-progress-fill" style="width: ${job.progressPct || 0}%"></div>
+              <span class="contracts-progress-text">${job.progressPct || 0}%</span>
+            </div>
+          </span>
+        </div>
+        <div class="contracts-job-card-field">
+          <span class="contracts-job-card-label">Budget:</span>
+          <span class="contracts-job-card-value">${formatCurrency(job.budget || 0)}</span>
+        </div>
+        <div class="contracts-job-card-actions">
+          <button type="button" class="btn small" onclick="showJobModal('${job.contractId}', '${job.id}')">Edit</button>
+          <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.contractId}', '${job.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 // ========== SELECTION ==========
@@ -676,7 +752,10 @@ async function selectContract(contractId) {
 async function saveBuilder(e) {
   if (e) e.preventDefault();
   
+  console.log("saveBuilder called");
+  
   if (!currentUid) {
+    console.error("Not authenticated");
     showToast("Please sign in first.", true);
     return;
   }
@@ -684,6 +763,7 @@ async function saveBuilder(e) {
   const btn = $("saveBuilderBtn");
   if (!btn) {
     console.error("Save builder button not found");
+    showToast("Error: Save button not found. Please refresh the page.", true);
     return;
   }
   const oldDisabled = btn.disabled;
@@ -692,6 +772,7 @@ async function saveBuilder(e) {
     btn.disabled = true;
     clearBuilderMessages();
     showBuilderMsg("Saving builder...");
+    console.log("Starting builder save...");
     
     const builderId = $("builderId")?.value || null;
     const name = $("builderName")?.value.trim();
@@ -700,9 +781,12 @@ async function saveBuilder(e) {
     const address = $("builderAddress")?.value.trim() || null;
     const notes = $("builderNotes")?.value.trim() || null;
     
+    console.log("Form data:", { builderId, name, email, phone });
+    
     if (!name) {
+      console.error("Builder name is required");
       showBuilderError("Builder name is required.");
-      // Button will be re-enabled in finally block
+      showToast("Builder name is required.", true);
       return;
     }
     
@@ -716,26 +800,37 @@ async function saveBuilder(e) {
     };
     
     if (!builderId) {
+      console.log("Creating new builder...");
       builderData.createdAt = serverTimestamp();
       const buildersCol = collection(db, "users", currentUid, "builders");
       const newRef = await addDoc(buildersCol, builderData);
+      console.log("Builder created with ID:", newRef.id);
       showBuilderMsg("Builder created successfully!", false);
+      showToast("Builder created successfully!");
       await loadAllData();
       // Auto-select the newly created builder
       selectedBuilderId = newRef.id;
       renderContractsList();
       renderJobsSection();
-      setTimeout(() => hideBuilderModal(), 1000);
+      setTimeout(() => {
+        hideBuilderModal();
+        showToast("Builder added to list!");
+      }, 1000);
     } else {
+      console.log("Updating existing builder:", builderId);
       const builderRef = doc(db, "users", currentUid, "builders", builderId);
       await updateDoc(builderRef, builderData);
+      console.log("Builder updated successfully");
       showBuilderMsg("Builder updated successfully!", false);
+      showToast("Builder updated successfully!");
       await loadAllData();
       setTimeout(() => hideBuilderModal(), 1000);
     }
   } catch (err) {
     console.error("Error saving builder:", err);
-    showBuilderError(getFriendlyError(err));
+    const errorMsg = getFriendlyError(err);
+    showBuilderError(errorMsg);
+    showToast("Error saving builder: " + errorMsg, true);
   } finally {
     btn.disabled = oldDisabled;
   }
@@ -1027,9 +1122,11 @@ function showBuilderModal(builderId = null) {
   const title = $("builderModalTitle");
   if (!modal) {
     console.error("Builder modal not found");
+    showToast("Error: Modal not found. Please refresh the page.", true);
     return;
   }
   
+  // Show modal
   modal.style.display = "flex";
   if (title) title.textContent = builderId ? "Edit Builder" : "New Builder";
   
@@ -1041,7 +1138,11 @@ function showBuilderModal(builderId = null) {
   
   // Re-enable save button in case it was disabled
   const saveBtn = $("saveBuilderBtn");
-  if (saveBtn) saveBtn.disabled = false;
+  if (saveBtn) {
+    saveBtn.disabled = false;
+  } else {
+    console.error("Save builder button not found");
+  }
   
   if (builderId) {
     const builder = builders.find(b => b.id === builderId);
@@ -1056,6 +1157,12 @@ function showBuilderModal(builderId = null) {
   
   clearBuilderMessages();
   document.body.style.overflow = "hidden";
+  
+  // Focus on first input for better UX
+  setTimeout(() => {
+    const nameInput = $("builderName");
+    if (nameInput) nameInput.focus();
+  }, 100);
 }
 
 function hideBuilderModal() {

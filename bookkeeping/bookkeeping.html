@@ -142,7 +142,10 @@
         <h1>1099 Bookkeeping</h1>
         <div class="bookkeeping-muted">Track 1099 laborers and payments</div>
       </div>
-      <div class="bookkeeping-muted" id="statusText">Loading…</div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <a href="../employees/employees.html" class="bookkeeping-btn bookkeeping-btn-ghost" style="text-decoration: none; display: inline-flex; align-items: center;">Employee Management</a>
+        <div class="bookkeeping-muted" id="statusText">Loading…</div>
+      </div>
     </div>
 
     <!-- Summary Cards -->
@@ -191,69 +194,55 @@
         <div class="bookkeeping-detail-header">
           <h2 id="detailLaborerName">Laborer Details</h2>
           <div class="bookkeeping-detail-actions">
-            <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="saveLaborerBtn">Save</button>
-            <button type="button" class="bookkeeping-btn bookkeeping-btn-ghost" id="cancelEditBtn">Cancel</button>
+            <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="editLaborerBtn">Edit Laborer</button>
           </div>
         </div>
 
-        <!-- Laborer Form -->
-        <form id="laborerForm">
-          <input type="hidden" id="laborerId" />
-          
+        <!-- Laborer Info (Read-Only Summary) -->
+        <div id="laborerInfoSummary" style="margin-bottom: 24px;">
           <div class="bookkeeping-form-group">
-            <label class="bookkeeping-label" for="laborerDisplayName">Display Name *</label>
-            <input type="text" id="laborerDisplayName" class="bookkeeping-input" required placeholder="John Doe" />
+            <label class="bookkeeping-label">Display Name</label>
+            <div class="bookkeeping-input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="summaryDisplayName">—</div>
           </div>
 
           <div class="bookkeeping-form-row">
             <div class="bookkeeping-form-group">
-              <label class="bookkeeping-label" for="laborerType">Type *</label>
-              <select id="laborerType" class="bookkeeping-select" required>
-                <option value="">Select type</option>
-                <option value="Worker">Worker</option>
-                <option value="Subcontractor">Subcontractor</option>
-              </select>
+              <label class="bookkeeping-label">Type</label>
+              <div class="bookkeeping-input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="summaryType">—</div>
             </div>
             <div class="bookkeeping-form-group">
-              <label class="bookkeeping-label" for="laborerTinLast4">TIN Last 4 (Optional)</label>
-              <input type="text" id="laborerTinLast4" class="bookkeeping-input" placeholder="1234" maxlength="4" pattern="[0-9]{4}" />
+              <label class="bookkeeping-label">TIN Last 4</label>
+              <div class="bookkeeping-input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="summaryTinLast4">—</div>
             </div>
           </div>
 
           <div class="bookkeeping-form-row">
             <div class="bookkeeping-form-group">
-              <label class="bookkeeping-label" for="laborerPhone">Phone</label>
-              <input type="tel" id="laborerPhone" class="bookkeeping-input" placeholder="(555) 555-5555" />
+              <label class="bookkeeping-label">Phone</label>
+              <div class="bookkeeping-input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="summaryPhone">—</div>
             </div>
             <div class="bookkeeping-form-group">
-              <label class="bookkeeping-label" for="laborerEmail">Email</label>
-              <input type="email" id="laborerEmail" class="bookkeeping-input" placeholder="john@example.com" />
+              <label class="bookkeeping-label">Email</label>
+              <div class="bookkeeping-input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="summaryEmail">—</div>
             </div>
           </div>
 
           <div class="bookkeeping-form-group">
-            <label class="bookkeeping-label" for="laborerAddress">Address</label>
-            <textarea id="laborerAddress" class="bookkeeping-textarea" placeholder="Street, City, State ZIP"></textarea>
+            <label class="bookkeeping-label">Address</label>
+            <div class="bookkeeping-textarea" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08); min-height: 60px; padding: 10px 12px;" id="summaryAddress">—</div>
           </div>
 
           <div class="bookkeeping-form-group">
-            <label class="bookkeeping-label" for="laborerNotes">Notes</label>
-            <textarea id="laborerNotes" class="bookkeeping-textarea" placeholder="Additional notes..."></textarea>
+            <label class="bookkeeping-label">Notes</label>
+            <div class="bookkeeping-textarea" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08); min-height: 60px; padding: 10px 12px;" id="summaryNotes">—</div>
           </div>
+        </div>
 
-          <div class="bookkeeping-form-group">
-            <label>
-              <input type="checkbox" id="laborerIsArchived" />
-              <span style="margin-left: 8px;">Archive this laborer (hide from active list)</span>
-            </label>
-          </div>
-        </form>
-
-        <!-- Documents Section -->
+        <!-- Documents Section (Read-Only) -->
         <div class="bookkeeping-documents-section">
           <h3>Documents</h3>
           
-          <!-- W-9 Document -->
+          <!-- W-9 Document Status -->
           <div class="bookkeeping-document-item">
             <div class="bookkeeping-document-header">
               <div>
@@ -262,15 +251,8 @@
               </div>
             </div>
             <div id="w9Info" class="bookkeeping-document-info" style="display: none;"></div>
-            <div class="bookkeeping-document-actions" id="w9Actions">
-              <div class="bookkeeping-file-input-wrapper">
-                <input type="file" id="w9FileInput" class="bookkeeping-file-input" accept=".pdf,.jpg,.jpeg,.png" />
-              </div>
-              <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="uploadW9Btn">Upload W-9</button>
-            </div>
-            <div id="w9Progress" class="bookkeeping-upload-progress" style="display: none;"></div>
-            <div id="w9Error" class="bookkeeping-upload-error" style="display: none;"></div>
-              </div>
+            <div class="bookkeeping-muted" style="font-size: 0.85rem; margin-top: 8px;">Upload W-9 in Employee Management</div>
+          </div>
 
           <!-- COI Document (only for Subcontractors) -->
           <div class="bookkeeping-document-item" id="coiDocumentSection" style="display: none;">
@@ -281,14 +263,7 @@
               </div>
             </div>
             <div id="coiInfo" class="bookkeeping-document-info" style="display: none;"></div>
-            <div class="bookkeeping-document-actions" id="coiActions">
-              <div class="bookkeeping-file-input-wrapper">
-                <input type="file" id="coiFileInput" class="bookkeeping-file-input" accept=".pdf,.jpg,.jpeg,.png" />
-              </div>
-              <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="uploadCoiBtn">Upload COI</button>
-            </div>
-            <div id="coiProgress" class="bookkeeping-upload-progress" style="display: none;"></div>
-            <div id="coiError" class="bookkeeping-upload-error" style="display: none;"></div>
+            <div class="bookkeeping-muted" style="font-size: 0.85rem; margin-top: 8px;">Upload COI in Employee Management</div>
           </div>
         </div>
 

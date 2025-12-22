@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/f
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -26,6 +27,7 @@ const $ = (id) => document.getElementById(id);
 let currentUid = null;
 let employees = [];
 let editingEmployeeId = null;
+let editingLaborerId = null; // Track if we're editing a laborer from Bookkeeping
 
 // Helper functions
 function showMsg(msg, isError = false) {
@@ -66,6 +68,49 @@ async function loadEmployees() {
     console.error("Error loading employees:", err);
     $("employeesList").innerHTML = `<div class="form-error">Error loading employees: ${getFriendlyError(err)}</div>`;
   }
+}
+
+// Load laborer from laborers collection
+async function loadLaborer(laborerId) {
+  if (!currentUid || !laborerId) return null;
+  
+  try {
+    const laborerRef = doc(db, "users", currentUid, "laborers", laborerId);
+    const laborerSnap = await getDoc(laborerRef);
+    
+    if (laborerSnap.exists()) {
+      return { id: laborerSnap.id, ...laborerSnap.data() };
+    }
+    return null;
+  } catch (err) {
+    console.error("Error loading laborer:", err);
+    return null;
+  }
+}
+
+// Map laborer data to employee form structure
+function mapLaborerToEmployeeForm(laborer) {
+  if (!laborer) return null;
+  
+  // Map laborerType: "Worker" -> "employee", "Subcontractor" -> "subcontractor"
+  let type = "employee";
+  if (laborer.laborerType === "Subcontractor") {
+    type = "subcontractor";
+  }
+  
+  return {
+    id: laborer.id,
+    name: laborer.displayName || "",
+    email: laborer.email || "",
+    phone: laborer.phone || "",
+    type: type,
+    w9Url: laborer.documents?.w9?.downloadURL || null,
+    coiUrl: laborer.documents?.coi?.downloadURL || null,
+    workersCompUrl: null, // Laborers don't have workersComp in current model
+    // Store original laborer data for saving back
+    _isLaborer: true,
+    _laborerData: laborer
+  };
 }
 
 // Render employees list
@@ -156,8 +201,9 @@ async function deleteFile(url) {
 // Show form
 function showForm(employee = null) {
   editingEmployeeId = employee ? employee.id : null;
+  editingLaborerId = employee?._isLaborer ? employee.id : null;
   $("employeeFormCard").style.display = "block";
-  $("formTitle").textContent = employee ? "Edit Employee" : "Add Employee";
+  $("formTitle").textContent = employee ? (employee._isLaborer ? "Edit Laborer" : "Edit Employee") : "Add Employee";
   
   // Reset form
   $("employeeForm").reset();
@@ -190,6 +236,7 @@ function showForm(employee = null) {
 function hideForm() {
   $("employeeFormCard").style.display = "none";
   editingEmployeeId = null;
+  editingLaborerId = null;
   clearMessages();
 }
 
@@ -199,7 +246,7 @@ function toggleSubcontractorFields() {
   $("subcontractorFields").style.display = type === "subcontractor" ? "block" : "none";
 }
 
-// Save employee
+// Save employee or laborer
 async function saveEmployee(e) {
   e.preventDefault();
   
@@ -214,7 +261,7 @@ async function saveEmployee(e) {
   try {
     btn.disabled = true;
     clearMessages();
-    showMsg("Saving employee...");
+    showMsg(editingLaborerId ? "Saving laborer..." : "Saving employee...");
     
     const name = $("empName").value.trim();
     const email = $("empEmail").value.trim();
@@ -231,6 +278,13 @@ async function saveEmployee(e) {
       return;
     }
     
+    // If editing a laborer, save to laborers collection
+    if (editingLaborerId) {
+      await saveLaborer(name, email, phone, type);
+      return;
+    }
+    
+    // Otherwise, save to employees collection (existing logic)
     const nameLower = name.toLowerCase();
     const employeeData = {
       name,
@@ -317,6 +371,115 @@ async function saveEmployee(e) {
   }
 }
 
+// Save laborer to laborers collection
+async function saveLaborer(name, email, phone, type) {
+  
+  // Map type back to laborerType: "employee" -> "Worker", "subcontractor" -> "Subcontractor"
+  const laborerType = type === "subcontractor" ? "Subcontractor" : "Worker";
+  
+  const laborerId = editingLaborerId;
+  const laborerRef = doc(db, "users", currentUid, "laborers", laborerId);
+  const laborerDoc = await getDoc(laborerRef);
+  const existing = laborerDoc.exists() ? laborerDoc.data() : null;
+  
+  // Build laborer data
+  const laborerData = {
+    displayName: name,
+    laborerType: laborerType,
+    email: email || null,
+    phone: phone || null,
+    updatedAt: serverTimestamp()
+  };
+  
+  // Preserve existing fields
+  if (existing) {
+    laborerData.address = existing.address || null;
+    laborerData.tinLast4 = existing.tinLast4 || null;
+    laborerData.notes = existing.notes || null;
+    laborerData.isArchived = existing.isArchived || false;
+    laborerData.documents = existing.documents || {};
+    laborerData.createdAt = existing.createdAt;
+  } else {
+    laborerData.documents = {};
+    laborerData.createdAt = serverTimestamp();
+  }
+  
+  // Handle file uploads
+  const w9File = $("empW9").files[0];
+  const coiFile = $("empCoi").files[0];
+  
+  if (w9File) {
+    showMsg("Uploading W-9...");
+    // Delete old W9 if exists
+    if (existing?.documents?.w9?.storagePath) {
+      try {
+        const oldRef = ref(storage, existing.documents.w9.storagePath);
+        await deleteObject(oldRef);
+      } catch (err) {
+        console.warn("Error deleting old W9:", err);
+      }
+    }
+    
+    const w9Url = await uploadFile(w9File, `users/${currentUid}/laborers/${laborerId}/documents/w9`);
+    
+    // Extract storage path from URL or construct it
+    const safeName = w9File.name.replace(/[^\w.\-]+/g, "_");
+    const timestamp = Date.now();
+    const storagePath = `users/${currentUid}/laborers/${laborerId}/documents/w9/${timestamp}_${safeName}`;
+    
+    laborerData.documents.w9 = {
+      fileName: w9File.name,
+      contentType: w9File.type,
+      size: w9File.size,
+      storagePath: storagePath,
+      downloadURL: w9Url,
+      uploadedAt: Date.now(),
+      updatedAt: Date.now()
+    };
+  }
+  
+  if (type === "subcontractor" && coiFile) {
+    showMsg("Uploading COI...");
+    // Delete old COI if exists
+    if (existing?.documents?.coi?.storagePath) {
+      try {
+        const oldRef = ref(storage, existing.documents.coi.storagePath);
+        await deleteObject(oldRef);
+      } catch (err) {
+        console.warn("Error deleting old COI:", err);
+      }
+    }
+    
+    const coiUrl = await uploadFile(coiFile, `users/${currentUid}/laborers/${laborerId}/documents/coi`);
+    
+    // Extract storage path from URL or construct it
+    const safeName = coiFile.name.replace(/[^\w.\-]+/g, "_");
+    const timestamp = Date.now();
+    const storagePath = `users/${currentUid}/laborers/${laborerId}/documents/coi/${timestamp}_${safeName}`;
+    
+    laborerData.documents.coi = {
+      fileName: coiFile.name,
+      contentType: coiFile.type,
+      size: coiFile.size,
+      storagePath: storagePath,
+      downloadURL: coiUrl,
+      uploadedAt: Date.now(),
+      updatedAt: Date.now()
+    };
+  }
+  
+  // Update laborer in Firestore
+  await updateDoc(laborerRef, laborerData);
+  
+  showMsg("Laborer saved successfully!", false);
+  
+  setTimeout(() => {
+    hideForm();
+    // Optionally navigate back to bookkeeping
+    // window.location.href = "../bookkeeping/bookkeeping.html";
+  }, 1500);
+}
+
 // Delete employee
 async function deleteEmployee(employeeId, employeeName) {
   if (!confirm(`Delete ${employeeName || "this employee"}? This action cannot be undone.`)) {
@@ -375,10 +538,26 @@ function init() {
     $("workersCompStatus").textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
   });
   
+  // Check for laborerId in query string
+  const urlParams = new URLSearchParams(window.location.search);
+  const laborerId = urlParams.get("laborerId");
+  
   // Auth state listener
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUid = user.uid;
+      
+      // If laborerId is in URL, load and show that laborer
+      if (laborerId) {
+        const laborer = await loadLaborer(laborerId);
+        if (laborer) {
+          const employeeForm = mapLaborerToEmployeeForm(laborer);
+          showForm(employeeForm);
+        } else {
+          showMsg("Laborer not found.", true);
+        }
+      }
+      
       await loadEmployees();
     } else {
       currentUid = null;
