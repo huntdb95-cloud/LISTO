@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"/>
 <title>Listo — Business Tools for Contractors</title>
 <meta content="Listo automates the business side of contracting so you can focus on what you do best. Track payroll, manage documents, create invoices, and stay compliant—all in one place." name="description"/>
 <link href="styles.css" rel="stylesheet"/>
@@ -246,6 +247,12 @@
   </div>
 </nav>
 
+<!-- Force HTTPS redirect -->
+<script>
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    location.replace('https:' + window.location.href.substring(window.location.protocol.length));
+  }
+</script>
 <!-- IMPORTANT: module is required for Firebase imports -->
 <script src="scripts.js" type="module"></script>
 </body>

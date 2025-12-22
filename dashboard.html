@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"/>
 <title>Listo — Home</title>
 <meta content="Your Listo dashboard - view your account information and access all tools." name="description"/>
 <link href="styles.css" rel="stylesheet"/>
@@ -185,6 +186,12 @@
   </div>
 </nav>
 
+<!-- Force HTTPS redirect -->
+<script>
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    location.replace('https:' + window.location.href.substring(window.location.protocol.length));
+  }
+</script>
 <!-- Facebook SDK -->
 <div id="fb-root"></div>
 <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0"></script>
