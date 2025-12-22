@@ -1634,6 +1634,7 @@ input:focus, select:focus, textarea:focus{
 .menu_content {
   position: relative;
   height: 100%;
+  padding-bottom: 80px; /* Space for logout button at bottom */
 }
 
 .menu_items {
@@ -1656,12 +1657,48 @@ input:focus, select:focus, textarea:focus{
   content: "Main";
 }
 
-.menu_tools::before {
-  content: "Tools";
-}
-
 .menu_support::before {
   content: "Support";
+}
+
+/* Sidebar bottom logout button */
+.sidebar-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 15px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  z-index: 10;
+}
+
+.sidebar-logout-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: all 0.2s;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+}
+
+.sidebar-logout-btn:hover {
+  color: white;
+  background: var(--danger);
+}
+
+.sidebar-logout-btn .navlink_icon {
+  color: inherit;
 }
 
 .navlink_icon {
