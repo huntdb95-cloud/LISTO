@@ -165,10 +165,10 @@ body[data-page="landing"] .lang-switch-mobile {
   
   /* Position language toggle absolutely to stay with sticky header, at the very edge of the screen */
   /* Container has width: calc(100% - 40px) with margin: 0 auto, so 20px margin on each side */
-  /* Header-inner has 20px right padding, so we need to extend past both: -20px (margin) - 20px (padding) + 10px (offset) = -30px */
+  /* Header-inner has 20px right padding, so we need to extend past both: -20px (margin) - 20px (padding) + 20px (offset) = -20px */
   body[data-page="landing"] .lang-switch-mobile {
     position: absolute;
-    right: -30px; /* Extend past container margin and header-inner padding to reach 10px from screen edge */
+    right: -20px; /* Extend past container margin and header-inner padding to reach 20px from screen edge */
     top: 50%; /* Center vertically in header */
     transform: translateY(-50%); /* Properly center the element */
     z-index: 10;
@@ -2478,6 +2478,7 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* Make logo container horizontal rectangle on mobile (shorter vertically) */
+/* Match auth logo size to header logo size on mobile */
 @media (max-width: 768px) {
   .auth-hero {
     padding: 2px 6px 1px; /* Reduced from 6px 8px 2px */
@@ -2485,15 +2486,18 @@ input:focus, select:focus, textarea:focus{
   }
   
   .auth-logo-wrap {
-    /* Reduce vertical padding significantly to create horizontal rectangle */
-    /* Keep horizontal padding similar to maintain width */
-    padding: 1px 6px; /* Much less vertical padding, same horizontal */
+    /* Increase vertical padding to fit header-sized logo (84px) */
+    /* Keep horizontal padding to maintain width */
+    /* Container remains rectangular (wider than tall) */
+    padding: 10px 6px; /* Enough vertical padding for 84px logo, same horizontal */
     min-height: auto; /* Remove any min-height constraints */
   }
   
   .auth-logo {
-    width: min(320px, 75vw); /* Keep same width as desktop */
-    max-height: 60px; /* Limit height to prevent distortion */
+    /* Match header logo size on mobile: height: 84px; width: auto; */
+    height: 84px;
+    width: auto;
+    max-width: min(320px, 75vw); /* Prevent logo from exceeding container width */
     object-fit: contain; /* Maintain aspect ratio */
     object-position: center; /* Center the logo */
   }
