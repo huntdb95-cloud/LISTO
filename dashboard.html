@@ -28,85 +28,49 @@
 <div class="header-actions">
 </div>
 </div>
-</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="menu_content">
-<ul class="menu_items">
-<div class="menu_title menu_main"></div>
-<li class="item">
-<a href="dashboard.html" class="nav_link" data-i18n="nav.dashboard">
-<span class="navlink_icon">
-<i class="bx bx-home-alt"></i>
-</span>
-<span class="navlink">Home</span>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="dashboard.html">
+  <span class="navlink_icon"><i class="bx bx-home-alt"></i></span>
+  <span class="navlink">Home</span>
 </a>
-</li>
-<li class="item">
-<a href="contracts/contracts.html" class="nav_link" data-i18n="nav.contracts">
-<span class="navlink_icon">
-<i class="bx bx-file-blank"></i>
-</span>
-<span class="navlink">Contracts</span>
+<a class="sidebar-link nav-link" data-i18n="nav.contracts" href="contracts/contracts.html">
+  <span class="navlink_icon"><i class="bx bx-file-blank"></i></span>
+  <span class="navlink">Contracts</span>
 </a>
-</li>
-<li class="item">
-<a href="bookkeeping/bookkeeping.html" class="nav_link" data-i18n="nav.bookkeeping">
-<span class="navlink_icon">
-<i class="bx bx-book"></i>
-</span>
-<span class="navlink">Bookkeeping</span>
+<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="bookkeeping/bookkeeping.html">
+  <span class="navlink_icon"><i class="bx bx-book"></i></span>
+  <span class="navlink">Bookkeeping</span>
 </a>
-</li>
-<li class="item">
-<a href="audit/audit.html" class="nav_link" data-i18n="nav.audit">
-<span class="navlink_icon">
-<i class="bx bx-clipboard"></i>
-</span>
-<span class="navlink">Audit Help</span>
-</a>
-</li>
-<li class="item">
-<a href="contract-scanner/contract-scanner.html" class="nav_link" data-i18n="nav.contractScanner">
-<span class="navlink_icon">
-<i class="bx bx-scan"></i>
-</span>
-<span class="navlink">Contract Scanner</span>
-</a>
-</li>
-<li class="item">
-<a href="invoice/invoice.html" class="nav_link" data-i18n="nav.invoiceBuilder">
-<span class="navlink_icon">
-<i class="bx bx-receipt"></i>
-</span>
-<span class="navlink">Invoice Builder</span>
-</a>
-</li>
-</ul>
-<ul class="menu_items">
-<div class="menu_title menu_support"></div>
-<li class="item">
-<a href="support.html" class="nav_link" data-i18n="nav.support">
-<span class="navlink_icon">
-<i class="bx bx-help-circle"></i>
-</span>
-<span class="navlink">Support</span>
-</a>
-</li>
-<li class="item">
-<a href="account/account.html" class="nav_link" data-i18n="nav.account">
-<span class="navlink_icon">
-<i class="bx bx-user"></i>
-</span>
-<span class="navlink">My Account</span>
-</a>
-</li>
-</ul>
-<div class="sidebar-bottom">
-<button class="sidebar-logout-btn" data-i18n="auth.logout" id="sidebarLogoutBtn" type="button" hidden>
-<span class="navlink_icon">
-<i class="bx bx-log-out"></i>
-</span>
-<span class="navlink">Log out</span>
-</button>
+<div class="sidebar-submenu">
+  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools">
+    <span class="navlink_icon"><i class="bx bx-wrench"></i></span>
+    <span class="navlink">Tools</span>
+  </button>
+  <div class="sidebar-submenu-content">
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="audit/audit.html">
+      <span class="navlink_icon"><i class="bx bx-clipboard"></i></span>
+      <span class="navlink">Audit Help</span>
+    </a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">
+      <span class="navlink_icon"><i class="bx bx-scan"></i></span>
+      <span class="navlink">Contract Scanner</span>
+    </a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">
+      <span class="navlink_icon"><i class="bx bx-receipt"></i></span>
+      <span class="navlink">Invoice Builder</span>
+    </a>
+  </div>
 </div>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">
+  <span class="navlink_icon"><i class="bx bx-help-circle"></i></span>
+  <span class="navlink">Support</span>
+</a>
+</div>
+<div class="sidebar-bottom">
+  <button id="sidebarLogoutBtn" class="sidebar-logout-btn" type="button" hidden>
+    <span class="navlink_icon"><i class="bx bx-log-out"></i></span>
+    <span class="navlink">Logout</span>
+  </button>
 </div></aside><main id="main">
 
 <section class="section">
