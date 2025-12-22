@@ -118,6 +118,11 @@ img { max-width: 100%; display: block; }
   z-index: 10;
 }
 
+/* Ensure mobile toggle is hidden on desktop for landing page */
+body[data-page="landing"] .lang-switch-mobile {
+  display: none;
+}
+
 /* Mobile language toggle for index page */
 @media (max-width: 920px) {
   /* Hide desktop language toggle on mobile for index page */
