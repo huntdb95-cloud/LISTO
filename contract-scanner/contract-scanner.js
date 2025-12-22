@@ -2,10 +2,9 @@
 // Contract Scanner Tool
 // Uses Google OCR to extract text from contracts and translates to Spanish
 
-import { auth } from "../config.js";
+import { auth, storage } from "../config.js";
 
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL
@@ -20,7 +19,6 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/f
 
 const $ = (id) => document.getElementById(id);
 
-const storage = getStorage();
 const functions = getFunctions();
 
 // State

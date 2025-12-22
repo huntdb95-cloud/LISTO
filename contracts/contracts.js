@@ -201,8 +201,24 @@ async function loadAllData() {
       contracts.push(...builderContracts);
     }
     
-    // Load jobs for selected contract
-    if (selectedContractId) {
+    // Load jobs for selected builder (all contracts under the builder)
+    jobs = [];
+    if (selectedBuilderId) {
+      const builderContracts = contracts.filter(c => c.builderId === selectedBuilderId);
+      for (const contract of builderContracts) {
+        const jobsCol = collection(db, "users", currentUid, "builders", contract.builderId, "contracts", contract.id, "jobs");
+        const jobsSnap = await getDocs(query(jobsCol, orderBy("dueDate", "asc")));
+        const contractJobs = jobsSnap.docs.map(d => ({
+          id: d.id,
+          contractId: contract.id,
+          contractTitle: contract.title,
+          builderId: contract.builderId,
+          ...d.data()
+        }));
+        jobs.push(...contractJobs);
+      }
+    } else if (selectedContractId) {
+      // Fallback: if only contract is selected (for backward compatibility)
       const selectedContract = contracts.find(c => c.id === selectedContractId);
       if (selectedContract) {
         const jobsCol = collection(db, "users", currentUid, "builders", selectedContract.builderId, "contracts", selectedContractId, "jobs");
@@ -210,16 +226,17 @@ async function loadAllData() {
         jobs = jobsSnap.docs.map(d => ({
           id: d.id,
           contractId: selectedContractId,
+          contractTitle: selectedContract.title,
+          builderId: selectedContract.builderId,
           ...d.data()
         }));
       }
-    } else {
-      jobs = [];
     }
     
     updateSummaryCards();
     applyFiltersAndSearch();
     renderContractsList();
+    renderJobsSection(); // Render the new standalone jobs section
     
     // Run migration after first load
     if (builders.length === 0 && contracts.length === 0) {
@@ -434,10 +451,13 @@ function renderContractsList() {
 function renderContractDetail() {
   const detailView = $("contractDetailView");
   const emptyView = $("contractEmptyState");
+  const detailPanelWrapper = $("contractsDetailPanelWrapper");
   
   if (!selectedContractId) {
     if (detailView) detailView.style.display = "none";
     if (emptyView) emptyView.style.display = "block";
+    // Show the wrapper so the empty state message is visible
+    if (detailPanelWrapper) detailPanelWrapper.style.display = "block";
     return;
   }
   
@@ -446,6 +466,7 @@ function renderContractDetail() {
   
   if (detailView) detailView.style.display = "block";
   if (emptyView) emptyView.style.display = "none";
+  if (detailPanelWrapper) detailPanelWrapper.style.display = "block";
   
   // Update header
   const titleEl = $("detailContractTitle");
@@ -477,8 +498,8 @@ function renderContractDetail() {
   updateDetailField("detailScope", contract.scope || "—");
   updateDetailField("detailNotes", contract.notes || "—");
   
-  // Render jobs table
-  renderJobsTable();
+  // Jobs are now displayed in the standalone jobs section, not here
+  // renderJobsTable(); // Removed - jobs are now in standalone section
 }
 
 function renderJobsTable() {
@@ -536,15 +557,106 @@ function renderJobsTable() {
   }).join("");
 }
 
+function renderJobsSection() {
+  const tbody = $("jobsSectionTableBody");
+  const titleEl = $("jobsSectionTitle");
+  const newJobBtn = $("newJobBtnStandalone");
+  const emptyEl = $("jobsSectionEmpty");
+  
+  if (!tbody) return;
+  
+  // Filter jobs by selected builder
+  const builderJobs = selectedBuilderId 
+    ? jobs.filter(j => j.builderId === selectedBuilderId)
+    : [];
+  
+  // Update title
+  if (titleEl) {
+    const selectedBuilder = builders.find(b => b.id === selectedBuilderId);
+    if (selectedBuilder) {
+      titleEl.textContent = `Jobs for ${escapeHtml(selectedBuilder.name)}`;
+    } else {
+      titleEl.textContent = "Jobs";
+    }
+  }
+  
+  // Show/hide new job button
+  if (newJobBtn) {
+    newJobBtn.style.display = selectedBuilderId ? "inline-flex" : "none";
+  }
+  
+  // Render jobs or empty state
+  if (!selectedBuilderId) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="contracts-empty-state">Select a builder to view jobs.</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  if (builderJobs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="contracts-empty-state">No jobs found for this builder.</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = builderJobs.map(job => {
+    const startDate = formatDate(job.startDate);
+    const dueDateFormatted = formatDate(job.dueDate);
+    // Check if job is overdue (normalize dates to compare date-only, not time)
+    let isOverdue = false;
+    if (job.dueDate && !["completed", "paid"].includes(job.status)) {
+      const dueDateObj = job.dueDate.toDate ? job.dueDate.toDate() : new Date(job.dueDate);
+      const today = new Date();
+      const dueDateOnly = new Date(dueDateObj.getFullYear(), dueDateObj.getMonth(), dueDateObj.getDate());
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      isOverdue = dueDateOnly < todayOnly;
+    }
+    
+    return `
+      <tr class="${isOverdue ? "contracts-job-overdue" : ""}">
+        <td><strong>${escapeHtml(job.jobName || "—")}</strong></td>
+        <td>${escapeHtml(job.contractTitle || "—")}</td>
+        <td>${escapeHtml(job.jobAddress || "—")}</td>
+        <td>
+          <span class="contracts-status-badge contracts-status-badge-${job.status || "not-started"}">
+            ${formatStatus(job.status || "not-started")}
+          </span>
+        </td>
+        <td>${startDate}</td>
+        <td class="${isOverdue ? "contracts-overdue-text" : ""}">${dueDateFormatted}</td>
+        <td>
+          <div class="contracts-progress-bar">
+            <div class="contracts-progress-fill" style="width: ${job.progressPct || 0}%"></div>
+            <span class="contracts-progress-text">${job.progressPct || 0}%</span>
+          </div>
+        </td>
+        <td>${formatCurrency(job.budget || 0)}</td>
+        <td>
+          <div class="contracts-actions">
+            <button type="button" class="btn small" onclick="showJobModal('${job.contractId}', '${job.id}')">Edit</button>
+            <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.contractId}', '${job.id}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
 // ========== SELECTION ==========
 
 async function selectBuilder(builderId) {
   selectedBuilderId = builderId;
   selectedContractId = null;
   jobs = [];
-  await loadAllData(); // Load data first
+  await loadAllData(); // Load data first (this will also call renderJobsSection)
   renderContractsList(); // Then render with fresh data
   renderContractDetail(); // Update detail view
+  renderJobsSection(); // Ensure jobs section is rendered
 }
 
 async function selectContract(contractId) {
@@ -553,9 +665,10 @@ async function selectContract(contractId) {
   if (contract) {
     selectedBuilderId = contract.builderId;
   }
-  await loadAllData(); // Load data first (including jobs for selected contract)
+  await loadAllData(); // Load data first (this will also call renderJobsSection)
   renderContractsList(); // Then render with fresh data
   renderContractDetail(); // Update detail view with loaded jobs
+  renderJobsSection(); // Ensure jobs section is rendered
 }
 
 // ========== CRUD: BUILDERS ==========
@@ -1214,6 +1327,7 @@ function init() {
   const newBuilderBtn = $("newBuilderBtn");
   const newContractBtn = $("newContractBtn");
   const newJobBtn = $("newJobBtn");
+  const newJobBtnStandalone = $("newJobBtnStandalone");
   const editContractBtn = $("editContractBtn");
   const duplicateContractBtn = $("duplicateContractBtn");
   const deleteContractBtn = $("deleteContractBtn");
@@ -1221,6 +1335,30 @@ function init() {
   if (newBuilderBtn) newBuilderBtn.addEventListener("click", () => showBuilderModal());
   if (newContractBtn) newContractBtn.addEventListener("click", () => showContractModal());
   if (newJobBtn) newJobBtn.addEventListener("click", () => showJobModal());
+  if (newJobBtnStandalone) {
+    newJobBtnStandalone.addEventListener("click", () => {
+      // If a builder is selected but no contract, prompt to select a contract first
+      if (selectedBuilderId && !selectedContractId) {
+        const builderContracts = contracts.filter(c => c.builderId === selectedBuilderId);
+        if (builderContracts.length === 0) {
+          showToast("Please create a contract first before adding jobs.", true);
+          return;
+        }
+        // Auto-select first contract for convenience
+        if (builderContracts.length === 1) {
+          selectContract(builderContracts[0].id).then(() => {
+            showJobModal(builderContracts[0].id);
+          });
+        } else {
+          showToast("Please select a contract first to add a job.", true);
+        }
+      } else if (selectedContractId) {
+        showJobModal(selectedContractId);
+      } else {
+        showToast("Please select a builder first.", true);
+      }
+    });
+  }
   if (editContractBtn) editContractBtn.addEventListener("click", () => {
     if (selectedContractId) showContractModal(selectedContractId);
   });
@@ -1332,6 +1470,7 @@ function init() {
       selectedContractId = null;
       renderContractsList();
       renderContractDetail();
+      renderJobsSection(); // Clear jobs section on logout
     }
   });
 }

@@ -15,10 +15,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { db, auth } from "../config.js";
+import { db, auth, storage } from "../config.js";
 
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
@@ -29,7 +28,6 @@ import {
    Helpers
 ------------------------------ */
 const $ = (id) => document.getElementById(id);
-const storage = getStorage();
 
 function money(n) {
   const val = Number(n || 0);

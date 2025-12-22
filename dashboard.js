@@ -1,14 +1,12 @@
 // dashboard.js
 // Dashboard page - Display account information
 
-import { auth, db } from "./config.js";
+import { auth, db, storage } from "./config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import { getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
-import { ref, getStorage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+import { getDownloadURL, ref } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
 const $ = (id) => document.getElementById(id);
-const storage = getStorage();
 
 // Initialize dashboard
 onAuthStateChanged(auth, async (user) => {
