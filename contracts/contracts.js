@@ -682,7 +682,10 @@ async function saveBuilder(e) {
   }
   
   const btn = $("saveBuilderBtn");
-  if (!btn) return;
+  if (!btn) {
+    console.error("Save builder button not found");
+    return;
+  }
   const oldDisabled = btn.disabled;
   
   try {
@@ -699,6 +702,7 @@ async function saveBuilder(e) {
     
     if (!name) {
       showBuilderError("Builder name is required.");
+      // Button will be re-enabled in finally block
       return;
     }
     
@@ -717,6 +721,10 @@ async function saveBuilder(e) {
       const newRef = await addDoc(buildersCol, builderData);
       showBuilderMsg("Builder created successfully!", false);
       await loadAllData();
+      // Auto-select the newly created builder
+      selectedBuilderId = newRef.id;
+      renderContractsList();
+      renderJobsSection();
       setTimeout(() => hideBuilderModal(), 1000);
     } else {
       const builderRef = doc(db, "users", currentUid, "builders", builderId);
@@ -1017,7 +1025,10 @@ async function deleteJobConfirm(contractId, jobId) {
 function showBuilderModal(builderId = null) {
   const modal = $("builderModal");
   const title = $("builderModalTitle");
-  if (!modal) return;
+  if (!modal) {
+    console.error("Builder modal not found");
+    return;
+  }
   
   modal.style.display = "flex";
   if (title) title.textContent = builderId ? "Edit Builder" : "New Builder";
@@ -1027,6 +1038,10 @@ function showBuilderModal(builderId = null) {
   
   const idInput = $("builderId");
   if (idInput) idInput.value = builderId || "";
+  
+  // Re-enable save button in case it was disabled
+  const saveBtn = $("saveBuilderBtn");
+  if (saveBtn) saveBtn.disabled = false;
   
   if (builderId) {
     const builder = builders.find(b => b.id === builderId);
@@ -1332,7 +1347,16 @@ function init() {
   const duplicateContractBtn = $("duplicateContractBtn");
   const deleteContractBtn = $("deleteContractBtn");
   
-  if (newBuilderBtn) newBuilderBtn.addEventListener("click", () => showBuilderModal());
+  if (newBuilderBtn) {
+    newBuilderBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("New Builder button clicked");
+      showBuilderModal();
+    });
+  } else {
+    console.error("New Builder button not found in DOM");
+  }
   if (newContractBtn) newContractBtn.addEventListener("click", () => showContractModal());
   if (newJobBtn) newJobBtn.addEventListener("click", () => showJobModal());
   if (newJobBtnStandalone) {
