@@ -2,7 +2,7 @@
 // Insurance Audit Help Tool
 // Loads payroll data, manages document uploads, questionnaire, and generates audit packages
 
-import { auth, db } from "../config.js";
+import { auth, db, storage } from "../config.js";
 
 import {
   collection,
@@ -17,7 +17,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL
@@ -32,7 +31,6 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/f
 
 const $ = (id) => document.getElementById(id);
 
-const storage = getStorage();
 const functions = getFunctions();
 
 // State

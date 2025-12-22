@@ -20,7 +20,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
@@ -29,7 +28,7 @@ import {
 
 const $ = (id) => document.getElementById(id);
 
-const storage = getStorage();
+import { storage } from "../config.js";
 
 let currentUser = null;
 let currentProfile = null;

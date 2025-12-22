@@ -3083,15 +3083,20 @@ input:focus, select:focus, textarea:focus{
   box-shadow: 0 0 0 3px rgba(77, 167, 99, 0.1);
 }
 
-/* Main Grid */
-.contracts-main-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px;
-  align-items: start;
+/* Builders & Contracts Box (Full Width) */
+.contracts-page-builders-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  max-height: calc(100vh - 400px);
 }
 
-/* Sidebar */
+/* Legacy sidebar class (kept for compatibility, maps to builders box) */
 .contracts-sidebar {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -3100,7 +3105,38 @@ input:focus, select:focus, textarea:focus{
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 300px);
+  max-height: calc(100vh - 400px);
+}
+
+/* Jobs Section */
+.contracts-page-jobs-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.contracts-jobs-section-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.contracts-jobs-section-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.contracts-jobs-section-content {
+  padding: 24px;
 }
 
 .contracts-list-header {
@@ -3240,6 +3276,7 @@ input:focus, select:focus, textarea:focus{
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  margin-bottom: 24px;
 }
 
 .contracts-detail-view {
@@ -3609,17 +3646,14 @@ input:focus, select:focus, textarea:focus{
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .contracts-main-grid {
-    grid-template-columns: 1fr;
-  }
-  
+  .contracts-page-builders-box,
   .contracts-sidebar {
-    max-height: 400px;
-    order: 2;
+    max-height: 500px;
   }
   
-  .contracts-detail-panel {
-    order: 1;
+  .contracts-jobs-section-content {
+    padding: 16px;
+    overflow-x: auto;
   }
 }
 
@@ -3669,6 +3703,16 @@ input:focus, select:focus, textarea:focus{
   .contracts-jobs-table th,
   .contracts-jobs-table td {
     padding: 8px;
+  }
+  
+  .contracts-jobs-section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .contracts-jobs-section-header .btn {
+    width: 100%;
   }
   
   .contracts-detail-grid,

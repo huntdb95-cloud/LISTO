@@ -93,10 +93,8 @@
 </div>
 </div>
 
-<!-- Main Content Grid -->
-<div class="contracts-main-grid">
-<!-- Left: Builder/Contract List -->
-<div class="contracts-sidebar">
+<!-- Builders & Contracts Box (Full Width) -->
+<div class="contracts-page-builders-box">
 <div class="contracts-list-header">
 <h2 class="contracts-list-title">Builders & Contracts</h2>
 </div>
@@ -107,9 +105,43 @@
 </div>
 </div>
 
-<!-- Right: Contract Details + Jobs -->
-<div class="contracts-detail-panel">
-<div id="contractDetailView" class="contracts-detail-view" style="display: none;">
+<!-- Jobs Section -->
+<div class="contracts-page-jobs-section">
+<div class="contracts-jobs-section-header">
+<h2 class="contracts-jobs-section-title" id="jobsSectionTitle">Jobs</h2>
+<button type="button" class="btn primary small" id="newJobBtnStandalone" style="display: none;">New Job</button>
+</div>
+<div class="contracts-jobs-section-content">
+<div id="jobsSectionContainer">
+<div class="contracts-jobs-table-container">
+<table class="contracts-jobs-table" id="jobsSectionTable">
+<thead>
+<tr>
+<th>Job Name</th>
+<th>Contract</th>
+<th>Address</th>
+<th>Status</th>
+<th>Start Date</th>
+<th>Due Date</th>
+<th>Progress</th>
+<th>Budget</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="jobsSectionTableBody">
+<tr>
+<td colspan="9" class="contracts-empty-state" id="jobsSectionEmpty">Select a builder to view jobs.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Contract Details Panel (Optional - for viewing contract details) -->
+<div class="contracts-detail-panel" id="contractsDetailPanelWrapper" style="display: none;">
+<div id="contractDetailView" class="contracts-detail-view">
 <!-- Contract Header -->
 <div class="contracts-detail-header">
 <div class="contracts-detail-header-content">
@@ -129,7 +161,6 @@
 <!-- Contract Info Tabs -->
 <div class="contracts-detail-tabs">
 <button type="button" class="contracts-tab contracts-tab-active" data-tab="overview">Overview</button>
-<button type="button" class="contracts-tab" data-tab="jobs">Jobs</button>
 <button type="button" class="contracts-tab" data-tab="notes">Notes</button>
 </div>
 
@@ -185,37 +216,6 @@
 </div>
 </div>
 
-<!-- Jobs Tab -->
-<div class="contracts-tab-content" id="tabJobs">
-<div class="contracts-jobs-header">
-<h3 class="contracts-detail-section-title">Jobs</h3>
-<button type="button" class="btn primary small" id="newJobBtn">New Job</button>
-</div>
-<div class="contracts-jobs-container">
-<div id="jobsTableContainer" class="contracts-jobs-table-container">
-<table class="contracts-jobs-table" id="jobsTable">
-<thead>
-<tr>
-<th>Job Name</th>
-<th>Address</th>
-<th>Status</th>
-<th>Start Date</th>
-<th>Due Date</th>
-<th>Progress</th>
-<th>Budget</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody id="jobsTableBody">
-<tr>
-<td colspan="8" class="contracts-empty-state">No jobs yet. Click "New Job" to add one.</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-
 <!-- Notes Tab -->
 <div class="contracts-tab-content" id="tabNotes">
 <div class="contracts-detail-section">
@@ -230,7 +230,6 @@
 <div class="contracts-empty-content">
 <h2>No Contract Selected</h2>
 <p>Select a contract from the list to view details, or create a new builder and contract to get started.</p>
-</div>
 </div>
 </div>
 </div>

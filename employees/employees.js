@@ -1,7 +1,7 @@
 // employees.js
 // Employee Management - Add, edit, and manage employees/subcontractors
 
-import { auth, db } from "../config.js";
+import { auth, db, storage } from "../config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   collection,
@@ -15,7 +15,6 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
@@ -23,7 +22,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
 const $ = (id) => document.getElementById(id);
-const storage = getStorage();
 
 let currentUid = null;
 let employees = [];
