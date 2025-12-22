@@ -47,7 +47,7 @@ const I18N = {
     "hero.title": "Focus on your work. We'll handle the paperwork.",
     "hero.subtitle": "Stop wasting time on business tasks. Listo automates payroll tracking, document management, invoicing, and compliance—so you can get back to what you do best.",
     "hero.ctaPrimary": "Log In",
-    "hero.ctaSecondary": "Sign Up",
+    "hero.ctaSecondary": "Get Started with Listo",
     "landing.login": "Log In",
 
     "card.prequalTitle": "Pre-Qualification Checklist",
@@ -491,7 +491,7 @@ const I18N = {
     "hero.title": "Precalifícate. Cobra. Sé elegido.",
     "hero.subtitle": "Listo ayuda a subcontratistas a completar requisitos de incorporación, estar listos para auditorías y crear un perfil confiable para contratistas generales.",
     "hero.ctaPrimary": "Iniciar Sesión",
-    "hero.ctaSecondary": "Registrarse",
+    "hero.ctaSecondary": "Comenzar con Listo",
     "landing.login": "Iniciar Sesión",
     "hero.pill1": "W-9 Completado",
     "hero.pill2": "COI Vigente Subido",
@@ -1016,8 +1016,20 @@ function initLanguage() {
   const saved = localStorage.getItem(LANG_KEY);
   const lang = (saved && I18N[saved]) ? saved : "en";
   applyTranslations(lang);
+  
+  // Set up language toggle buttons
   document.querySelectorAll("[data-lang]").forEach(btn => {
-    btn.addEventListener("click", () => applyTranslations(btn.getAttribute("data-lang")));
+    // Remove any existing listeners
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const selectedLang = newBtn.getAttribute("data-lang");
+      localStorage.setItem(LANG_KEY, selectedLang);
+      applyTranslations(selectedLang);
+    });
   });
 }
 
@@ -1035,8 +1047,14 @@ async function initLanguageForUser(user) {
   
   // Set up language toggle buttons if they exist (for login/signup/forgot pages)
   document.querySelectorAll("[data-lang]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const selectedLang = btn.getAttribute("data-lang");
+    // Remove any existing listeners
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const selectedLang = newBtn.getAttribute("data-lang");
       applyTranslations(selectedLang);
       // For authenticated users, save to Firestore
       if (user) {
