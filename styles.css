@@ -1470,6 +1470,39 @@ input:focus, select:focus, textarea:focus{
 }
 .checkline input{ margin-top: 4px; }
 
+/* ===== Signature Canvas ===== */
+.signature-container {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  padding: 12px;
+  position: relative;
+}
+
+#signatureCanvas {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: 200px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.signature-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  #signatureCanvas {
+    height: 150px;
+  }
+}
+
 /* ===== Payroll Page (legacy selector) ===== */
 /* (kept) Add class="payroll-page" on <body> of payroll.html for these styles */
 .payroll-page .page { padding: 24px 0; }
