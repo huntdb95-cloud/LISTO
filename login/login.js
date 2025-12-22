@@ -38,12 +38,20 @@ form.addEventListener("submit", async (e) => {
     setTimeout(() => {
       // Check for next parameter or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
-      const next = urlParams.get("next");
+      let next = urlParams.get("next");
+      
+      // Prevent redirect loops: if next points to login page, default to dashboard
+      if (next && (next.includes("/login/") || next.includes("login.html"))) {
+        next = null;
+      }
+      
       if (next) {
         // Handle absolute paths, relative paths, and paths that already include ../
         if (next.startsWith("/")) {
           // Absolute path - prepend .. to go up from login/ directory
-          window.location.href = `..${next}`;
+          // Remove leading slash and construct relative path
+          const relativePath = next.substring(1); // Remove leading /
+          window.location.href = `../${relativePath}`;
         } else if (next.startsWith("../") || next.startsWith("./")) {
           // Already a relative path - use as-is
           window.location.href = next;

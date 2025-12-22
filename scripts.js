@@ -43,6 +43,11 @@ const I18N = {
     "nav.invoiceBuilder": "Invoice Builder",
     "nav.account": "My Account",
     "nav.support": "Support",
+    "nav.settings": "Settings",
+    "tools.pageTitle": "Tools",
+    "tools.pageSubtitle": "Access all available tools to help manage your business.",
+    "settings.title": "Settings",
+    "settings.subtitle": "Manage your account settings and get support.",
 
     "hero.title": "Focus on your work. We'll handle the paperwork.",
     "hero.subtitle": "Stop wasting time on business tasks. Listo automates payroll tracking, document management, invoicing, and compliance—so you can get back to what you do best.",
@@ -501,6 +506,11 @@ const I18N = {
     "nav.contractScanner": "Escáner de Contratos",
     "nav.invoiceBuilder": "Generador de Facturas",
     "nav.support": "Soporte",
+    "nav.settings": "Configuración",
+    "tools.pageTitle": "Herramientas",
+    "tools.pageSubtitle": "Accede a todas las herramientas disponibles para ayudar a administrar tu negocio.",
+    "settings.title": "Configuración",
+    "settings.subtitle": "Administra la configuración de tu cuenta y obtén soporte.",
 
     "hero.title": "Precalifícate. Cobra. Sé elegido.",
     "hero.subtitle": "Listo ayuda a subcontratistas a completar requisitos de incorporación, estar listos para auditorías y crear un perfil confiable para contratistas generales.",
@@ -1159,6 +1169,14 @@ function requireAuthGuard(user) {
   const page = body?.getAttribute("data-page");
 
   if (requiresAuth && !user) {
+    // Prevent redirect loops: don't redirect if already on login/signup/forgot pages
+    if (page === "login" || page === "signup" || page === "forgot" || 
+        window.location.pathname.includes("/login/") || 
+        window.location.pathname.includes("/signup/") || 
+        window.location.pathname.includes("/forgot/")) {
+      return; // Already on auth page, don't redirect
+    }
+    
     // Store absolute path (with leading slash) for next parameter
     const pathname = window.location.pathname;
     const next = pathname.startsWith("/") ? pathname : `/${pathname}`;
@@ -2114,9 +2132,43 @@ if (typeof window !== 'undefined') {
   window.updateHeaderAvatar = updateHeaderAvatar;
 }
 
+/* ========== Mobile Bottom Navigation ========== */
+function initMobileBottomNav() {
+  const bottomNav = document.querySelector(".mobile-bottom-nav");
+  if (!bottomNav) return;
+
+  // Set active state based on current page
+  const path = window.location.pathname;
+  const navItems = bottomNav.querySelectorAll(".mobile-bottom-nav-item");
+  
+  navItems.forEach(item => {
+    item.classList.remove("active");
+    const navType = item.getAttribute("data-nav");
+    
+    // Determine active state based on path and nav type
+    let isActive = false;
+    if (navType === "home" && (path.includes("dashboard.html") || path.endsWith("/") || path.endsWith("/index.html"))) {
+      isActive = true;
+    } else if (navType === "contracts" && path.includes("contracts")) {
+      isActive = true;
+    } else if (navType === "bookkeeping" && path.includes("bookkeeping")) {
+      isActive = true;
+    } else if (navType === "tools" && (path.includes("tools") || path.includes("audit") || path.includes("invoice") || path.includes("contract-scanner"))) {
+      isActive = true;
+    } else if (navType === "settings" && (path.includes("settings") || path.includes("account") || path.includes("support"))) {
+      isActive = true;
+    }
+    
+    if (isActive) {
+      item.classList.add("active");
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();
   initYear();
+  initMobileBottomNav();
 
   // Initialize language immediately for auth pages (login, signup, forgot)
   const page = document.body?.getAttribute("data-page");
@@ -2166,6 +2218,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     requireAuthGuard(user);
     initAuthUI();
+    
+    // Update mobile bottom nav active state after language is set
+    initMobileBottomNav();
 
     if (!user) return;
 
