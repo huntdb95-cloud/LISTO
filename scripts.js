@@ -130,6 +130,18 @@ const I18N = {
     "auth.goSignup": "Create one",
     "auth.haveAccount": "Already have an account?",
     "auth.goLogin": "Log in",
+    "auth.forgotTitle": "Reset password",
+    "auth.forgotSubtitle": "Enter your email and we'll send you a reset link.",
+    "auth.sendReset": "Send reset link",
+    "auth.backToLogin": "Back to login",
+    "auth.backToHome": "Back to Home",
+    "auth.forgotPassword": "Forgot password",
+    "auth.displayName": "Company / Display name",
+    "auth.displayNamePlaceholder": "ABC Construction",
+    "auth.emailPlaceholder": "you@company.com",
+    "auth.passwordPlaceholder": "At least 6 characters",
+    "auth.passwordPlaceholderLogin": "••••••••",
+    "auth.createAccountLink": "Create account",
     "auth.sideTitle": "Private. Secure. Built for onboarding.",
     "auth.sideBody": "Your documents and uploads are protected behind your login.",
     "auth.logout": "Log out",
@@ -577,6 +589,18 @@ const I18N = {
     "auth.goSignup": "Crear una",
     "auth.haveAccount": "¿Ya tienes cuenta?",
     "auth.goLogin": "Inicia sesión",
+    "auth.forgotTitle": "Restablecer contraseña",
+    "auth.forgotSubtitle": "Ingresa tu correo y te enviaremos un enlace para restablecer.",
+    "auth.sendReset": "Enviar enlace de restablecimiento",
+    "auth.backToLogin": "Volver al inicio de sesión",
+    "auth.backToHome": "Volver al inicio",
+    "auth.forgotPassword": "¿Olvidaste tu contraseña?",
+    "auth.displayName": "Empresa / Nombre para mostrar",
+    "auth.displayNamePlaceholder": "ABC Construction",
+    "auth.emailPlaceholder": "tu@empresa.com",
+    "auth.passwordPlaceholder": "Al menos 6 caracteres",
+    "auth.passwordPlaceholderLogin": "••••••••",
+    "auth.createAccountLink": "Crear cuenta",
     "auth.sideTitle": "Privado. Seguro. Hecho para incorporación.",
     "auth.sideBody": "Tus documentos y cargas están protegidos con tu inicio de sesión.",
     "auth.logout": "Cerrar sesión",
@@ -986,6 +1010,13 @@ function applyTranslations(lang) {
       }
     }
   });
+  // Handle placeholder translations
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (dict[key]) {
+      el.placeholder = dict[key];
+    }
+  });
   setPressedButtons(lang);
   localStorage.setItem(LANG_KEY, lang);
 }
@@ -1363,18 +1394,18 @@ function updatePrequalUI(data) {
 async function initPrequalPage(user) {
   const data = await loadPrequalStatus(user.uid);
   updatePrequalUI(data);
+  
+  // Initialize Business License upload
+  initBusinessLicenseUpload(user);
+
+  // Initialize Workers Comp upload
+  initWorkersCompUpload(user);
 }
 
 // Make prequal functions available globally for contracts.js
 if (typeof window !== 'undefined') {
   window.loadPrequalStatus = loadPrequalStatus;
   window.updatePrequalUI = updatePrequalUI;
-
-  // Initialize Business License upload
-  initBusinessLicenseUpload(user);
-
-  // Initialize Workers Comp upload
-  initWorkersCompUpload(user);
 }
 
 /* ========= COI page logic ========= */
@@ -2072,6 +2103,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();
   initYear();
 
+  // Initialize language immediately for auth pages (login, signup, forgot)
+  const page = document.body?.getAttribute("data-page");
+  const isAuthPage = page === "login" || page === "signup" || page === "forgot" || window.location.pathname.includes("/forgot/");
+  if (isAuthPage) {
+    initLanguage();
+  }
+
   const ok = await initFirebase();
   if (!ok) return;
 
@@ -2083,7 +2121,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (headerAvatar) headerAvatar.hidden = !user;
     
     // Initialize language based on auth state
-    await initLanguageForUser(user);
+    // Skip for auth pages since initLanguage() was already called
+    if (!isAuthPage) {
+      await initLanguageForUser(user);
+    }
     
     if (user) {
       await updateHeaderAvatar(user);

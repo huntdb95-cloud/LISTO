@@ -446,6 +446,10 @@ exportCsvBtn.addEventListener("click", exportCsv);
 /* -----------------------------
    Mobile Swipe Functionality
 ------------------------------ */
+// Track if swipe is initialized to prevent duplicate listeners
+let swipeInitialized = false;
+let swipeHandlers = null;
+
 function initSwipe() {
   const container = document.getElementById("swipeContainer");
   const indicators = document.querySelectorAll(".swipe-indicators .indicator");
@@ -456,6 +460,18 @@ function initSwipe() {
 
   // Only enable on mobile
   if (window.innerWidth > 900) {
+    // Clean up if we were initialized and now on desktop
+    if (swipeInitialized && swipeHandlers) {
+      swipeHandlers.container?.removeEventListener("touchstart", swipeHandlers.touchstart);
+      swipeHandlers.container?.removeEventListener("touchmove", swipeHandlers.touchmove);
+      swipeHandlers.container?.removeEventListener("touchend", swipeHandlers.touchend);
+      swipeHandlers.container?.removeEventListener("scroll", swipeHandlers.scroll);
+      swipeHandlers.indicators?.forEach(({ element, handler }) => {
+        element.removeEventListener("click", handler);
+      });
+      swipeInitialized = false;
+      swipeHandlers = null;
+    }
     return;
   }
 
@@ -463,6 +479,27 @@ function initSwipe() {
   if (!container) {
     return;
   }
+
+  // Remove old listeners if already initialized
+  if (swipeInitialized && swipeHandlers) {
+    swipeHandlers.container?.removeEventListener("touchstart", swipeHandlers.touchstart);
+    swipeHandlers.container?.removeEventListener("touchmove", swipeHandlers.touchmove);
+    swipeHandlers.container?.removeEventListener("touchend", swipeHandlers.touchend);
+    swipeHandlers.container?.removeEventListener("scroll", swipeHandlers.scroll);
+    swipeHandlers.indicators?.forEach(({ element, handler }) => {
+      element.removeEventListener("click", handler);
+    });
+  }
+  
+  // Store handlers for cleanup
+  swipeHandlers = {
+    container: container,
+    indicators: [],
+    touchstart: null,
+    touchmove: null,
+    touchend: null,
+    scroll: null
+  };
 
   // Update indicators
   function updateIndicators(slideIndex) {
@@ -484,16 +521,20 @@ function initSwipe() {
 
   // Indicator click handlers
   indicators.forEach((ind, idx) => {
-    ind.addEventListener("click", () => goToSlide(idx));
+    const handler = () => goToSlide(idx);
+    ind.addEventListener("click", handler);
+    swipeHandlers.indicators.push({ element: ind, handler });
   });
 
-  // Touch event handlers
-  container.addEventListener("touchstart", (e) => {
+  // Touch event handlers - store references for cleanup
+  const touchstartHandler = (e) => {
     startX = e.touches[0].clientX;
     isDragging = true;
-  });
+  };
+  swipeHandlers.touchstart = touchstartHandler;
+  container.addEventListener("touchstart", touchstartHandler);
 
-  container.addEventListener("touchmove", (e) => {
+  const touchmoveHandler = (e) => {
     if (!isDragging) return;
     currentX = e.touches[0].clientX;
     const diff = startX - currentX;
@@ -501,9 +542,11 @@ function initSwipe() {
     if (Math.abs(diff) > 10) {
       e.preventDefault();
     }
-  });
+  };
+  swipeHandlers.touchmove = touchmoveHandler;
+  container.addEventListener("touchmove", touchmoveHandler);
 
-  container.addEventListener("touchend", (e) => {
+  const touchendHandler = (e) => {
     if (!isDragging) return;
     isDragging = false;
     const diff = startX - currentX;
@@ -516,16 +559,23 @@ function initSwipe() {
         goToSlide(currentSlide - 1);
       }
     }
-  });
+  };
+  swipeHandlers.touchend = touchendHandler;
+  container.addEventListener("touchend", touchendHandler);
 
   // Update indicators on scroll (for manual scrolling)
-  container.addEventListener("scroll", () => {
+  const scrollHandler = () => {
     const slideIndex = Math.round(container.scrollLeft / container.offsetWidth);
     if (slideIndex !== currentSlide) {
       currentSlide = slideIndex;
       updateIndicators(slideIndex);
     }
-  });
+  };
+  swipeHandlers.scroll = scrollHandler;
+  container.addEventListener("scroll", scrollHandler);
+
+  // Mark as initialized
+  swipeInitialized = true;
 
   // Initialize
   updateIndicators(0);

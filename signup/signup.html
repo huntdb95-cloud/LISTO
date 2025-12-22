@@ -25,13 +25,13 @@
               <button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
             </div>
           </div>
-          <h1 class="auth-title">Create account</h1>
-          <p class="auth-subtitle">Create your login to access payroll and documents.</p>
+          <h1 class="auth-title" data-i18n="auth.signupTitle">Create account</h1>
+          <p class="auth-subtitle" data-i18n="auth.signupSubtitle">Create your login to access payroll and documents.</p>
         </div>
 
         <form id="signupForm" class="auth-form" autocomplete="on">
           <div class="field">
-            <label class="field-label" for="displayName">Company / Display name</label>
+            <label class="field-label" for="displayName" data-i18n="auth.displayName">Company / Display name</label>
             <input
               id="displayName"
               name="displayName"
@@ -39,11 +39,12 @@
               required
               autocomplete="organization"
               placeholder="ABC Construction"
+              data-i18n-placeholder="auth.displayNamePlaceholder"
             />
           </div>
 
           <div class="field">
-            <label class="field-label" for="signupEmail">Email</label>
+            <label class="field-label" for="signupEmail" data-i18n="auth.email">Email</label>
             <input
               id="signupEmail"
               name="email"
@@ -51,11 +52,12 @@
               required
               autocomplete="email"
               placeholder="you@company.com"
+              data-i18n-placeholder="auth.emailPlaceholder"
             />
           </div>
 
           <div class="field">
-            <label class="field-label" for="signupPassword">Password</label>
+            <label class="field-label" for="signupPassword" data-i18n="auth.password">Password</label>
             <input
               id="signupPassword"
               name="password"
@@ -63,6 +65,7 @@
               required
               autocomplete="new-password"
               placeholder="At least 6 characters"
+              data-i18n-placeholder="auth.passwordPlaceholder"
             />
           </div>
 
@@ -84,11 +87,11 @@
 
           <p id="signupError" class="form-error" aria-live="polite"></p>
 
-          <button class="btn primary" type="submit">Create Account</button>
+          <button class="btn primary" type="submit" data-i18n="auth.createBtn">Create Account</button>
 
           <div class="auth-links">
-            <a class="mini-link" href="../login/login.html">Already have an account? Log in</a>
-            <a class="mini-link" href="../index.html">Back to Home</a>
+            <a class="mini-link" href="../login/login.html"><span data-i18n="auth.haveAccount">Already have an account?</span> <span data-i18n="auth.goLogin">Log in</span></a>
+            <a class="mini-link" href="../index.html" data-i18n="auth.backToHome">Back to Home</a>
           </div>
         </form>
       </section>
