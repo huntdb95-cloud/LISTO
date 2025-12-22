@@ -66,6 +66,22 @@
             />
           </div>
 
+          <div class="field" style="margin-top: 16px;">
+            <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+              <input
+                id="acceptTerms"
+                name="acceptTerms"
+                type="checkbox"
+                required
+                style="margin-top: 4px; flex-shrink: 0;"
+              />
+              <span style="font-size: 0.9rem; line-height: 1.5;">
+                <span data-i18n="signup.acceptTerms">I agree to the</span>
+                <a href="../terms.html" target="_blank" data-i18n="signup.termsLink" style="color: var(--brand); text-decoration: underline;">Terms and Conditions</a>
+              </span>
+            </label>
+          </div>
+
           <p id="signupError" class="form-error" aria-live="polite"></p>
 
           <button class="btn primary" type="submit">Create Account</button>

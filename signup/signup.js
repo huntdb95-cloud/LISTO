@@ -38,6 +38,7 @@ form.addEventListener("submit", async (e) => {
   const displayName = cleanName(displayNameEl?.value);
   const email = (emailEl?.value || "").trim();
   const password = passEl?.value || "";
+  const acceptTerms = document.getElementById("acceptTerms")?.checked;
 
   if (!displayName) {
     setError("Please enter a company / display name.");
@@ -45,6 +46,10 @@ form.addEventListener("submit", async (e) => {
   }
   if (displayName.length > 80) {
     setError("Display name is too long (max 80 characters).");
+    return;
+  }
+  if (!acceptTerms) {
+    setError("You must accept the Terms and Conditions to create an account.");
     return;
   }
 
@@ -59,6 +64,8 @@ form.addEventListener("submit", async (e) => {
       displayName,
       displayNameLower: displayName.toLowerCase(),
       email,
+      termsAccepted: true,
+      termsAcceptedAt: serverTimestamp(),
       createdAt: serverTimestamp()
     });
 
