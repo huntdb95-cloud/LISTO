@@ -209,11 +209,20 @@ function renderJobs(contractId, jobs) {
       `<a href="${job.projectCoiUrl}" target="_blank" class="mini-link document-link">View Project COI</a>` : 
       `<span class="muted small">No Project COI uploaded</span>`;
     
+    const isPaid = job.isPaid === true;
+    const paidStatusClass = isPaid ? "paid" : "unpaid";
+    const paidStatusText = isPaid ? "Paid" : "Unpaid";
+    
     return `
       <div class="job-card" data-job-id="${job.id}">
         <div class="job-header">
           <div>
-            <h5 class="job-title">${job.jobName || "—"}</h5>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <h5 class="job-title" style="margin: 0;">${job.jobName || "—"}</h5>
+              <span class="job-status-badge ${paidStatusClass}" onclick="toggleJobPaidStatus('${contractId}', '${job.id}', ${!isPaid})" style="cursor: pointer; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">
+                ${paidStatusText}
+              </span>
+            </div>
             <div class="small muted" style="margin-top: 4px;">
               ${job.address ? `<div><strong>Address:</strong> ${job.address}</div>` : ""}
               ${job.description ? `<div style="margin-top: 4px;"><strong>Description:</strong> ${job.description}</div>` : ""}
@@ -698,6 +707,24 @@ async function deleteJob(contractId, jobId, jobName) {
   }
 }
 
+// Toggle job paid status
+async function toggleJobPaidStatus(contractId, jobId, setPaid) {
+  if (!currentUid) return;
+  
+  try {
+    const jobRef = doc(db, "users", currentUid, "contracts", contractId, "jobs", jobId);
+    await updateDoc(jobRef, {
+      isPaid: setPaid,
+      updatedAt: serverTimestamp()
+    });
+    
+    await loadContracts();
+  } catch (err) {
+    console.error("Error updating job paid status:", err);
+    alert(`Error updating job status: ${getFriendlyError(err)}`);
+  }
+}
+
 // Make functions globally available
 window.editContract = editContract;
 window.deleteContract = deleteContract;
@@ -706,6 +733,7 @@ window.toggleJobs = toggleJobs;
 window.addJob = addJob;
 window.editJob = editJob;
 window.deleteJob = deleteJob;
+window.toggleJobPaidStatus = toggleJobPaidStatus;
 window.hideContractModal = hideContractModal;
 window.hideJobModal = hideJobModal;
 

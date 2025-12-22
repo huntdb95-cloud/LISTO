@@ -128,6 +128,15 @@
       <div>
         <h3 style="margin:0 0 10px 0;" data-i18n="invoice.customer">Customer</h3>
         <div class="grid">
+          <div style="grid-column: 1 / -1;">
+            <label data-i18n="invoice.selectBuilder">Select Builder (Optional)</label>
+            <select id="selectBuilder" style="margin-bottom: 8px;">
+              <option value="">— Select a builder —</option>
+            </select>
+            <select id="selectJob" style="display: none;">
+              <option value="">— Select a job (optional) —</option>
+            </select>
+          </div>
           <div>
             <label data-i18n="invoice.customerName">Customer Name</label>
             <input id="toName" placeholder="Customer Name" />
