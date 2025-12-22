@@ -1811,6 +1811,169 @@ input:focus, select:focus, textarea:focus{
   font-weight: 600;
 }
 
+/* Fix sidebar-nav to display vertically, not horizontally */
+.sidebar .nav-menu,
+.sidebar .sidebar-nav {
+  display: block !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+/* Sidebar links should be block-level, not inline */
+.sidebar .sidebar-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: all 0.2s;
+  margin: 2px 10px;
+  box-sizing: border-box;
+}
+
+.sidebar .sidebar-link:hover {
+  color: white;
+  background: var(--brand);
+}
+
+/* Sidebar icon styling */
+.sidebar .sidebar-link .navlink_icon {
+  position: relative;
+  font-size: 22px;
+  min-width: 50px;
+  line-height: 40px;
+  display: inline-block;
+  text-align: center;
+  border-radius: 6px;
+  color: inherit;
+  transition: all 0.2s;
+  margin-right: 8px;
+}
+
+.sidebar .sidebar-link:hover .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar .sidebar-link.active .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Sidebar submenu styles */
+.sidebar-submenu {
+  margin: 2px 10px;
+}
+
+.sidebar-submenu-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  position: relative;
+}
+
+.sidebar-submenu-toggle .navlink_icon {
+  position: relative;
+  font-size: 22px;
+  min-width: 50px;
+  line-height: 40px;
+  display: inline-block;
+  text-align: center;
+  border-radius: 6px;
+  color: inherit;
+  transition: all 0.2s;
+  margin-right: 8px;
+}
+
+.sidebar-submenu-toggle:hover .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-submenu-toggle:hover {
+  color: white;
+  background: var(--brand);
+}
+
+.sidebar-submenu-toggle::after {
+  content: "▶";
+  position: absolute;
+  right: 15px;
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.sidebar-submenu.open .sidebar-submenu-toggle::after {
+  transform: rotate(90deg);
+}
+
+.sidebar-submenu-content {
+  display: none;
+  padding-left: 0;
+  margin-top: 4px;
+}
+
+.sidebar-submenu.open .sidebar-submenu-content {
+  display: block;
+}
+
+.sidebar-submenu-link {
+  display: flex;
+  align-items: center;
+  padding: 8px 15px 8px 40px;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 8px;
+  margin: 2px 0;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.sidebar-submenu-link .navlink_icon {
+  position: relative;
+  font-size: 20px;
+  min-width: 40px;
+  line-height: 32px;
+  display: inline-block;
+  text-align: center;
+  border-radius: 6px;
+  color: inherit;
+  transition: all 0.2s;
+  margin-right: 8px;
+}
+
+.sidebar-submenu-link:hover .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-submenu-link.active .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-submenu-link:hover {
+  color: white;
+  background: var(--brand);
+}
+
+.sidebar-submenu-link.active {
+  color: white;
+  background: var(--brand);
+  font-weight: 600;
+}
+
 .submenu_item {
   cursor: pointer;
   position: relative; /* Required for absolute positioning of arrow-left */
