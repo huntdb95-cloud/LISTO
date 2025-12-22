@@ -2151,6 +2151,15 @@ input:focus, select:focus, textarea:focus{
   padding: 0 18px 18px;
 }
 
+.auth-form .field {
+  margin: 0;
+}
+
+.auth-form .checkbox-label {
+  margin: 0;
+  padding: 0;
+}
+
 .auth-links{
   display: flex;
   gap: 10px;

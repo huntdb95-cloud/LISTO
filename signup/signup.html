@@ -69,8 +69,21 @@
             />
           </div>
 
-          <div class="field" style="margin-top: 16px;">
-            <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+          <div class="field">
+            <label class="field-label" for="confirmPassword" data-i18n="auth.confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              autocomplete="new-password"
+              placeholder="Re-enter your password"
+              data-i18n-placeholder="auth.confirmPasswordPlaceholder"
+            />
+          </div>
+
+          <div class="field">
+            <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
               <input
                 id="acceptTerms"
                 name="acceptTerms"
