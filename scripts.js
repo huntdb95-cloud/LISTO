@@ -35,6 +35,8 @@ const I18N = {
     "nav.prequal": "Pre-Qualification",
     "nav.payroll": "Payroll",
     "nav.employees": "Employees",
+    "nav.bookkeeping": "Bookkeeping",
+    "nav.tools": "Tools",
     "nav.audit": "Audit Help",
     "nav.contractScanner": "Contract Scanner",
     "nav.invoiceBuilder": "Invoice Builder",
@@ -366,6 +368,29 @@ const I18N = {
     "employees.edit": "Edit",
     "employees.delete": "Delete",
 
+    "bookkeeping.title": "Bookkeeping",
+    "bookkeeping.subtitle": "Manage your payroll and employees in one place.",
+    "bookkeeping.tabPayroll": "Payroll",
+    "bookkeeping.tabEmployees": "Employees",
+    "bookkeeping.addPayment": "Add Payment",
+    "bookkeeping.employee": "Employee",
+    "bookkeeping.employeeHint": "New names will be saved automatically.",
+    "bookkeeping.paymentDate": "Payment Date",
+    "bookkeeping.amount": "Amount",
+    "bookkeeping.method": "Method",
+    "bookkeeping.savePayment": "Save Payment",
+    "bookkeeping.reset": "Reset",
+    "bookkeeping.paymentsThisMonth": "Payments (This Month)",
+    "bookkeeping.totalThisMonth": "Total Paid (This Month)",
+    "bookkeeping.totalAllTime": "Total Paid (All Time)",
+    "bookkeeping.tip": "Tip: You can search and filter the table on the right to find any payment quickly.",
+    "bookkeeping.paymentHistory": "Payment History",
+    "bookkeeping.allMethods": "All Methods",
+    "bookkeeping.exportCsv": "Export CSV",
+    "bookkeeping.clearFilters": "Clear Filters",
+    "bookkeeping.date": "Date",
+    "bookkeeping.actions": "Actions",
+
     "support.faq1Q": "How do I become Pre-Qualified?",
     "support.faq1A": "Complete three items: fill out your W-9, upload an active Certificate of Insurance (COI), and sign the Subcontractor Agreement. Once all three are complete, you'll earn Pre-Qualified status.",
     "support.faq2Q": "How do I track payroll payments?",
@@ -410,6 +435,9 @@ const I18N = {
     "nav.dashboard": "Inicio",
     "nav.prequal": "Precalificación",
     "nav.payroll": "Nómina",
+    "nav.employees": "Empleados",
+    "nav.bookkeeping": "Contabilidad",
+    "nav.tools": "Herramientas",
     "nav.audit": "Ayuda de Auditoría",
     "nav.contractScanner": "Escáner de Contratos",
     "nav.invoiceBuilder": "Generador de Facturas",
@@ -742,6 +770,29 @@ const I18N = {
     "employees.noEmployees": "Aún no se han agregado empleados. Haz clic en \"Agregar Empleado\" para comenzar.",
     "employees.edit": "Editar",
     "employees.delete": "Eliminar",
+
+    "bookkeeping.title": "Contabilidad",
+    "bookkeeping.subtitle": "Administra tu nómina y empleados en un solo lugar.",
+    "bookkeeping.tabPayroll": "Nómina",
+    "bookkeeping.tabEmployees": "Empleados",
+    "bookkeeping.addPayment": "Agregar Pago",
+    "bookkeeping.employee": "Empleado",
+    "bookkeeping.employeeHint": "Los nombres nuevos se guardarán automáticamente.",
+    "bookkeeping.paymentDate": "Fecha de Pago",
+    "bookkeeping.amount": "Cantidad",
+    "bookkeeping.method": "Método",
+    "bookkeeping.savePayment": "Guardar Pago",
+    "bookkeeping.reset": "Restablecer",
+    "bookkeeping.paymentsThisMonth": "Pagos (Este Mes)",
+    "bookkeeping.totalThisMonth": "Total Pagado (Este Mes)",
+    "bookkeeping.totalAllTime": "Total Pagado (Todo el Tiempo)",
+    "bookkeeping.tip": "Consejo: Puedes buscar y filtrar la tabla a la derecha para encontrar cualquier pago rápidamente.",
+    "bookkeeping.paymentHistory": "Historial de Pagos",
+    "bookkeeping.allMethods": "Todos los Métodos",
+    "bookkeeping.exportCsv": "Exportar CSV",
+    "bookkeeping.clearFilters": "Limpiar Filtros",
+    "bookkeeping.date": "Fecha",
+    "bookkeeping.actions": "Acciones",
 
     "support.faq1Q": "¿Cómo me convierto en Precalificado?",
     "support.faq1A": "Completa tres elementos: completa tu W-9, sube un Certificado de Seguro (COI) activo y firma el Acuerdo de Subcontratista. Una vez que los tres estén completos, obtendrás el estatus de Precalificado.",
@@ -1707,11 +1758,31 @@ function initSidebarNav() {
     setOpen(false);
   });
 
+  // Initialize submenu toggles
+  const submenuToggles = document.querySelectorAll(".sidebar-submenu-toggle");
+  submenuToggles.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const submenu = btn.closest(".sidebar-submenu");
+      if (submenu) {
+        submenu.classList.toggle("open");
+      }
+    });
+  });
+
   // Mark active link
   const path = window.location.pathname.split("/").pop() || "index.html";
   sideNav.querySelectorAll("a").forEach(a => {
     const href = (a.getAttribute("href") || "").split("/").pop();
-    if (href === path) a.classList.add("active");
+    if (href === path) {
+      a.classList.add("active");
+      // If it's a submenu link, open the parent submenu
+      const submenu = a.closest(".sidebar-submenu");
+      if (submenu) {
+        submenu.classList.add("open");
+      }
+    }
   });
 }
 

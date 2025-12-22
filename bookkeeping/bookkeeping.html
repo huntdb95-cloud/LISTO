@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bookkeeping</title>
+
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .page-title { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin: 10px 0 18px; }
+    .page-title h1 { margin:0; font-size: 1.6rem; }
+    .muted { opacity: .75; font-size: .95rem; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:16px; }
+    .card { background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 16px; }
+    .card h2 { margin: 0 0 10px; font-size: 1.1rem; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; align-items: start; }
+    .row-3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
+    label { display:block; font-weight: 600; margin: 0 0 6px; }
+    input, select, button { width:100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.18); }
+    button { cursor:pointer; font-weight:700; }
+    button.primary { border: none; background: #111; color: #fff; }
+    button.ghost { background: transparent; }
+    .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .toolbar > * { flex: 1; min-width: 160px; }
+    .stats { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top: 10px; }
+    .stat { padding: 12px; border: 1px solid rgba(0,0,0,.10); border-radius: 12px; display: flex; flex-direction: column; }
+    .stat .k { font-size: .85rem; opacity: .7; min-height: 2.4em; display: flex; align-items: flex-start; }
+    .stat .v { font-size: 1.15rem; font-weight: 800; margin-top: 4px; }
+    .table-wrap { overflow:auto; border: 1px solid rgba(0,0,0,.10); border-radius: 12px; }
+    table { width:100%; border-collapse: collapse; min-width: 820px; }
+    th, td { text-align:left; padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,.08); }
+    th { background: rgba(0,0,0,.03); font-size: .9rem; }
+    .pill { display:inline-block; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(0,0,0,.15); font-size: .85rem; }
+    .right { text-align:right; }
+    .danger { color: #b00020; font-weight: 700; }
+    .success { color: #0a7a2f; font-weight: 700; }
+    .footer-note { margin-top: 10px; font-size: .9rem; opacity: .7; }
+    
+    /* Tab styles */
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid rgba(0,0,0,.1); }
+    .tab { padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--muted); transition: all 0.2s; }
+    .tab:hover { color: var(--brand-dark); }
+    .tab.active { color: var(--brand-dark); border-bottom-color: var(--brand); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* Swipe indicators (hidden on desktop) */
+    .swipe-indicators {
+      display: none;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .swipe-indicators .indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,.2);
+      cursor: pointer;
+      padding: 0;
+      transition: background 0.2s;
+    }
+    .swipe-indicators .indicator.active {
+      background: rgba(0,0,0,.6);
+    }
+
+    /* Swipe container (normal on desktop, swipeable on mobile) */
+    .swipe-container {
+      display: contents;
+    }
+    .swipe-slide {
+      transition: transform 0.3s ease-out;
+    }
+
+    /* Mobile: Swipeable interface */
+    @media (max-width: 900px) { 
+      .swipe-indicators {
+        display: flex;
+      }
+      .grid { 
+        grid-template-columns: 1fr; 
+        gap: 0;
+        overflow: hidden;
+      }
+      .swipe-container {
+        display: flex;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .swipe-container::-webkit-scrollbar {
+        display: none;
+      }
+      .swipe-slide {
+        flex: 0 0 100%;
+        scroll-snap-align: start;
+        width: 100%;
+        margin-right: 0;
+      }
+      .swipe-slide:last-child {
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+
+<body data-page="bookkeeping" data-requires-auth="true">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner">
+<div class="header-left">
+<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+<img id="headerAvatarImage" alt="Profile" style="display: none;" />
+<span id="headerAvatarInitials" class="header-avatar-initials"></span>
+</a>
+</div>
+<a aria-label="Listo Home" class="brand" href="../dashboard.html">
+<img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
+</a>
+
+<div class="header-actions">
+<div aria-label="Language toggle" class="lang-switch" role="group">
+<button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+<button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+</div>
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
+          Log out
+        </button>
+</div>
+</div>
+</header>
+<div class="layout">
+<aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.prequal" href="../prequal.html">Pre-Qualification</a>
+<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="../bookkeeping/bookkeeping.html">Bookkeeping</a>
+<div class="sidebar-submenu">
+  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools">Tools</button>
+  <div class="sidebar-submenu-content">
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="../audit/audit.html">Audit Help</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
+  </div>
+</div>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
+</div></aside>
+<main id="main">
+
+  <div class="page-wrap">
+    <div class="page-title">
+      <div>
+        <h1 data-i18n="bookkeeping.title">Bookkeeping</h1>
+        <div class="muted" data-i18n="bookkeeping.subtitle">Manage your payroll and employees in one place.</div>
+      </div>
+      <div class="muted" id="statusText">Loading…</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="payroll" data-i18n="bookkeeping.tabPayroll">Payroll</button>
+      <button class="tab" data-tab="employees" data-i18n="bookkeeping.tabEmployees">Employees</button>
+    </div>
+
+    <!-- Payroll Tab Content -->
+    <div id="payrollTab" class="tab-content active">
+      <!-- Mobile swipe indicators (only visible on mobile) -->
+      <div class="swipe-indicators" id="swipeIndicators">
+        <button class="indicator active" data-slide="0" aria-label="Add Payment"></button>
+        <button class="indicator" data-slide="1" aria-label="Payment History"></button>
+      </div>
+
+      <div class="grid">
+        <!-- Swipeable container for mobile -->
+        <div class="swipe-container" id="swipeContainer">
+          <!-- Left: Entry -->
+          <div class="card swipe-slide">
+            <h2 data-i18n="bookkeeping.addPayment">Add Payment</h2>
+
+          <form id="paymentForm" autocomplete="off">
+            <div class="row">
+              <div>
+                <label for="employeeName" data-i18n="bookkeeping.employee">Employee</label>
+                <!-- Type a name or select a saved employee -->
+                <input id="employeeName" list="employeeList" placeholder="Start typing a name…" required />
+                <datalist id="employeeList"></datalist>
+                <div class="muted" style="margin-top:6px; font-size: 0.85rem; line-height: 1.4;" data-i18n="bookkeeping.employeeHint">New names will be saved automatically.</div>
+              </div>
+
+              <div>
+                <label for="payDate" data-i18n="bookkeeping.paymentDate">Payment Date</label>
+                <input id="payDate" type="date" required />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="amount" data-i18n="bookkeeping.amount">Amount</label>
+                <input id="amount" type="number" step="0.01" min="0" placeholder="0.00" required />
+              </div>
+
+              <div>
+                <label for="method" data-i18n="bookkeeping.method">Method</label>
+                <select id="method" required>
+                  <option value="Cash">Cash</option>
+                  <option value="Check">Check</option>
+                  <option value="Zelle">Zelle</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+              <button class="primary" type="submit" id="saveBtn" data-i18n="bookkeeping.savePayment">Save Payment</button>
+              <button class="ghost" type="button" id="resetBtn" data-i18n="bookkeeping.reset">Reset</button>
+            </div>
+
+            <div id="formMsg" style="margin-top:10px;"></div>
+          </form>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="k" data-i18n="bookkeeping.paymentsThisMonth">Payments (This Month)</div>
+              <div class="v" id="monthCount">—</div>
+            </div>
+            <div class="stat">
+              <div class="k" data-i18n="bookkeeping.totalThisMonth">Total Paid (This Month)</div>
+              <div class="v" id="monthTotal">—</div>
+            </div>
+            <div class="stat">
+              <div class="k" data-i18n="bookkeeping.totalAllTime">Total Paid (All Time)</div>
+              <div class="v" id="allTotal">—</div>
+            </div>
+          </div>
+
+            <div class="footer-note" data-i18n="bookkeeping.tip">
+              Tip: You can search and filter the table on the right to find any payment quickly.
+            </div>
+          </div>
+
+          <!-- Right: History -->
+          <div class="card swipe-slide">
+            <h2 data-i18n="bookkeeping.paymentHistory">Payment History</h2>
+
+            <div class="toolbar" style="margin-bottom:12px;">
+            <input id="searchBox" placeholder="Search employee…" />
+            <select id="filterMethod">
+              <option value="" data-i18n="bookkeeping.allMethods">All Methods</option>
+              <option value="Cash">Cash</option>
+              <option value="Check">Check</option>
+              <option value="Zelle">Zelle</option>
+            </select>
+              <input id="fromDate" type="date" title="From date" />
+              <input id="toDate" type="date" title="To date" />
+            </div>
+
+            <div class="row" style="margin-bottom:12px;">
+              <button type="button" id="exportCsvBtn" data-i18n="bookkeeping.exportCsv">Export CSV</button>
+              <button type="button" id="clearFiltersBtn" class="ghost" data-i18n="bookkeeping.clearFilters">Clear Filters</button>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="bookkeeping.date">Date</th>
+                    <th data-i18n="bookkeeping.employee">Employee</th>
+                    <th data-i18n="bookkeeping.method">Method</th>
+                    <th class="right" data-i18n="bookkeeping.amount">Amount</th>
+                    <th class="right" data-i18n="bookkeeping.actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTbody">
+                  <tr><td colspan="5" class="muted">Loading payments…</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="tableMsg" class="muted" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employees Tab Content -->
+    <div id="employeesTab" class="tab-content">
+      <!-- Add/Edit Employee Form -->
+      <div class="card pad mb" id="employeeFormCard" style="display: none;">
+      <h2 class="h2" id="formTitle" data-i18n="employees.addEmployee">Add Employee</h2>
+      <div class="divider"></div>
+
+      <form id="employeeForm">
+      <input type="hidden" id="employeeId" />
+
+      <div class="form-grid">
+      <div class="form-group">
+      <label for="empName" data-i18n="employees.name">Full Name *</label>
+      <input type="text" id="empName" required placeholder="John Doe" />
+      </div>
+
+      <div class="form-group">
+      <label for="empEmail" data-i18n="employees.email">Email</label>
+      <input type="email" id="empEmail" placeholder="john@example.com" />
+      </div>
+
+      <div class="form-group">
+      <label for="empPhone" data-i18n="employees.phone">Phone</label>
+      <input type="tel" id="empPhone" placeholder="(555) 555-5555" />
+      </div>
+
+      <div class="form-group">
+      <label for="empType" data-i18n="employees.type">Type *</label>
+      <select id="empType" required>
+      <option value="">Select type</option>
+      <option value="employee" data-i18n="employees.typeEmployee">Employee</option>
+      <option value="subcontractor" data-i18n="employees.typeSubcontractor">Subcontractor</option>
+      </select>
+      </div>
+      </div>
+
+      <!-- Subcontractor-specific fields -->
+      <div id="subcontractorFields" style="display: none;">
+      <div class="divider"></div>
+      <h3 class="h3" data-i18n="employees.subcontractorDocs">Subcontractor Documents</h3>
+      <p class="muted small" data-i18n="employees.subcontractorDocsDesc">Upload either a Certificate of Insurance (COI) or a Workers Compensation Exemption.</p>
+
+      <div class="form-grid">
+      <div class="form-group">
+      <label for="empCoi" data-i18n="employees.coi">Certificate of Insurance (COI)</label>
+      <input type="file" id="empCoi" accept=".pdf,.png,.jpg,.jpeg" />
+      <div class="small muted" data-i18n="employees.coiHint">PDF, PNG, or JPG (max 10MB)</div>
+      <div id="coiStatus" class="small muted" style="margin-top: 6px;"></div>
+      </div>
+
+      <div class="form-group">
+      <label for="empWorkersComp" data-i18n="employees.workersComp">Workers Compensation Exemption</label>
+      <input type="file" id="empWorkersComp" accept=".pdf,.png,.jpg,.jpeg" />
+      <div class="small muted" data-i18n="employees.workersCompHint">PDF, PNG, or JPG (max 10MB)</div>
+      <div id="workersCompStatus" class="small muted" style="margin-top: 6px;"></div>
+      </div>
+      </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- W9 Upload (for all types) -->
+      <div class="form-group">
+      <label for="empW9" data-i18n="employees.w9">W-9 Form</label>
+      <input type="file" id="empW9" accept=".pdf,.png,.jpg,.jpeg" />
+      <div class="small muted" data-i18n="employees.w9Hint">PDF, PNG, or JPG (max 10MB)</div>
+      <div id="w9Status" class="small muted" style="margin-top: 6px;"></div>
+      </div>
+
+      <div class="btn-row" style="margin-top: 20px;">
+      <button type="submit" class="btn primary" id="saveEmployeeBtn" data-i18n="employees.save">Save Employee</button>
+      <button type="button" class="btn ghost" id="cancelBtn" data-i18n="employees.cancel">Cancel</button>
+      </div>
+
+      <div id="formMsg" class="form-msg" style="margin-top: 10px;"></div>
+      <div id="formError" class="form-error" style="margin-top: 10px;"></div>
+      </form>
+      </div>
+
+      <!-- Employee List -->
+      <div class="card pad">
+      <div class="row-between">
+      <h2 class="h2" data-i18n="employees.listTitle">Employees & Subcontractors</h2>
+      <button type="button" class="btn primary" id="addEmployeeBtn" data-i18n="employees.addEmployee">Add Employee</button>
+      </div>
+      <div class="divider"></div>
+
+      <div id="employeesList" class="employees-list">
+      <div class="muted" data-i18n="employees.loading">Loading...</div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- If you're already loading firebase elsewhere globally, remove these script tags and keep bookkeeping.js -->
+  
+</main>
+</div>
+<script type="module" src="../scripts.js"></script>
+<script type="module" src="./bookkeeping.js"></script>
+
+</body>
+</html>
+
