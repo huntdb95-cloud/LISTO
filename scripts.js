@@ -1323,7 +1323,6 @@ function requireAuthGuard(user) {
 }
 
 /* ========= Auth UI ========= */
-let logoutHandlerAttached = false;
 let loginFormHandlerAttached = false;
 let signupFormHandlerAttached = false;
 
@@ -2403,10 +2402,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (logoutBtn) {
       logoutBtn.hidden = !user;
       
-      // Set up logout handler only once
-      if (!logoutHandlerAttached && auth) {
-        logoutHandlerAttached = true;
-        logoutBtn.addEventListener("click", () => {
+      // Set up logout handler only once per button instance
+      if (!logoutBtn.dataset.handlerAttached && auth) {
+        logoutBtn.dataset.handlerAttached = "true";
+        logoutBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           showLogoutConfirmation();
         });
       }
