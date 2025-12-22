@@ -65,6 +65,13 @@ async function loadProfile() {
       $("userName").value = currentProfile.name || currentUser.displayName || "";
     }
     
+    // Display current language preference
+    const userLang = currentProfile.language || "en";
+    if ($("langEnBtn") && $("langEsBtn")) {
+      $("langEnBtn").setAttribute("aria-pressed", userLang === "en" ? "true" : "false");
+      $("langEsBtn").setAttribute("aria-pressed", userLang === "es" ? "true" : "false");
+    }
+    
     // Display profile picture or initials
     await displayProfilePicture();
     
@@ -159,6 +166,14 @@ function setupEventListeners() {
   
   // Password update form
   $("passwordForm").addEventListener("submit", handlePasswordUpdate);
+  
+  // Language preference buttons
+  if ($("langEnBtn")) {
+    $("langEnBtn").addEventListener("click", () => handleLanguageChange("en"));
+  }
+  if ($("langEsBtn")) {
+    $("langEsBtn").addEventListener("click", () => handleLanguageChange("es"));
+  }
 }
 
 // Handle logo upload
@@ -493,6 +508,43 @@ function clearMessages(prefix) {
   if (err) {
     err.textContent = "";
     err.style.display = "none";
+  }
+}
+
+// Handle language change
+async function handleLanguageChange(lang) {
+  if (!currentUser) return;
+  
+  try {
+    clearMessages("language");
+    showMsg("languageMsg", "Updating language preference...");
+    
+    // Update Firestore profile
+    const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
+    await setDoc(profileRef, {
+      language: lang,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    
+    // Update current profile
+    currentProfile.language = lang;
+    
+    // Update button states
+    if ($("langEnBtn") && $("langEsBtn")) {
+      $("langEnBtn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+      $("langEsBtn").setAttribute("aria-pressed", lang === "es" ? "true" : "false");
+    }
+    
+    // Apply translations immediately
+    if (typeof window.applyTranslations === 'function') {
+      window.applyTranslations(lang);
+    }
+    
+    showMsg("languageMsg", "Language preference updated successfully!", false);
+    
+  } catch (err) {
+    console.error("Language update error:", err);
+    showError("languageError", getFriendlyError(err));
   }
 }
 
