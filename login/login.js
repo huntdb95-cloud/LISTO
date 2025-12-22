@@ -27,16 +27,31 @@ form.addEventListener("submit", async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // Check for next parameter or default to dashboard
-    const urlParams = new URLSearchParams(window.location.search);
-    const next = urlParams.get("next");
-    if (next) {
-      window.location.href = next.startsWith("/") ? `..${next}` : `../${next}`;
-    } else {
-      window.location.href = "../dashboard.html";
+    
+    // Show login animation
+    const animation = document.getElementById("loginAnimation");
+    if (animation) {
+      animation.style.display = "flex";
     }
+    
+    // Wait for animation to show, then redirect
+    setTimeout(() => {
+      // Check for next parameter or default to dashboard
+      const urlParams = new URLSearchParams(window.location.search);
+      const next = urlParams.get("next");
+      if (next) {
+        window.location.href = next.startsWith("/") ? `..${next}` : `../${next}`;
+      } else {
+        window.location.href = "../dashboard.html";
+      }
+    }, 1500); // Show animation for 1.5 seconds
   } catch (err) {
     console.error(err);
     setMsg(friendlyAuthError(err));
+    // Hide animation if there was an error
+    const animation = document.getElementById("loginAnimation");
+    if (animation) {
+      animation.style.display = "none";
+    }
   }
 });

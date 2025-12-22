@@ -4,23 +4,110 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Listo — Pre-Qualification Dashboard</title>
-<meta content="Complete W-9, upload COI, sign agreement, and upload business documents to become Pre-Qualified on Listo." name="description"/>
-<link href="styles.css" rel="stylesheet"/>
+<title>Listo — Contracts</title>
+<meta content="Manage your pre-qualification documents and active builder contracts with jobs." name="description"/>
+<link href="../styles.css" rel="stylesheet"/>
+<style>
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid rgba(0,0,0,.1);
+  }
+  .tab {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .tab:hover {
+    color: var(--brand-dark);
+  }
+  .tab.active {
+    color: var(--brand-dark);
+    border-bottom-color: var(--brand);
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .contract-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .contract-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .contract-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .contract-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .jobs-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .job-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .job-title {
+    font-weight: 600;
+    margin: 0;
+  }
+  .job-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .document-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .document-link {
+    font-size: 0.9rem;
+  }
+</style>
 </head>
-<body data-page="prequal" data-requires-auth="true">
+<body data-page="contracts" data-requires-auth="true">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
 <div class="container header-inner">
 <div class="header-left">
 <button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
-<a href="account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+<a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
 <img id="headerAvatarImage" alt="Profile" style="display: none;" />
 <span id="headerAvatarInitials" class="header-avatar-initials"></span>
 </a>
 </div>
-<a aria-label="Listo Home" class="brand" href="dashboard.html">
-<img alt="Listo" class="brand-logo" src="images/logo2.png"/>
+<a aria-label="Listo Home" class="brand" href="../dashboard.html">
+<img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
 </a>
 
 <div class="header-actions">
@@ -30,28 +117,36 @@
 </div>
 </div>
 </header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
-<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="dashboard.html">Home</a>
-<a class="sidebar-link nav-link" data-i18n="nav.contracts" href="contracts/contracts.html">Contracts</a>
-<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="bookkeeping/bookkeeping.html">Bookkeeping</a>
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contracts" href="../contracts/contracts.html">Contracts</a>
+<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="../bookkeeping/bookkeeping.html">Bookkeeping</a>
 <div class="sidebar-submenu">
   <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools">Tools</button>
   <div class="sidebar-submenu-content">
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="audit/audit.html">Audit Help</a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">Contract Scanner</a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">Invoice Builder</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="../audit/audit.html">Audit Help</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
   </div>
 </div>
-<a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">Support</a>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
 </div></aside><main id="main">
 <section class="section">
 <div class="container">
 <div class="section-head">
-<h1 class="page-title" data-i18n="prequal.title">Pre-Qualification Dashboard</h1>
-<p class="muted" data-i18n="prequal.subtitle">
-            Complete the items below to earn your "Pre-Qualified" status.
+<h1 class="page-title" data-i18n="contracts.title">Contracts</h1>
+<p class="muted" data-i18n="contracts.subtitle">
+            Manage your pre-qualification documents and active builder contracts.
           </p>
 </div>
 
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="prequal" data-i18n="contracts.tabPrequal">Pre-Qualification</button>
+  <button class="tab" data-tab="builders" data-i18n="contracts.tabBuilders">Builder Contracts</button>
+</div>
+
+<!-- Pre-Qualification Tab Content -->
+<div id="prequalTab" class="tab-content active">
 <!-- Completion Dashboard -->
 <div class="card pad mb completion-status-card">
 <h2 class="h2" data-i18n="prequal.dashboardTitle">Completion Status</h2>
@@ -115,8 +210,8 @@
 <div class="divider"></div>
 <p class="muted small" data-i18n="prequal.itemW9Desc">Fill and submit your W-9.</p>
 <div class="dashboard-card-actions">
-<a class="btn primary" href="w9.html" data-i18n="prequal.completeW9">Complete W-9</a>
-<a class="btn ghost" href="w9.html" id="w9ViewBtn" data-i18n="prequal.viewDocument" style="display: none;">View W-9</a>
+<a class="btn primary" href="../w9.html" data-i18n="prequal.completeW9">Complete W-9</a>
+<a class="btn ghost" href="../w9.html" id="w9ViewBtn" data-i18n="prequal.viewDocument" style="display: none;">View W-9</a>
 </div>
 </div>
 
@@ -131,7 +226,7 @@
 <div class="divider"></div>
 <p class="muted small" id="coiMetaText" data-i18n="prequal.itemCOIDesc">Upload an active COI and set the expiration date.</p>
 <div class="dashboard-card-actions">
-<a class="btn primary" href="coi.html" data-i18n="prequal.completeCOI">Complete COI</a>
+<a class="btn primary" href="../coi.html" data-i18n="prequal.completeCOI">Complete COI</a>
 <a class="btn ghost" href="#" id="coiViewBtn" data-i18n="prequal.viewDocument" target="_blank" rel="noopener" style="display: none;">View COI</a>
 </div>
 </div>
@@ -147,8 +242,8 @@
 <div class="divider"></div>
 <p class="muted small" data-i18n="prequal.itemAgreementDesc">Review and sign your agreement.</p>
 <div class="dashboard-card-actions">
-<a class="btn primary" href="agreement.html" data-i18n="prequal.completeAgreement">Complete Agreement</a>
-<a class="btn ghost" href="agreement.html" id="agreementViewBtn" data-i18n="prequal.viewDocument" style="display: none;">View Agreement</a>
+<a class="btn primary" href="../agreement.html" data-i18n="prequal.completeAgreement">Complete Agreement</a>
+<a class="btn ghost" href="../agreement.html" id="agreementViewBtn" data-i18n="prequal.viewDocument" style="display: none;">View Agreement</a>
 </div>
 </div>
 
@@ -245,22 +340,92 @@
 </div>
 </div>
 </div>
+
+<!-- Builder Contracts Tab Content -->
+<div id="buildersTab" class="tab-content">
+<!-- Add/Edit Contract Form -->
+<div class="card pad mb" id="contractFormCard" style="display: none;">
+<h2 class="h2" id="contractFormTitle" data-i18n="contracts.addContract">Add Builder Contract</h2>
+<div class="divider"></div>
+
+<form id="contractForm">
+<input type="hidden" id="contractId" />
+
+<div class="form-group">
+<label for="builderName" data-i18n="contracts.builderName">Builder Name *</label>
+<input type="text" id="builderName" required placeholder="ABC Construction" />
+</div>
+
+<div class="form-grid">
+<div class="form-group">
+<label for="builderCoi" data-i18n="contracts.builderCoi">Builder-Specific COI</label>
+<input type="file" id="builderCoi" accept=".pdf,.png,.jpg,.jpeg" />
+<div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
+<div id="builderCoiStatus" class="small muted" style="margin-top: 6px;"></div>
+</div>
+
+<div class="form-group">
+<label for="subAgreement" data-i18n="contracts.subAgreement">Signed Subcontractor Agreement</label>
+<input type="file" id="subAgreement" accept=".pdf,.png,.jpg,.jpeg" />
+<div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
+<div id="subAgreementStatus" class="small muted" style="margin-top: 6px;"></div>
+</div>
+</div>
+
+<div class="btn-row" style="margin-top: 20px;">
+<button type="submit" class="btn primary" id="saveContractBtn" data-i18n="contracts.saveContract">Save Contract</button>
+<button type="button" class="btn ghost" id="cancelContractBtn" data-i18n="contracts.cancel">Cancel</button>
+</div>
+
+<div id="contractFormMsg" class="form-msg" style="margin-top: 10px;"></div>
+<div id="contractFormError" class="form-error" style="margin-top: 10px;"></div>
+</form>
+</div>
+
+<!-- Active Contracts -->
+<div class="card pad mb">
+<div class="row-between">
+<h2 class="h2" data-i18n="contracts.activeContracts">Active Contracts</h2>
+<button type="button" class="btn primary" id="addContractBtn" data-i18n="contracts.addContract">Add Builder Contract</button>
+</div>
+<div class="divider"></div>
+
+<div id="activeContractsList">
+<div class="muted" data-i18n="contracts.loading">Loading...</div>
+</div>
+</div>
+
+<!-- Inactive Contracts -->
+<div class="card pad">
+<div class="row-between">
+<h2 class="h2" data-i18n="contracts.inactiveContracts">Inactive Contracts</h2>
+</div>
+<div class="divider"></div>
+
+<div id="inactiveContractsList">
+<div class="muted" data-i18n="contracts.noInactiveContracts">No inactive contracts.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </section>
+
 <footer class="site-footer">
 <div class="container footer-inner">
 <div>
 <div class="brand footer-brand">
-<img alt="Listo" class="brand-logo footer-logo" src="images/logo.png"/>
+<img alt="Listo" class="brand-logo footer-logo" src="../images/logo.png"/>
 </div>
 <p class="muted" data-i18n="footer.note">
             Built to help subcontractors look sharp, stay compliant, and win more work.
           </p>
 </div>
 <div class="footer-links">
-<a data-i18n="nav.contracts" href="contracts/contracts.html">Contracts</a>
-<a data-i18n="nav.payroll" href="payroll/payroll.html">Payroll</a>
-<a data-i18n="nav.audit" href="audit/audit.html">Insurance Audit Help</a>
-<a data-i18n="nav.support" href="support.html">Support</a>
+<a data-i18n="nav.contracts" href="../contracts/contracts.html">Contracts</a>
+<a data-i18n="nav.bookkeeping" href="../bookkeeping/bookkeeping.html">Bookkeeping</a>
+<a data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
+<a data-i18n="nav.support" href="../support.html">Support</a>
 </div>
 </div>
 <div class="container footer-bottom">
@@ -269,6 +434,8 @@
 </footer>
 </main></div>
 
-<script src="scripts.js" type="module"></script>
+<script src="../scripts.js" type="module"></script>
+<script type="module" src="./contracts.js"></script>
 </body>
 </html>
+

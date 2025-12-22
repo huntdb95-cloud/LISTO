@@ -33,6 +33,7 @@ const I18N = {
     "nav.home": "Home",
     "nav.dashboard": "Home",
     "nav.prequal": "Pre-Qualification",
+    "nav.contracts": "Contracts",
     "nav.payroll": "Payroll",
     "nav.employees": "Employees",
     "nav.bookkeeping": "Bookkeeping",
@@ -391,6 +392,36 @@ const I18N = {
     "bookkeeping.date": "Date",
     "bookkeeping.actions": "Actions",
 
+    "contracts.title": "Contracts",
+    "contracts.subtitle": "Manage your pre-qualification documents and active builder contracts.",
+    "contracts.tabPrequal": "Pre-Qualification",
+    "contracts.tabBuilders": "Builder Contracts",
+    "contracts.addContract": "Add Builder Contract",
+    "contracts.builderName": "Builder Name",
+    "contracts.builderCoi": "Builder-Specific COI",
+    "contracts.subAgreement": "Signed Subcontractor Agreement",
+    "contracts.fileHint": "PDF, PNG, or JPG (max 10MB)",
+    "contracts.saveContract": "Save Contract",
+    "contracts.cancel": "Cancel",
+    "contracts.edit": "Edit",
+    "contracts.delete": "Delete",
+    "contracts.activate": "Activate",
+    "contracts.deactivate": "Deactivate",
+    "contracts.activeContracts": "Active Contracts",
+    "contracts.inactiveContracts": "Inactive Contracts",
+    "contracts.noActiveContracts": "No active contracts. Click \"Add Builder Contract\" to get started.",
+    "contracts.noInactiveContracts": "No inactive contracts.",
+    "contracts.loading": "Loading...",
+    "contracts.jobs": "Jobs",
+    "contracts.showJobs": "Show Jobs",
+    "contracts.hideJobs": "Hide Jobs",
+    "contracts.addJob": "Add Job",
+    "contracts.noJobs": "No jobs added yet.",
+    "contracts.jobName": "Job Name",
+    "contracts.jobAddress": "Address",
+    "contracts.jobDescription": "Description of Work",
+    "contracts.projectCoi": "Project COI",
+
     "support.faq1Q": "How do I become Pre-Qualified?",
     "support.faq1A": "Complete three items: fill out your W-9, upload an active Certificate of Insurance (COI), and sign the Subcontractor Agreement. Once all three are complete, you'll earn Pre-Qualified status.",
     "support.faq2Q": "How do I track payroll payments?",
@@ -437,6 +468,7 @@ const I18N = {
     "nav.home": "Inicio",
     "nav.dashboard": "Inicio",
     "nav.prequal": "Precalificación",
+    "nav.contracts": "Contratos",
     "nav.payroll": "Nómina",
     "nav.employees": "Empleados",
     "nav.bookkeeping": "Contabilidad",
@@ -796,6 +828,36 @@ const I18N = {
     "bookkeeping.clearFilters": "Limpiar Filtros",
     "bookkeeping.date": "Fecha",
     "bookkeeping.actions": "Acciones",
+
+    "contracts.title": "Contratos",
+    "contracts.subtitle": "Administra tus documentos de precalificación y contratos activos con constructores.",
+    "contracts.tabPrequal": "Precalificación",
+    "contracts.tabBuilders": "Contratos con Constructores",
+    "contracts.addContract": "Agregar Contrato con Constructor",
+    "contracts.builderName": "Nombre del Constructor",
+    "contracts.builderCoi": "COI Específico del Constructor",
+    "contracts.subAgreement": "Acuerdo de Subcontratista Firmado",
+    "contracts.fileHint": "PDF, PNG o JPG (máx 10MB)",
+    "contracts.saveContract": "Guardar Contrato",
+    "contracts.cancel": "Cancelar",
+    "contracts.edit": "Editar",
+    "contracts.delete": "Eliminar",
+    "contracts.activate": "Activar",
+    "contracts.deactivate": "Desactivar",
+    "contracts.activeContracts": "Contratos Activos",
+    "contracts.inactiveContracts": "Contratos Inactivos",
+    "contracts.noActiveContracts": "No hay contratos activos. Haz clic en \"Agregar Contrato con Constructor\" para comenzar.",
+    "contracts.noInactiveContracts": "No hay contratos inactivos.",
+    "contracts.loading": "Cargando...",
+    "contracts.jobs": "Trabajos",
+    "contracts.showJobs": "Mostrar Trabajos",
+    "contracts.hideJobs": "Ocultar Trabajos",
+    "contracts.addJob": "Agregar Trabajo",
+    "contracts.noJobs": "Aún no se han agregado trabajos.",
+    "contracts.jobName": "Nombre del Trabajo",
+    "contracts.jobAddress": "Dirección",
+    "contracts.jobDescription": "Descripción del Trabajo",
+    "contracts.projectCoi": "COI del Proyecto",
 
     "support.faq1Q": "¿Cómo me convierto en Precalificado?",
     "support.faq1A": "Completa tres elementos: completa tu W-9, sube un Certificado de Seguro (COI) activo y firma el Acuerdo de Subcontratista. Una vez que los tres estén completos, obtendrás el estatus de Precalificado.",
@@ -1239,6 +1301,12 @@ function updatePrequalUI(data) {
 async function initPrequalPage(user) {
   const data = await loadPrequalStatus(user.uid);
   updatePrequalUI(data);
+}
+
+// Make prequal functions available globally for contracts.js
+if (typeof window !== 'undefined') {
+  window.loadPrequalStatus = loadPrequalStatus;
+  window.updatePrequalUI = updatePrequalUI;
 
   // Initialize Business License upload
   initBusinessLicenseUpload(user);
@@ -1952,6 +2020,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const page = document.body?.getAttribute("data-page");
     try {
       if (page === "prequal") await initPrequalPage(user);
+      if (page === "contracts") await initPrequalPage(user); // Contracts page also needs prequal UI
       if (page === "coi") await initCoiPage(user);
       if (page === "w9") await initW9Page(user);
       if (page === "agreement") await initAgreementPage(user);
