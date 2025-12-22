@@ -498,6 +498,12 @@ const I18N = {
     "contracts.builderName": "Builder Name",
     "contracts.builderCoi": "Builder-Specific COI",
     "contracts.subAgreement": "Signed Subcontractor Agreement",
+    "contracts.subAgreementType": "Subcontractor Agreement",
+    "contracts.signStandard": "Sign Standard Agreement",
+    "contracts.uploadSigned": "Upload Signed Agreement",
+    "contracts.signStandardDesc": "You will be redirected to sign the standard subcontractor agreement.",
+    "contracts.goToSign": "Go to Sign Agreement",
+    "contracts.uploadSignedAgreement": "Upload Signed Agreement",
     "contracts.fileHint": "PDF, PNG, or JPG (max 10MB)",
     "contracts.saveContract": "Save Contract",
     "contracts.cancel": "Cancel",
@@ -967,6 +973,12 @@ const I18N = {
     "contracts.builderName": "Nombre del Constructor",
     "contracts.builderCoi": "COI Específico del Constructor",
     "contracts.subAgreement": "Acuerdo de Subcontratista Firmado",
+    "contracts.subAgreementType": "Acuerdo de Subcontratista",
+    "contracts.signStandard": "Firmar Acuerdo Estándar",
+    "contracts.uploadSigned": "Subir Acuerdo Firmado",
+    "contracts.signStandardDesc": "Serás redirigido para firmar el acuerdo estándar de subcontratista.",
+    "contracts.goToSign": "Ir a Firmar Acuerdo",
+    "contracts.uploadSignedAgreement": "Subir Acuerdo Firmado",
     "contracts.fileHint": "PDF, PNG o JPG (máx 10MB)",
     "contracts.saveContract": "Guardar Contrato",
     "contracts.cancel": "Cancelar",
@@ -1661,10 +1673,10 @@ async function getAgreementDocRef(uid) {
 
 function collectAgreementData() {
   return {
+    builderName: (document.getElementById("agreementBuilderName")?.value || "").trim(),
     subcontractorName: (document.getElementById("agreementSubName")?.value || "").trim(),
-    initials: (document.getElementById("agreementInitials")?.value || "").trim().toUpperCase(),
     title: (document.getElementById("agreementTitle")?.value || "").trim(),
-    signature: (document.getElementById("agreementSignature")?.value || "").trim(),
+    signature: (document.getElementById("agreementSignature")?.value || "").trim(), // Base64 signature image
     date: (document.getElementById("agreementDate")?.value || "").trim(),
     accepted: !!document.getElementById("agreementAccept")?.checked,
 
@@ -1695,6 +1707,140 @@ async function saveAgreement(user, data) {
   }, { merge: true });
 }
 
+// Initialize signature canvas
+function initSignatureCanvas() {
+  const canvas = document.getElementById("signatureCanvas");
+  const clearBtn = document.getElementById("clearSignatureBtn");
+  const hiddenInput = document.getElementById("agreementSignature");
+  if (!canvas || !hiddenInput) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "#000000"; // Black ink
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Set canvas size based on container width (responsive)
+  function resizeCanvas() {
+    const container = canvas.parentElement;
+    if (container) {
+      const containerWidth = container.clientWidth - 24; // Account for padding
+      const aspectRatio = 600 / 200; // Original aspect ratio
+      const newWidth = Math.min(600, containerWidth);
+      const newHeight = newWidth / aspectRatio;
+      
+      // Save current signature if exists
+      const currentSignature = hiddenInput.value;
+      
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      
+      // Restore drawing context settings after resize
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      
+      // Redraw if there's existing signature data
+      if (currentSignature) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = currentSignature;
+      }
+    }
+  }
+
+  // Initial resize
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  let isDrawing = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  // Get coordinates relative to canvas
+  function getCoordinates(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    if (e.touches && e.touches.length > 0) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  function startDrawing(e) {
+    e.preventDefault();
+    isDrawing = true;
+    const coords = getCoordinates(e);
+    lastX = coords.x;
+    lastY = coords.y;
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const coords = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+    lastX = coords.x;
+    lastY = coords.y;
+    updateSignatureData();
+  }
+
+  function stopDrawing(e) {
+    e.preventDefault();
+    if (isDrawing) {
+      isDrawing = false;
+      updateSignatureData();
+    }
+  }
+
+  function updateSignatureData() {
+    hiddenInput.value = canvas.toDataURL("image/png");
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hiddenInput.value = "";
+  }
+
+  // Mouse events
+  canvas.addEventListener("mousedown", startDrawing);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", stopDrawing);
+  canvas.addEventListener("mouseleave", stopDrawing);
+
+  // Touch events
+  canvas.addEventListener("touchstart", startDrawing);
+  canvas.addEventListener("touchmove", draw);
+  canvas.addEventListener("touchend", stopDrawing);
+  canvas.addEventListener("touchcancel", stopDrawing);
+
+  // Clear button
+  if (clearBtn) {
+    clearBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearCanvas();
+    });
+  }
+
+  // Load existing signature if available
+  return { clearCanvas, updateSignatureData };
+}
+
 async function initAgreementPage(user) {
   const form = document.getElementById("agreementForm");
   if (!form) return;
@@ -1702,16 +1848,65 @@ async function initAgreementPage(user) {
   const msg = document.getElementById("agreementMsg");
   const err = document.getElementById("agreementErr");
   const btn = document.getElementById("agreementSignBtn");
+  const builderNameInput = document.getElementById("agreementBuilderName");
+  const builderNameDisplay = document.getElementById("builderNameDisplay");
+
+  // Initialize signature canvas
+  const signatureCanvas = initSignatureCanvas();
+
+  // Check for pending builder name from contracts page
+  const pendingBuilderName = sessionStorage.getItem("pendingBuilderName");
+  if (pendingBuilderName && builderNameInput) {
+    builderNameInput.value = pendingBuilderName;
+    if (builderNameDisplay) builderNameDisplay.textContent = pendingBuilderName;
+    sessionStorage.removeItem("pendingBuilderName");
+  }
+
+  // Set default date to today
+  const dateInput = document.getElementById("agreementDate");
+  if (dateInput && !dateInput.value) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+  }
+
+  // Update builder name display when input changes
+  if (builderNameInput && builderNameDisplay) {
+    builderNameInput.addEventListener("input", (e) => {
+      const name = e.target.value.trim();
+      builderNameDisplay.textContent = name || "[Builder Name]";
+    });
+  }
 
   // preload if previously signed
   const existing = await loadAgreement(user);
   if (existing) {
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+    setVal("agreementBuilderName", existing.builderName);
     setVal("agreementSubName", existing.subcontractorName);
-    setVal("agreementInitials", existing.initials);
     setVal("agreementTitle", existing.title);
-    setVal("agreementSignature", existing.signature);
     setVal("agreementDate", existing.date);
+    
+    // Load signature image if it exists
+    if (existing.signature && existing.signature.startsWith("data:image")) {
+      const canvas = document.getElementById("signatureCanvas");
+      const hiddenInput = document.getElementById("agreementSignature");
+      if (canvas && hiddenInput) {
+        const img = new Image();
+        img.onload = () => {
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          hiddenInput.value = existing.signature;
+        };
+        img.src = existing.signature;
+      }
+    }
+    
+    // Update builder name display
+    if (builderNameDisplay && existing.builderName) {
+      builderNameDisplay.textContent = existing.builderName;
+    }
+    
     const accept = document.getElementById("agreementAccept");
     if (accept) accept.checked = !!existing.accepted;
     if (msg && existing.signedAt?.toDate) msg.textContent = `Loaded prior signature: ${existing.signedAt.toDate().toLocaleString()}`;
@@ -1723,9 +1918,10 @@ async function initAgreementPage(user) {
     if (err) err.textContent = "";
 
     const data = collectAgreementData();
-    if (!data.subcontractorName) { if (err) err.textContent = "Subcontractor name is required."; return; }
-    if (!data.initials) { if (err) err.textContent = "Initials are required."; return; }
-    if (!data.signature) { if (err) err.textContent = "Signature is required."; return; }
+    if (!data.builderName) { if (err) err.textContent = "Builder name is required."; return; }
+    if (!data.subcontractorName) { if (err) err.textContent = "Name of signer is required."; return; }
+    if (!data.title) { if (err) err.textContent = "Title at company is required."; return; }
+    if (!data.signature) { if (err) err.textContent = "Signature is required. Please sign the canvas."; return; }
     if (!data.date) { if (err) err.textContent = "Date is required."; return; }
     if (!data.accepted) { if (err) err.textContent = "Please check the agreement box to proceed."; return; }
 

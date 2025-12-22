@@ -453,7 +453,21 @@
           </div>
           
           <div class="form-group">
-            <label for="subAgreement" data-i18n="contracts.subAgreement">Signed Subcontractor Agreement</label>
+            <label for="subAgreementType" data-i18n="contracts.subAgreementType">Subcontractor Agreement *</label>
+            <select id="subAgreementType" required>
+              <option value="">Select option</option>
+              <option value="sign" data-i18n="contracts.signStandard">Sign Standard Agreement</option>
+              <option value="upload" data-i18n="contracts.uploadSigned">Upload Signed Agreement</option>
+            </select>
+          </div>
+          
+          <div id="subAgreementSignOption" class="form-group" style="display: none;">
+            <div class="small muted" data-i18n="contracts.signStandardDesc">You will be redirected to sign the standard subcontractor agreement.</div>
+            <button type="button" class="btn small primary" id="signAgreementBtn" data-i18n="contracts.goToSign">Go to Sign Agreement</button>
+          </div>
+          
+          <div id="subAgreementUploadOption" class="form-group" style="display: none;">
+            <label for="subAgreement" data-i18n="contracts.uploadSignedAgreement">Upload Signed Agreement</label>
             <input type="file" id="subAgreement" accept=".pdf,.png,.jpg,.jpeg" />
             <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
             <div id="subAgreementStatus" class="small muted" style="margin-top: 6px;"></div>
@@ -540,7 +554,21 @@
 </div>
 
 <div class="form-group">
-<label for="subAgreement" data-i18n="contracts.subAgreement">Signed Subcontractor Agreement</label>
+<label for="subAgreementType" data-i18n="contracts.subAgreementType">Subcontractor Agreement *</label>
+<select id="subAgreementType" required>
+  <option value="">Select option</option>
+  <option value="sign" data-i18n="contracts.signStandard">Sign Standard Agreement</option>
+  <option value="upload" data-i18n="contracts.uploadSigned">Upload Signed Agreement</option>
+</select>
+</div>
+
+<div id="subAgreementSignOption" class="form-group" style="display: none;">
+<div class="small muted" data-i18n="contracts.signStandardDesc">You will be redirected to sign the standard subcontractor agreement.</div>
+<button type="button" class="btn small primary" id="signAgreementBtn" data-i18n="contracts.goToSign">Go to Sign Agreement</button>
+</div>
+
+<div id="subAgreementUploadOption" class="form-group" style="display: none;">
+<label for="subAgreement" data-i18n="contracts.uploadSignedAgreement">Upload Signed Agreement</label>
 <input type="file" id="subAgreement" accept=".pdf,.png,.jpg,.jpeg" />
 <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
 <div id="subAgreementStatus" class="small muted" style="margin-top: 6px;"></div>

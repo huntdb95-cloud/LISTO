@@ -51,22 +51,20 @@
             Review the agreement below. When you sign, your signature is saved to your Listo account.
           </p>
 </div>
-<div class="grid-2">
-<!-- Left: Agreement Text -->
 <div class="card pad">
 <div class="row-between">
 <div>
-<h2 class="h2">Agreement Text</h2>
-<p class="muted small">This is the readable version of the PDF content.</p>
+<h2 class="h2">Subcontractor Agreement</h2>
+<p class="muted small">Review the agreement and sign below.</p>
 </div>
 <a class="btn small" href="prequal.html">Back</a>
 </div>
 <div class="divider"></div>
 <article class="legal">
 <h3 class="legal-title">SUBCONTRACTORS AGREEMENT</h3>
-<p>
-                This Document is a binding contract, which will serve as a blanket agreement for and between Kristina
-                Chapman Contractor Dba Chapman &amp; Chapman Homes herein known as Builder, and the undersigned referred
+              <p>
+                This Document is a binding contract, which will serve as a blanket agreement for and between 
+                <strong id="builderNameDisplay">[Builder Name]</strong> herein known as Builder, and the undersigned referred
                 to hereafter as Subcontractor. By signing, Subcontractor and Builder agree to the terms set forth herein.
                 This agreement shall remain in force from the date hereof and from year to year, unless a change is
                 agreed to in writing by both Builder and Subcontractor. The parties agree to the following:
@@ -210,46 +208,39 @@
                 Subcontractor shall warrant against any defects in workmanship and/or materials, which were supplied by subcontractor for a period of one year from the date the home is first occupied by the homeowner.
                 The Subcontractor’s warranty shall be of the same standards and duration as the Builder’s warranty provided to the Owner. A copy of such warranty is available on request from Builder.
               </p>
-<p class="muted small" style="margin-top:14px;">
-                Source: Uploaded agreement PDF. :contentReference[oaicite:1]{index=1}
-              </p>
 </article>
-</div>
-<!-- Right: PDF + Signature -->
-<div class="card pad">
-<h2 class="h2">Original PDF</h2>
-<p class="muted small">View the original document exactly as provided.</p>
-<div class="divider"></div>
-<div aria-label="Agreement PDF viewer" class="pdf-frame">
-<iframe loading="lazy" src="agreement.pdf" title="Subcontractor Agreement PDF"></iframe>
-</div>
-<div class="divider"></div>
+<div class="divider" style="margin-top: 32px;"></div>
 <h2 class="h2">Sign Agreement</h2>
 <p class="muted small">
-              Your signature is stored to your account. This will mark your agreement as completed in Pre-Qualification.
+              Fill in the builder information and sign the agreement. Your signature is stored to your account. This will mark your agreement as completed in Pre-Qualification.
             </p>
 <form class="form-grid" id="agreementForm">
 <label class="field">
-<span class="field-label">Subcontractor name</span>
-<input id="agreementSubName" required="" type="text"/>
-</label>
-<div class="grid-2 tight">
-<label class="field">
-<span class="field-label">Initials</span>
-<input id="agreementInitials" maxlength="4" placeholder="AB" required="" type="text"/>
+<span class="field-label">Builder Name *</span>
+<input id="agreementBuilderName" required="" type="text" placeholder="Enter builder/company name"/>
 </label>
 <label class="field">
-<span class="field-label">Title</span>
-<input id="agreementTitle" placeholder="Owner / Member / Manager" type="text"/>
-</label>
-</div>
-<label class="field">
-<span class="field-label">Signature (type full name)</span>
-<input id="agreementSignature" required="" type="text"/>
+<span class="field-label">Name of Signer *</span>
+<input id="agreementSubName" required="" type="text" placeholder="Your full name"/>
 </label>
 <label class="field">
-<span class="field-label">Date</span>
+<span class="field-label">Title at Company *</span>
+<input id="agreementTitle" required="" placeholder="Owner / Member / Manager" type="text"/>
+</label>
+<label class="field">
+<span class="field-label">Date Signed *</span>
 <input id="agreementDate" required="" type="date"/>
+</label>
+<label class="field">
+<span class="field-label">Signature *</span>
+<div class="signature-container">
+<canvas id="signatureCanvas" width="600" height="200"></canvas>
+<div class="signature-actions">
+<button type="button" class="btn small ghost" id="clearSignatureBtn">Clear</button>
+</div>
+<input type="hidden" id="agreementSignature" required=""/>
+</div>
+<p class="muted small" style="margin-top: 8px;">Sign with your finger (mobile) or mouse (desktop) in black ink.</p>
 </label>
 <label class="checkline">
 <input id="agreementAccept" required="" type="checkbox"/>
@@ -261,14 +252,6 @@
 <p aria-live="polite" class="muted small" id="agreementMsg" role="status"></p>
 <p aria-live="polite" class="form-error" id="agreementErr" role="alert"></p>
 </form>
-<div class="note" style="margin-top:14px;">
-<strong>Note:</strong>
-<span class="muted small">
-                This page stores typed signature + timestamp. If you later want drawn signatures or a generated PDF copy,
-                we can add that and upload the signed PDF to Firebase Storage.
-              </span>
-</div>
-</div>
 </div>
 </div>
 </section>

@@ -295,8 +295,29 @@ function showContractModal(contract = null) {
   
   const builderCoi = $("builderCoi");
   const subAgreement = $("subAgreement");
+  const subAgreementType = $("subAgreementType");
+  const subAgreementSignOption = $("subAgreementSignOption");
+  const subAgreementUploadOption = $("subAgreementUploadOption");
+  
   if (builderCoi) builderCoi.value = "";
   if (subAgreement) subAgreement.value = "";
+  
+  // Set sub-agreement type based on existing contract
+  if (subAgreementType) {
+    if (contract?.subAgreementUrl) {
+      subAgreementType.value = "upload";
+      if (subAgreementSignOption) subAgreementSignOption.style.display = "none";
+      if (subAgreementUploadOption) subAgreementUploadOption.style.display = "block";
+    } else if (contract?.subAgreementType === "sign") {
+      subAgreementType.value = "sign";
+      if (subAgreementSignOption) subAgreementSignOption.style.display = "block";
+      if (subAgreementUploadOption) subAgreementUploadOption.style.display = "none";
+    } else {
+      subAgreementType.value = "";
+      if (subAgreementSignOption) subAgreementSignOption.style.display = "none";
+      if (subAgreementUploadOption) subAgreementUploadOption.style.display = "none";
+    }
+  }
   
   const builderCoiStatus = $("builderCoiStatus");
   const subAgreementStatus = $("subAgreementStatus");
@@ -377,7 +398,19 @@ async function saveContract(e) {
     }
     
     const builderCoiFile = $("builderCoi")?.files[0];
+    const subAgreementType = $("subAgreementType")?.value;
     const subAgreementFile = $("subAgreement")?.files[0];
+    
+    // Validate sub-agreement type selection
+    if (!subAgreementType) {
+      showMsg("Please select an option for Subcontractor Agreement.", true);
+      return;
+    }
+    
+    if (subAgreementType === "upload" && !subAgreementFile && !existing?.subAgreementUrl) {
+      showMsg("Please upload a signed agreement file or select 'Sign Standard Agreement'.", true);
+      return;
+    }
     
     if (builderCoiFile) {
       showMsg("Uploading Builder COI...");
@@ -388,13 +421,20 @@ async function saveContract(e) {
       contractData.builderCoiPath = builderCoiPath;
     }
     
-    if (subAgreementFile) {
-      showMsg("Uploading Sub Agreement...");
-      if (existing?.subAgreementPath) await deleteFile(existing.subAgreementUrl);
-      const subAgreementUrl = await uploadFile(subAgreementFile, `users/${currentUid}/contracts/${contractId}/subAgreement`);
-      const subAgreementPath = `users/${currentUid}/contracts/${contractId}/subAgreement/${Date.now()}_${subAgreementFile.name.replace(/[^\w.\-]+/g, "_")}`;
-      contractData.subAgreementUrl = subAgreementUrl;
-      contractData.subAgreementPath = subAgreementPath;
+    // Handle sub-agreement based on type
+    if (subAgreementType === "upload") {
+      if (subAgreementFile) {
+        showMsg("Uploading Sub Agreement...");
+        if (existing?.subAgreementPath) await deleteFile(existing.subAgreementUrl);
+        const subAgreementUrl = await uploadFile(subAgreementFile, `users/${currentUid}/contracts/${contractId}/subAgreement`);
+        const subAgreementPath = `users/${currentUid}/contracts/${contractId}/subAgreement/${Date.now()}_${subAgreementFile.name.replace(/[^\w.\-]+/g, "_")}`;
+        contractData.subAgreementUrl = subAgreementUrl;
+        contractData.subAgreementPath = subAgreementPath;
+      }
+    } else if (subAgreementType === "sign") {
+      // User will sign standard agreement - mark that they need to sign
+      contractData.subAgreementType = "sign";
+      contractData.subAgreementSigned = false; // Will be set to true when they sign on agreement page
     }
     
     const contractRef = doc(db, "users", currentUid, "contracts", contractId);
@@ -742,6 +782,32 @@ function attachContractEventListeners() {
   // File input change handlers for contract form
   const builderCoi = $("builderCoi");
   const subAgreement = $("subAgreement");
+  const subAgreementType = $("subAgreementType");
+  const subAgreementSignOption = $("subAgreementSignOption");
+  const subAgreementUploadOption = $("subAgreementUploadOption");
+  const signAgreementBtn = $("signAgreementBtn");
+  
+  // Handle sub-agreement type selection
+  if (subAgreementType) {
+    subAgreementType.addEventListener("change", (e) => {
+      const value = e.target.value;
+      if (subAgreementSignOption) subAgreementSignOption.style.display = value === "sign" ? "block" : "none";
+      if (subAgreementUploadOption) subAgreementUploadOption.style.display = value === "upload" ? "block" : "none";
+    });
+  }
+  
+  // Handle "Go to Sign Agreement" button
+  if (signAgreementBtn) {
+    signAgreementBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const builderName = $("builderName")?.value?.trim();
+      if (builderName) {
+        // Store builder name in sessionStorage to pre-fill on agreement page
+        sessionStorage.setItem("pendingBuilderName", builderName);
+      }
+      window.location.href = "../agreement.html";
+    });
+  }
   
   if (builderCoi) {
     builderCoi.addEventListener("change", (e) => {
