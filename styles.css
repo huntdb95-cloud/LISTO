@@ -132,8 +132,9 @@ img { max-width: 100%; display: block; }
   
   /* Ensure logo stays centered on mobile for index page */
   body[data-page="landing"] .header-inner {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
     position: relative;
+    padding-right: 120px; /* Add padding to prevent overlap with translate button */
   }
   
   body[data-page="landing"] .header-inner > .brand {
@@ -145,13 +146,13 @@ img { max-width: 100%; display: block; }
     width: auto;
   }
   
-  /* Position language toggle on the right */
+  /* Position language toggle absolutely on the right with proper spacing */
   body[data-page="landing"] .lang-switch-mobile {
-    grid-column: 2;
-    position: relative;
-    right: 0;
-    top: auto;
-    transform: none;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
   }
   
   /* Hide header-actions on mobile for index page (or adjust as needed) */
@@ -1400,9 +1401,6 @@ input:focus, select:focus, textarea:focus{
 
 .form-error:not(:empty) {
   display: block;
-}
-  font-size: 0.9rem;
-  display: none;
 }
 
 /* ===== W-9 preview overlay ===== */
