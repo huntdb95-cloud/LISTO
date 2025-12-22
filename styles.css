@@ -315,7 +315,8 @@ img { max-width: 100%; display: block; }
   font-weight: 800;
 }
 
-.cta-row{ display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 14px; }
+.cta-row{ display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 14px; justify-content: center; }
+.cta-row .btn{ font-size: 1.15rem; padding: 14px 32px; }
 .trust-row{ display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 
 .pill{
