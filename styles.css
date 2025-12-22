@@ -2486,16 +2486,16 @@ input:focus, select:focus, textarea:focus{
   }
   
   .auth-logo-wrap {
-    /* Increase vertical padding to fit header-sized logo (84px) */
+    /* Increase vertical padding to fit larger logo (126px = 84px * 1.5) */
     /* Keep horizontal padding to maintain width */
     /* Container remains rectangular (wider than tall) */
-    padding: 10px 6px; /* Enough vertical padding for 84px logo, same horizontal */
+    padding: 14px 6px; /* Increased vertical padding for 126px logo, same horizontal */
     min-height: auto; /* Remove any min-height constraints */
   }
   
   .auth-logo {
-    /* Match header logo size on mobile: height: 84px; width: auto; */
-    height: 84px;
+    /* Logo size increased by 50%: 84px * 1.5 = 126px */
+    height: 126px;
     width: auto;
     max-width: min(320px, 75vw); /* Prevent logo from exceeding container width */
     object-fit: contain; /* Maintain aspect ratio */
@@ -2605,6 +2605,11 @@ input:focus, select:focus, textarea:focus{
   justify-content: space-between;
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+/* When auth-links has only one child, make container smaller */
+.auth-links:has(> :only-child) {
+  justify-content: flex-start;
 }
 
 /* Optional: a small footer line under the card */
