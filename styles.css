@@ -1926,6 +1926,41 @@ input:focus, select:focus, textarea:focus{
   .mobile-bottom-nav {
     display: block;
   }
+  
+  /* Hide header avatar and logout button on mobile */
+  .header-avatar {
+    display: none !important;
+  }
+  
+  .header-actions {
+    display: none !important;
+  }
+}
+
+/* Mobile logout button (only visible on mobile) */
+.mobile-logout-btn {
+  display: none;
+}
+
+@media (max-width: 920px) {
+  .mobile-logout-btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 20px 16px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    position: sticky;
+    bottom: 60px; /* Position above mobile bottom nav */
+    z-index: 10;
+  }
+  
+  .mobile-logout-btn .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
 }
 
 /* ============================
