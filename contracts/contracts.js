@@ -58,29 +58,6 @@ function getFriendlyError(err) {
   return "An error occurred. Please try again.";
 }
 
-// Tab Management
-function initTabs() {
-  const tabs = document.querySelectorAll(".tab");
-  const tabContents = document.querySelectorAll(".tab-content");
-  
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      const targetTab = tab.getAttribute("data-tab");
-      
-      // Update active tab
-      tabs.forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-      
-      // Update active content
-      tabContents.forEach(content => {
-        content.classList.remove("active");
-        if (content.id === `${targetTab}Tab`) {
-          content.classList.add("active");
-        }
-      });
-    });
-  });
-}
 
 // Load contracts
 async function loadContracts() {
@@ -835,9 +812,6 @@ function attachContractEventListeners() {
 
 // Initialize
 function init() {
-  // Initialize tabs
-  initTabs();
-  
   // Contract form event listeners
   const addContractBtn = $("addContractBtn");
   if (addContractBtn) addContractBtn.addEventListener("click", () => showContractModal());
@@ -891,20 +865,6 @@ function init() {
     if (user) {
       currentUid = user.uid;
       await loadContracts();
-      
-      // Load prequalification data if on prequal tab
-      if (typeof window.loadPrequalStatus === 'function' && typeof window.updatePrequalUI === 'function') {
-        const prequalData = await window.loadPrequalStatus(user.uid);
-        window.updatePrequalUI(prequalData);
-        
-        // Initialize Business License and Workers Comp uploads
-        if (typeof window.initBusinessLicenseUpload === 'function') {
-          window.initBusinessLicenseUpload(user);
-        }
-        if (typeof window.initWorkersCompUpload === 'function') {
-          window.initWorkersCompUpload(user);
-        }
-      }
     } else {
       currentUid = null;
       contracts = [];

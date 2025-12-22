@@ -7,6 +7,7 @@
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"/>
 <title>Listo — Home</title>
 <meta content="Your Listo dashboard - view your account information and access all tools." name="description"/>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
 <link href="styles.css" rel="stylesheet"/>
 </head>
 <body data-page="dashboard" data-requires-auth="true">
@@ -30,19 +31,62 @@
         </button>
 </div>
 </div>
-</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
-<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="dashboard.html">Home</a>
-<a class="sidebar-link nav-link" data-i18n="nav.contracts" href="contracts/contracts.html">Contracts</a>
-<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="bookkeeping/bookkeeping.html">Bookkeeping</a>
-<div class="sidebar-submenu">
-  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools">Tools</button>
-  <div class="sidebar-submenu-content">
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="audit/audit.html">Audit Help</a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">Contract Scanner</a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">Invoice Builder</a>
-  </div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="menu_content">
+<ul class="menu_items">
+<div class="menu_title menu_main"></div>
+<li class="item">
+<a href="dashboard.html" class="nav_link" data-i18n="nav.dashboard">
+<span class="navlink_icon">
+<i class="bx bx-home-alt"></i>
+</span>
+<span class="navlink">Home</span>
+</a>
+</li>
+<li class="item">
+<a href="contracts/contracts.html" class="nav_link" data-i18n="nav.contracts">
+<span class="navlink_icon">
+<i class="bx bx-file-blank"></i>
+</span>
+<span class="navlink">Contracts</span>
+</a>
+</li>
+<li class="item">
+<a href="bookkeeping/bookkeeping.html" class="nav_link" data-i18n="nav.bookkeeping">
+<span class="navlink_icon">
+<i class="bx bx-book"></i>
+</span>
+<span class="navlink">Bookkeeping</span>
+</a>
+</li>
+</ul>
+<ul class="menu_items">
+<div class="menu_title menu_tools"></div>
+<li class="item">
+<div class="nav_link submenu_item" data-i18n="nav.tools">
+<span class="navlink_icon">
+<i class="bx bx-wrench"></i>
+</span>
+<span class="navlink">Tools</span>
+<i class="bx bx-chevron-right arrow-left"></i>
 </div>
-<a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">Support</a>
+<ul class="menu_items submenu">
+<a href="audit/audit.html" class="nav_link sublink" data-i18n="nav.audit">Audit Help</a>
+<a href="contract-scanner/contract-scanner.html" class="nav_link sublink" data-i18n="nav.contractScanner">Contract Scanner</a>
+<a href="invoice/invoice.html" class="nav_link sublink" data-i18n="nav.invoiceBuilder">Invoice Builder</a>
+</ul>
+</li>
+</ul>
+<ul class="menu_items">
+<div class="menu_title menu_support"></div>
+<li class="item">
+<a href="support.html" class="nav_link" data-i18n="nav.support">
+<span class="navlink_icon">
+<i class="bx bx-help-circle"></i>
+</span>
+<span class="navlink">Support</span>
+</a>
+</li>
+</ul>
 </div></aside><main id="main">
 
 <section class="section">
@@ -84,6 +128,53 @@
 </div>
 <div style="margin-top: 16px;">
 <a class="btn primary" href="account/account.html" data-i18n="dashboard.editAccount">Edit Account</a>
+</div>
+<div class="divider" style="margin-top: 24px;"></div>
+<!-- Completion Status -->
+<h3 class="h3" style="margin-top: 0;" data-i18n="prequal.dashboardTitle">Completion Status</h3>
+<div class="prequal-dashboard-grid">
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardW9Dot"></span>
+<div style="flex: 1; min-width: 0;">
+<span data-i18n="prequal.itemW9">W-9 Completed</span>
+</div>
+</div>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardCoiDot"></span>
+<div style="flex: 1; min-width: 0;">
+<span data-i18n="prequal.itemCOIShort">Certificate of Insurance</span>
+</div>
+</div>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardAgreementDot"></span>
+<div style="flex: 1; min-width: 0;">
+<span data-i18n="prequal.itemAgreement">Subcontractor Agreement</span>
+</div>
+</div>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardBusinessLicenseDot"></span>
+<div style="flex: 1; min-width: 0;">
+<span data-i18n="prequal.itemBusinessLicense">Business License</span>
+<span class="muted small" data-i18n="prequal.optional"> (Optional)</span>
+</div>
+</div>
+</div>
+<div class="prequal-dashboard-item">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="dashboardWorkersCompDot"></span>
+<div style="flex: 1; min-width: 0;">
+<span data-i18n="prequal.itemWorkersComp">Workers Compensation Exemption</span>
+<span class="muted small" data-i18n="prequal.optional"> (Optional)</span>
+</div>
+</div>
+</div>
 </div>
 </div>
 

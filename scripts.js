@@ -1552,10 +1552,12 @@ async function initPrequalPage(user) {
   initWorkersCompUpload(user);
 }
 
-// Make prequal functions available globally for contracts.js
+// Make prequal functions available globally for contracts.js and account.js
 if (typeof window !== 'undefined') {
   window.loadPrequalStatus = loadPrequalStatus;
   window.updatePrequalUI = updatePrequalUI;
+  window.initBusinessLicenseUpload = initBusinessLicenseUpload;
+  window.initWorkersCompUpload = initWorkersCompUpload;
 }
 
 /* ========= COI page logic ========= */
@@ -2288,74 +2290,76 @@ function initWorkersCompUpload(user) {
 
 /* ========= Existing UI bits ========= */
 
-/* ========== Sidebar (Mobile Toggle + Active Link) ========= */
+/* ========== Sidebar (New Permanent Design - Desktop Only) ========= */
 function initSidebarNav() {
-  const toggle = document.querySelector(".sidebar-toggle");
   const sidebar = document.querySelector(".sidebar");
-  const sideNav = document.querySelector("#sideNav");
-  if (!sidebar || !sideNav) return;
+  if (!sidebar) return;
 
-  const setOpen = (open) => {
-    sidebar.classList.toggle("open", open);
-    if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
-  };
-
-  // Toggle sidebar on mobile
-  if (toggle) {
-    toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("open")));
-  }
-
-  // Close after clicking a link (mobile) - but not submenu links
-  sideNav.querySelectorAll("a.sidebar-link:not(.sidebar-submenu-link)").forEach(a => a.addEventListener("click", () => setOpen(false)));
-  // Also close when clicking submenu links
-  sideNav.querySelectorAll("a.sidebar-submenu-link").forEach(a => a.addEventListener("click", () => setOpen(false)));
-
-  // Close when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!sidebar.classList.contains("open")) return;
-    if (sidebar.contains(e.target) || (toggle && toggle.contains(e.target))) return;
-    setOpen(false);
-  });
-
-  // Initialize submenu toggles
-  function initSubmenuToggles() {
-    const submenuToggles = document.querySelectorAll(".sidebar-submenu-toggle");
-    submenuToggles.forEach(btn => {
-      // Check if already has listener
-      if (btn.dataset.listenerAttached === "true") return;
-      
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const submenu = btn.closest(".sidebar-submenu");
-        if (submenu) {
-          submenu.classList.toggle("open");
+  // Initialize submenu toggles (new structure)
+  const submenuItems = document.querySelectorAll(".submenu_item");
+  submenuItems.forEach((item, index) => {
+    if (item.dataset.listenerAttached === "true") return;
+    
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      item.classList.toggle("show_submenu");
+      // Close other submenus
+      submenuItems.forEach((item2, index2) => {
+        if (index !== index2) {
+          item2.classList.remove("show_submenu");
         }
       });
-      
-      btn.dataset.listenerAttached = "true";
     });
-  }
-  
-  // Initialize immediately
-  initSubmenuToggles();
-  
-  // Re-initialize after a short delay to catch dynamically added elements
-  setTimeout(initSubmenuToggles, 100);
+    
+    item.dataset.listenerAttached = "true";
+  });
 
   // Mark active link
   const path = window.location.pathname.split("/").pop() || "index.html";
-  sideNav.querySelectorAll("a").forEach(a => {
+  const allLinks = sidebar.querySelectorAll("a.nav_link");
+  allLinks.forEach(a => {
     const href = (a.getAttribute("href") || "").split("/").pop();
-    if (href === path) {
+    if (href === path || (path === "" && href === "dashboard.html")) {
       a.classList.add("active");
       // If it's a submenu link, open the parent submenu
-      const submenu = a.closest(".sidebar-submenu");
-      if (submenu) {
-        submenu.classList.add("open");
+      const submenuItem = a.closest("li.item");
+      if (submenuItem) {
+        const submenuParent = submenuItem.querySelector(".submenu_item");
+        if (submenuParent) {
+          submenuParent.classList.add("show_submenu");
+        }
       }
     }
   });
+
+  // Mobile behavior (keep existing mobile sidebar toggle if needed)
+  const toggle = document.querySelector(".sidebar-toggle");
+  if (toggle && window.innerWidth <= 920) {
+    const setOpen = (open) => {
+      sidebar.classList.toggle("open", open);
+      if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+
+    toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("open")));
+    
+    // Close after clicking a link (mobile)
+    allLinks.forEach(a => {
+      a.addEventListener("click", () => {
+        if (window.innerWidth <= 920) {
+          setOpen(false);
+        }
+      });
+    });
+
+    // Close when clicking outside (mobile)
+    document.addEventListener("click", (e) => {
+      if (window.innerWidth > 920) return;
+      if (!sidebar.classList.contains("open")) return;
+      if (sidebar.contains(e.target) || (toggle && toggle.contains(e.target))) return;
+      setOpen(false);
+    });
+  }
 }
 
 
@@ -2636,7 +2640,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const page = document.body?.getAttribute("data-page");
     try {
       if (page === "prequal") await initPrequalPage(user);
-      if (page === "contracts") await initPrequalPage(user); // Contracts page also needs prequal UI
+      if (page === "account") {
+        // Account page handles prequal initialization in account.js
+        // But we still need to update dashboard status dots
+        const prequalData = await loadPrequalStatus(user.uid);
+        updatePrequalUI(prequalData);
+      }
+      if (page === "dashboard") {
+        // Dashboard needs prequal status for the account info box
+        const prequalData = await loadPrequalStatus(user.uid);
+        updatePrequalUI(prequalData);
+      }
       if (page === "coi") await initCoiPage(user);
       if (page === "w9") await initW9Page(user);
       if (page === "agreement") await initAgreementPage(user);
