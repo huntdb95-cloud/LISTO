@@ -334,6 +334,13 @@ body[data-page="landing"] .lang-switch-mobile {
   align-items: center;
   justify-content: center;
 }
+
+/* Hide header avatar on desktop (sidebar has My Account link) */
+@media (min-width: 1024px) {
+  .header-avatar {
+    display: none !important;
+  }
+}
 .lang-switch{
   display: inline-flex;
   background: rgba(77,167,99,0.06);
@@ -2139,12 +2146,12 @@ input:focus, select:focus, textarea:focus{
   max-width: 100%;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1023px) {
   .mobile-bottom-nav {
     display: block;
   }
   
-  /* Hide header avatar and logout button on mobile */
+  /* Hide header avatar and logout button on mobile/tablet */
   .header-avatar {
     display: none !important;
   }
