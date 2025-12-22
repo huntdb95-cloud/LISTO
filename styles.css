@@ -1059,11 +1059,28 @@ input:focus, select:focus, textarea:focus{
   width: 100%;
   min-height: 400px;
   overflow: hidden;
+  display: block;
 }
 
+/* Force Facebook plugin to fill container width */
+.facebook-feed-container .fb-page {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block;
+}
+
+.facebook-feed-container .fb-page > span {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block;
+}
+
+.facebook-feed-container .fb-page iframe,
 .facebook-feed-container iframe {
   width: 100% !important;
-  max-width: 100%;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  display: block;
 }
 
 @media (max-width: 900px) {
