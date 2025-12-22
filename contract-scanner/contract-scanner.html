@@ -199,7 +199,6 @@
 <header class="site-header">
 <div class="container header-inner">
 <div class="header-left">
-<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
 <a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
 <img id="headerAvatarImage" alt="Profile" style="display: none;" />
 <span id="headerAvatarInitials" class="header-avatar-initials"></span>
@@ -212,54 +211,10 @@
 <div class="header-actions">
 </div>
 </div>
-</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
-<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">
-  <span class="navlink_icon"><i class="bx bx-home-alt"></i></span>
-  <span class="navlink">Home</span>
-</a>
-<a class="sidebar-link nav-link" data-i18n="nav.contracts" href="../contracts/contracts.html">
-  <span class="navlink_icon"><i class="bx bx-file-blank"></i></span>
-  <span class="navlink">Contracts</span>
-</a>
-<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="../bookkeeping/bookkeeping.html">
-  <span class="navlink_icon"><i class="bx bx-book"></i></span>
-  <span class="navlink">Bookkeeping</span>
-</a>
-<div class="sidebar-submenu">
-  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools" type="button">
-    <span class="navlink_icon"><i class="bx bx-wrench"></i></span>
-    <span class="navlink">Tools</span>
-  </button>
-  <div class="sidebar-submenu-content">
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">
-      <span class="navlink_icon"><i class="bx bx-receipt"></i></span>
-      <span class="navlink">Invoice Builder</span>
-    </a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">
-      <span class="navlink_icon"><i class="bx bx-scan"></i></span>
-      <span class="navlink">Contract Scanner</span>
-    </a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="../audit/audit.html">
-      <span class="navlink_icon"><i class="bx bx-clipboard"></i></span>
-      <span class="navlink">Audit Help</span>
-    </a>
-  </div>
-</div>
-<a class="sidebar-link nav-link" data-i18n="nav.account" href="../account/account.html">
-  <span class="navlink_icon"><i class="bx bx-user"></i></span>
-  <span class="navlink">My Account</span>
-</a>
-<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">
-  <span class="navlink_icon"><i class="bx bx-help-circle"></i></span>
-  <span class="navlink">Support</span>
-</a>
-</div>
-<div class="sidebar-bottom">
-  <button id="sidebarLogoutBtn" class="sidebar-logout-btn" type="button" hidden>
-    <span class="navlink_icon"><i class="bx bx-log-out"></i></span>
-    <span class="navlink">Logout</span>
-  </button>
-</div></aside><main id="main">
+</header>
+<div class="app-layout">
+  <div id="sidebar"></div>
+  <main id="main">
   <div class="page-wrap">
     <!-- Header -->
     <div class="card">
@@ -339,7 +294,8 @@
     </div>
 
   </div>
-</main></div>
+  </main>
+</div>
 
 <!-- Mobile Bottom Navigation -->
 <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
@@ -367,6 +323,7 @@
   </div>
 </nav>
 
+<script src="../sidebar.js"></script>
 <script src="../scripts.js" type="module"></script>
 <script type="module" src="./contract-scanner.js"></script>
 </body>
