@@ -81,8 +81,14 @@ function setStatus(text, kind = "") {
 
 function setSendResult(text, kind = "") {
   const box = el("sendResult");
+  if (!box) return;
   box.textContent = text || "";
-  box.className = `muted ${kind}`.trim();
+  // Use invoice-pill class to match CSS modifiers (ok, warn, err)
+  if (kind) {
+    box.className = `invoice-pill ${kind}`.trim();
+  } else {
+    box.className = "invoice-muted";
+  }
 }
 
 function setBusy(isBusy) {
