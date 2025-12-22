@@ -144,7 +144,7 @@ body[data-page="landing"] .lang-switch-mobile {
   body[data-page="landing"] .header-inner {
     grid-template-columns: 1fr;
     position: relative;
-    padding: 24px 140px 24px 20px; /* Increased top/bottom padding and right padding for translate button */
+    padding: 24px 20px 24px 20px; /* Reduced right padding to allow toggle at edge */
     min-height: 132px; /* Ensure enough height for 84px logo + padding */
   }
   
@@ -157,10 +157,10 @@ body[data-page="landing"] .lang-switch-mobile {
     width: auto;
   }
   
-  /* Position language toggle absolutely on the right with more spacing from logo */
+  /* Position language toggle absolutely on the right at the very edge of the screen */
   body[data-page="landing"] .lang-switch-mobile {
     position: absolute;
-    right: 10px; /* Moved further right */
+    right: calc(100% - 100vw + 4px); /* Position at viewport edge accounting for container margins */
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
