@@ -93,6 +93,92 @@
   .document-link {
     font-size: 0.9rem;
   }
+  
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .modal-content {
+    background: var(--panel);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .modal-header .h2 {
+    margin: 0;
+  }
+  
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+  }
+  
+  .modal-close:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+  
+  .modal-body {
+    padding: 24px;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 </style>
 </head>
 <body data-page="contracts" data-requires-auth="true">
@@ -343,7 +429,97 @@
 
 <!-- Builder Contracts Tab Content -->
 <div id="buildersTab" class="tab-content">
-<!-- Add/Edit Contract Form -->
+<!-- Contract Modal -->
+<div id="contractModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="h2" id="contractModalTitle" data-i18n="contracts.addContract">Add Builder Contract</h2>
+      <button type="button" class="modal-close" onclick="hideContractModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="contractForm">
+        <input type="hidden" id="contractId" />
+        
+        <div class="form-group">
+          <label for="builderName" data-i18n="contracts.builderName">Builder Name *</label>
+          <input type="text" id="builderName" required placeholder="ABC Construction" />
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="builderCoi" data-i18n="contracts.builderCoi">Builder-Specific COI</label>
+            <input type="file" id="builderCoi" accept=".pdf,.png,.jpg,.jpeg" />
+            <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
+            <div id="builderCoiStatus" class="small muted" style="margin-top: 6px;"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="subAgreement" data-i18n="contracts.subAgreement">Signed Subcontractor Agreement</label>
+            <input type="file" id="subAgreement" accept=".pdf,.png,.jpg,.jpeg" />
+            <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
+            <div id="subAgreementStatus" class="small muted" style="margin-top: 6px;"></div>
+          </div>
+        </div>
+        
+        <div id="contractFormMsg" class="form-msg" style="margin-top: 10px;"></div>
+        <div id="contractFormError" class="form-error" style="margin-top: 10px;"></div>
+        
+        <div class="btn-row" style="margin-top: 20px;">
+          <button type="submit" class="btn primary" id="saveContractBtn" data-i18n="contracts.saveContract">Save Contract</button>
+          <button type="button" class="btn ghost" onclick="hideContractModal()" data-i18n="contracts.cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Job Modal -->
+<div id="jobModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="h2" id="jobModalTitle" data-i18n="contracts.addJob">Add Job</h2>
+      <button type="button" class="modal-close" onclick="hideJobModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="jobForm">
+        <input type="hidden" id="jobContractId" />
+        <input type="hidden" id="jobId" />
+        
+        <div class="form-group">
+          <label for="jobName" data-i18n="contracts.jobName">Job Name *</label>
+          <input type="text" id="jobName" required placeholder="Project Name" />
+        </div>
+        
+        <div class="form-group">
+          <label for="jobAddress" data-i18n="contracts.jobAddress">Address</label>
+          <input type="text" id="jobAddress" placeholder="123 Main St, City, State ZIP" />
+        </div>
+        
+        <div class="form-group">
+          <label for="jobDescription" data-i18n="contracts.jobDescription">Description of Work</label>
+          <textarea id="jobDescription" rows="4" placeholder="Describe the work being performed..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="jobProjectCoi" data-i18n="contracts.projectCoi">Project COI</label>
+          <input type="file" id="jobProjectCoi" accept=".pdf,.png,.jpg,.jpeg" />
+          <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
+          <div id="jobProjectCoiStatus" class="small muted" style="margin-top: 6px;"></div>
+        </div>
+        
+        <div id="jobFormMsg" class="form-msg" style="margin-top: 10px;"></div>
+        <div id="jobFormError" class="form-error" style="margin-top: 10px;"></div>
+        
+        <div class="btn-row" style="margin-top: 20px;">
+          <button type="submit" class="btn primary" id="saveJobBtn" data-i18n="contracts.saveJob">Save Job</button>
+          <button type="button" class="btn ghost" onclick="hideJobModal()" data-i18n="contracts.cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Contract Form (hidden, kept for backward compatibility) -->
 <div class="card pad mb" id="contractFormCard" style="display: none;">
 <h2 class="h2" id="contractFormTitle" data-i18n="contracts.addContract">Add Builder Contract</h2>
 <div class="divider"></div>

@@ -183,13 +183,15 @@ function renderContractCard(contract, jobs, isActive) {
       <div class="jobs-section">
         <div class="row-between" style="margin-bottom: 12px;">
           <h4 class="h4" data-i18n="contracts.jobs">Jobs</h4>
-          <button class="btn small" onclick="toggleJobs('${contract.id}')" data-i18n="contracts.${isExpanded ? 'hideJobs' : 'showJobs'}">${isExpanded ? 'Hide Jobs' : 'Show Jobs'} (${jobs.length})</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn small primary" onclick="addJob('${contract.id}')" data-i18n="contracts.addJob">Add Job</button>
+            <button class="btn small" onclick="toggleJobs('${contract.id}')" data-i18n="contracts.${isExpanded ? 'hideJobs' : 'showJobs'}">${isExpanded ? 'Hide Jobs' : 'Show Jobs'} (${jobs.length})</button>
+          </div>
         </div>
         ${isExpanded ? `
           <div id="jobs-${contract.id}">
             ${jobsHtml}
-            <button class="btn small primary" onclick="addJob('${contract.id}')" data-i18n="contracts.addJob" style="margin-top: 12px;">Add Job</button>
-      </div>
+          </div>
         ` : ""}
       </div>
     </div>
@@ -261,16 +263,16 @@ async function deleteFile(url) {
   }
 }
 
-// Show contract form
-function showContractForm(contract = null) {
+// Show contract modal
+function showContractModal(contract = null) {
   editingContractId = contract ? contract.id : null;
-  const formCard = $("contractFormCard");
-  const formTitle = $("contractFormTitle");
-  if (!formCard) return;
+  const modal = $("contractModal");
+  const modalTitle = $("contractModalTitle");
+  if (!modal) return;
   
-  formCard.style.display = "block";
-  if (formTitle) {
-    formTitle.textContent = contract ? "Edit Builder Contract" : "Add Builder Contract";
+  modal.style.display = "flex";
+  if (modalTitle) {
+    modalTitle.textContent = contract ? "Edit Builder Contract" : "Add Builder Contract";
   }
   
   const form = $("contractForm");
@@ -293,15 +295,27 @@ function showContractForm(contract = null) {
   if (subAgreementStatus) subAgreementStatus.textContent = contract?.subAgreementUrl ? "Current file uploaded" : "";
   
   clearMessages();
-  formCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  
+  // Prevent body scroll when modal is open
+  document.body.style.overflow = "hidden";
 }
 
-// Hide contract form
-function hideContractForm() {
-  const formCard = $("contractFormCard");
-  if (formCard) formCard.style.display = "none";
+// Hide contract modal
+function hideContractModal() {
+  const modal = $("contractModal");
+  if (modal) modal.style.display = "none";
   editingContractId = null;
   clearMessages();
+  document.body.style.overflow = "";
+}
+
+// Legacy function for backward compatibility
+function showContractForm(contract = null) {
+  showContractModal(contract);
+}
+
+function hideContractForm() {
+  hideContractModal();
 }
 
 // Save contract
@@ -467,54 +481,129 @@ function addJob(contractId) {
   const contract = contracts.find(c => c.id === contractId);
   if (!contract) return;
   
-  showJobForm(contractId);
+  showJobModal(contractId);
 }
 
-// Show job form
+// Show job modal
+function showJobModal(contractId, job = null) {
+  const modal = $("jobModal");
+  const modalTitle = $("jobModalTitle");
+  if (!modal) return;
+  
+  modal.style.display = "flex";
+  if (modalTitle) {
+    modalTitle.textContent = job ? "Edit Job" : "Add Job";
+  }
+  
+  const form = $("jobForm");
+  if (form) form.reset();
+  
+  const contractIdInput = $("jobContractId");
+  const jobIdInput = $("jobId");
+  if (contractIdInput) contractIdInput.value = contractId;
+  if (jobIdInput) jobIdInput.value = job ? job.id : "";
+  
+  const jobName = $("jobName");
+  const jobAddress = $("jobAddress");
+  const jobDescription = $("jobDescription");
+  const jobProjectCoi = $("jobProjectCoi");
+  
+  if (jobName) jobName.value = job?.jobName || "";
+  if (jobAddress) jobAddress.value = job?.address || "";
+  if (jobDescription) jobDescription.value = job?.description || "";
+  if (jobProjectCoi) jobProjectCoi.value = "";
+  
+  const projectCoiStatus = $("jobProjectCoiStatus");
+  if (projectCoiStatus) projectCoiStatus.textContent = job?.projectCoiUrl ? "Current file uploaded" : "";
+  
+  clearJobMessages();
+  
+  // Prevent body scroll when modal is open
+  document.body.style.overflow = "hidden";
+}
+
+// Hide job modal
+function hideJobModal() {
+  const modal = $("jobModal");
+  if (modal) modal.style.display = "none";
+  clearJobMessages();
+  document.body.style.overflow = "";
+}
+
+// Clear job form messages
+function clearJobMessages() {
+  const msgEl = $("jobFormMsg");
+  const errEl = $("jobFormError");
+  if (msgEl) msgEl.textContent = "";
+  if (errEl) errEl.textContent = "";
+}
+
+// Legacy function for backward compatibility
 function showJobForm(contractId, job = null) {
-  // Create a modal or inline form for adding/editing jobs
-  const jobName = prompt("Job Name:", job?.jobName || "");
-  if (jobName === null) return;
+  showJobModal(contractId, job);
+}
+
+// Save job (from form)
+async function saveJobFromForm(e) {
+  e.preventDefault();
   
-  const address = prompt("Job Address:", job?.address || "");
-  if (address === null) return;
-  
-  const description = prompt("Description of Work:", job?.description || "");
-  if (description === null) return;
-  
-  // Create file input for project COI
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".pdf,.png,.jpg,.jpeg";
-  fileInput.style.display = "none";
-  document.body.appendChild(fileInput);
-  
-  const uploadProjectCoi = confirm("Would you like to upload a Project COI for this job?");
-  let projectCoiFile = null;
-  
-  if (uploadProjectCoi) {
-    fileInput.click();
-    fileInput.onchange = async (e) => {
-      projectCoiFile = e.target.files[0];
-      await saveJob(contractId, job?.id || null, jobName, address, description, projectCoiFile);
-      document.body.removeChild(fileInput);
-    };
+  if (!currentUid) {
+    showJobError("Please sign in first.");
     return;
   }
   
-  saveJob(contractId, job?.id || null, jobName, address, description, null);
-  document.body.removeChild(fileInput);
+  const btn = $("saveJobBtn");
+  if (!btn) return;
+  const oldDisabled = btn.disabled;
+  
+  try {
+    btn.disabled = true;
+    clearJobMessages();
+    showJobMsg("Saving job...");
+    
+    const contractId = $("jobContractId")?.value;
+    const jobId = $("jobId")?.value || null;
+    const jobName = $("jobName")?.value.trim();
+    const address = $("jobAddress")?.value.trim() || null;
+    const description = $("jobDescription")?.value.trim() || null;
+    const projectCoiFile = $("jobProjectCoi")?.files[0] || null;
+    
+    if (!contractId) {
+      showJobError("Contract ID is missing.");
+      return;
+    }
+    
+    if (!jobName) {
+      showJobError("Job name is required.");
+      return;
+    }
+    
+    await saveJob(contractId, jobId, jobName, address, description, projectCoiFile);
+    
+    showJobMsg("Job saved successfully!", false);
+    await loadContracts();
+    
+    setTimeout(() => {
+      hideJobModal();
+    }, 1000);
+    
+  } catch (err) {
+    console.error("Error saving job:", err);
+    showJobError(getFriendlyError(err));
+  } finally {
+    btn.disabled = oldDisabled;
+  }
 }
 
-// Save job
+// Save job (internal function)
 async function saveJob(contractId, jobId, jobName, address, description, projectCoiFile) {
   if (!currentUid) return;
   
   try {
     const jobData = {
       jobName: jobName.trim(),
-      address: address.trim() || null,
-      description: description.trim() || null,
+      address: address ? address.trim() : null,
+      description: description ? description.trim() : null,
       updatedAt: serverTimestamp()
     };
     
@@ -552,8 +641,27 @@ async function saveJob(contractId, jobId, jobName, address, description, project
     await loadContracts();
   } catch (err) {
     console.error("Error saving job:", err);
-    alert(`Error saving job: ${getFriendlyError(err)}`);
+    throw err;
   }
+}
+
+// Show job message
+function showJobMsg(msg, isError = false) {
+  const msgEl = $("jobFormMsg");
+  const errEl = $("jobFormError");
+  if (!msgEl || !errEl) return;
+  if (isError) {
+    msgEl.textContent = "";
+    errEl.textContent = msg;
+  } else {
+    errEl.textContent = "";
+    msgEl.textContent = msg;
+  }
+}
+
+// Show job error
+function showJobError(msg) {
+  showJobMsg(msg, true);
 }
 
 // Edit job
@@ -561,7 +669,7 @@ function editJob(contractId, jobId) {
   loadJobs(contractId).then(jobs => {
     const job = jobs.find(j => j.id === jobId);
     if (job) {
-      showJobForm(contractId, job);
+      showJobModal(contractId, job);
     }
   });
 }
@@ -598,10 +706,12 @@ window.toggleJobs = toggleJobs;
 window.addJob = addJob;
 window.editJob = editJob;
 window.deleteJob = deleteJob;
+window.hideContractModal = hideContractModal;
+window.hideJobModal = hideJobModal;
 
 // Attach event listeners for dynamically rendered content
 function attachContractEventListeners() {
-  // File input change handlers
+  // File input change handlers for contract form
   const builderCoi = $("builderCoi");
   const subAgreement = $("subAgreement");
   
@@ -618,6 +728,15 @@ function attachContractEventListeners() {
       if (status) status.textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
     });
   }
+  
+  // File input change handlers for job form
+  const jobProjectCoi = $("jobProjectCoi");
+  if (jobProjectCoi) {
+    jobProjectCoi.addEventListener("change", (e) => {
+      const status = $("jobProjectCoiStatus");
+      if (status) status.textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
+    });
+  }
 }
 
 // Initialize
@@ -627,13 +746,48 @@ function init() {
   
   // Contract form event listeners
   const addContractBtn = $("addContractBtn");
-  if (addContractBtn) addContractBtn.addEventListener("click", () => showContractForm());
+  if (addContractBtn) addContractBtn.addEventListener("click", () => showContractModal());
   
   const cancelContractBtn = $("cancelContractBtn");
-  if (cancelContractBtn) cancelContractBtn.addEventListener("click", hideContractForm);
+  if (cancelContractBtn) cancelContractBtn.addEventListener("click", hideContractModal);
   
   const contractForm = $("contractForm");
   if (contractForm) contractForm.addEventListener("submit", saveContract);
+  
+  // Job form event listeners
+  const jobForm = $("jobForm");
+  if (jobForm) jobForm.addEventListener("submit", saveJobFromForm);
+  
+  // Close modals when clicking outside
+  const contractModal = $("contractModal");
+  if (contractModal) {
+    contractModal.addEventListener("click", (e) => {
+      if (e.target === contractModal) {
+        hideContractModal();
+      }
+    });
+  }
+  
+  const jobModal = $("jobModal");
+  if (jobModal) {
+    jobModal.addEventListener("click", (e) => {
+      if (e.target === jobModal) {
+        hideJobModal();
+      }
+    });
+  }
+  
+  // Close modals with Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (contractModal && contractModal.style.display === "flex") {
+        hideContractModal();
+      }
+      if (jobModal && jobModal.style.display === "flex") {
+        hideJobModal();
+      }
+    }
+  });
   
   // Attach initial event listeners
   attachContractEventListeners();
