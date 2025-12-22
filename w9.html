@@ -6,6 +6,7 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Listo — W-9</title>
 <meta content="Fill out and save your W-9 information securely in your Listo account." name="description"/>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
 <link href="styles.css" rel="stylesheet"/>
 </head>
 <body data-page="w9" data-requires-auth="true">
@@ -40,25 +41,29 @@
   <span class="navlink">Bookkeeping</span>
 </a>
 <div class="sidebar-submenu">
-  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools">
+  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools" type="button">
     <span class="navlink_icon"><i class="bx bx-wrench"></i></span>
     <span class="navlink">Tools</span>
   </button>
   <div class="sidebar-submenu-content">
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="audit/audit.html">
-      <span class="navlink_icon"><i class="bx bx-clipboard"></i></span>
-      <span class="navlink">Audit Help</span>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">
+      <span class="navlink_icon"><i class="bx bx-receipt"></i></span>
+      <span class="navlink">Invoice Builder</span>
     </a>
     <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="contract-scanner/contract-scanner.html">
       <span class="navlink_icon"><i class="bx bx-scan"></i></span>
       <span class="navlink">Contract Scanner</span>
     </a>
-    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="invoice/invoice.html">
-      <span class="navlink_icon"><i class="bx bx-receipt"></i></span>
-      <span class="navlink">Invoice Builder</span>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="audit/audit.html">
+      <span class="navlink_icon"><i class="bx bx-clipboard"></i></span>
+      <span class="navlink">Audit Help</span>
     </a>
   </div>
 </div>
+<a class="sidebar-link nav-link" data-i18n="nav.account" href="account/account.html">
+  <span class="navlink_icon"><i class="bx bx-user"></i></span>
+  <span class="navlink">My Account</span>
+</a>
 <a class="sidebar-link nav-link" data-i18n="nav.support" href="support.html">
   <span class="navlink_icon"><i class="bx bx-help-circle"></i></span>
   <span class="navlink">Support</span>

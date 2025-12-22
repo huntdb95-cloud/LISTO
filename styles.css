@@ -1932,8 +1932,9 @@ input:focus, select:focus, textarea:focus{
   margin: 2px 10px;
 }
 
+/* Make Tools toggle look exactly like other sidebar links */
 .sidebar-submenu-toggle {
-  display: flex;
+  display: flex !important;
   align-items: center;
   width: 100%;
   padding: 8px 15px;
@@ -1949,6 +1950,9 @@ input:focus, select:focus, textarea:focus{
   font-size: inherit;
   text-align: left;
   position: relative;
+  margin: 0;
+  box-sizing: border-box;
+  font-weight: normal;
 }
 
 .sidebar-submenu-toggle .navlink_icon {
@@ -1956,16 +1960,18 @@ input:focus, select:focus, textarea:focus{
   font-size: 22px;
   min-width: 50px;
   line-height: 40px;
-  display: inline-block;
+  display: inline-block !important;
   text-align: center;
   border-radius: 6px;
   color: inherit;
   transition: all 0.2s;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
-.sidebar-submenu-toggle:hover .navlink_icon {
-  background: rgba(255, 255, 255, 0.2);
+.sidebar-submenu-toggle .navlink {
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-submenu-toggle:hover {
@@ -1973,22 +1979,30 @@ input:focus, select:focus, textarea:focus{
   background: var(--brand);
 }
 
+.sidebar-submenu-toggle:hover .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Arrow indicator for submenu */
 .sidebar-submenu-toggle::after {
   content: "▶";
   position: absolute;
   right: 15px;
   font-size: 0.75rem;
   transition: transform 0.2s;
+  opacity: 0.6;
 }
 
 .sidebar-submenu.open .sidebar-submenu-toggle::after {
   transform: rotate(90deg);
 }
 
+/* Submenu content */
 .sidebar-submenu-content {
   display: none;
-  padding-left: 0;
-  margin-top: 4px;
+  padding: 0;
+  margin: 4px 0 0 0;
+  overflow: hidden;
 }
 
 .sidebar-submenu.open .sidebar-submenu-content {
@@ -1996,15 +2010,17 @@ input:focus, select:focus, textarea:focus{
 }
 
 .sidebar-submenu-link {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  padding: 8px 15px 8px 40px;
+  padding: 8px 15px 8px 50px;
   color: var(--muted);
   text-decoration: none;
   border-radius: 8px;
   margin: 2px 0;
   transition: all 0.2s;
   font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sidebar-submenu-link .navlink_icon {
@@ -2012,20 +2028,18 @@ input:focus, select:focus, textarea:focus{
   font-size: 20px;
   min-width: 40px;
   line-height: 32px;
-  display: inline-block;
+  display: inline-block !important;
   text-align: center;
   border-radius: 6px;
   color: inherit;
   transition: all 0.2s;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
-.sidebar-submenu-link:hover .navlink_icon {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.sidebar-submenu-link.active .navlink_icon {
-  background: rgba(255, 255, 255, 0.2);
+.sidebar-submenu-link .navlink {
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-submenu-link:hover {
@@ -2033,10 +2047,18 @@ input:focus, select:focus, textarea:focus{
   background: var(--brand);
 }
 
+.sidebar-submenu-link:hover .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .sidebar-submenu-link.active {
   color: white;
   background: var(--brand);
   font-weight: 600;
+}
+
+.sidebar-submenu-link.active .navlink_icon {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .submenu_item {
