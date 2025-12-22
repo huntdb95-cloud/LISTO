@@ -131,6 +131,8 @@ const I18N = {
     "auth.createBtn": "Create Account",
     "signup.acceptTerms": "I agree to the",
     "signup.termsLink": "Terms and Conditions",
+    "signup.and": " and ",
+    "signup.privacyLink": "Privacy Policy",
     "auth.noAccount": "No account?",
     "auth.goSignup": "Create one",
     "auth.haveAccount": "Already have an account?",
@@ -356,7 +358,75 @@ const I18N = {
     "support.termsTitle": "Terms and Conditions",
     "support.termsDesc": "Review our Terms and Conditions to understand the terms of service for using Listo.",
     "support.viewTerms": "View Terms and Conditions",
+    "support.viewPrivacy": "View Privacy Policy",
     "support.faqTitle": "Frequently Asked Questions",
+
+    "terms.title": "Terms and Conditions",
+    "terms.lastUpdated": "Last updated:",
+    "terms.section1Title": "1. Acceptance of Terms",
+    "terms.section1Content": "By accessing and using Listo (\"the Service\"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.",
+    "terms.section2Title": "2. Use License",
+    "terms.section2Content": "Permission is granted to temporarily use Listo for personal or business purposes. This is the grant of a license, not a transfer of title, and under this license you may not:",
+    "terms.section2Item1": "Modify or copy the materials",
+    "terms.section2Item2": "Use the materials for any commercial purpose or for any public display",
+    "terms.section2Item3": "Attempt to reverse engineer any software contained in the Service",
+    "terms.section2Item4": "Remove any copyright or other proprietary notations from the materials",
+    "terms.section3Title": "3. User Account",
+    "terms.section3Content": "You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account or password.",
+    "terms.section4Title": "4. Data and Privacy",
+    "terms.section4Content": "You retain ownership of all data you upload to Listo. We will not share your data with third parties except as necessary to provide the Service or as required by law. Please review our Privacy Policy for more information.",
+    "terms.section5Title": "5. Service Availability",
+    "terms.section5Content": "We strive to provide continuous access to the Service, but we do not guarantee uninterrupted access. The Service may be unavailable due to maintenance, updates, or circumstances beyond our control.",
+    "terms.section6Title": "6. Limitation of Liability",
+    "terms.section6Content": "In no event shall Listo or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the Service.",
+    "terms.section7Title": "7. Modifications",
+    "terms.section7Content": "Listo may revise these terms of service at any time without notice. By using this Service you are agreeing to be bound by the then current version of these terms of service.",
+    "terms.section8Title": "8. Contact Information",
+    "terms.section8Content": "If you have any questions about these Terms and Conditions, please contact us at support@listo.com.",
+    "terms.backHome": "Back to Home",
+
+    "privacy.title": "Privacy Policy",
+    "privacy.lastUpdated": "Last updated:",
+    "privacy.backHome": "Back to Home",
+    "privacy.section1Title": "1. Information We Collect",
+    "privacy.section1Content": "We collect information that you provide directly to us when you create an account, use our services, or contact us. This includes:",
+    "privacy.section1Item1": "Account information (name, email address, password)",
+    "privacy.section1Item2": "Business information and documents you upload (W-9 forms, COI, contracts, invoices, payroll records)",
+    "privacy.section1Item3": "Usage information (how you interact with our services)",
+    "privacy.section1Item4": "Device and log information (IP address, browser type, access times)",
+    "privacy.section2Title": "2. How We Use Your Information",
+    "privacy.section2Content": "We use the information we collect to:",
+    "privacy.section2Item1": "Provide, maintain, and improve our services",
+    "privacy.section2Item2": "Process transactions and send related information",
+    "privacy.section2Item3": "Send technical notices, updates, and support messages",
+    "privacy.section2Item4": "Respond to your comments, questions, and requests",
+    "privacy.section2Item5": "Monitor and analyze trends, usage, and activities",
+    "privacy.section3Title": "3. Information Sharing and Disclosure",
+    "privacy.section3Content": "We do not sell, trade, or rent your personal information to third parties. We may share your information only in the following circumstances:",
+    "privacy.section3Item1": "With service providers who assist us in operating our platform (e.g., Firebase for authentication and data storage, SendGrid for email delivery)",
+    "privacy.section3Item2": "When required by law or to protect our rights and safety",
+    "privacy.section3Item3": "In connection with a business transfer (merger, acquisition, etc.)",
+    "privacy.section3Item4": "With your explicit consent",
+    "privacy.section4Title": "4. Data Security",
+    "privacy.section4Content": "We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. This includes:",
+    "privacy.section4Item1": "Encryption of data in transit and at rest",
+    "privacy.section4Item2": "Secure authentication and access controls",
+    "privacy.section4Item3": "Regular security assessments and updates",
+    "privacy.section4Item4": "Limited access to personal information on a need-to-know basis",
+    "privacy.section5Title": "5. Your Rights and Choices",
+    "privacy.section5Content": "You have the right to:",
+    "privacy.section5Item1": "Access and update your personal information through your account settings",
+    "privacy.section5Item2": "Delete your account and associated data at any time",
+    "privacy.section5Item3": "Opt out of certain communications (though we may still send important service-related messages)",
+    "privacy.section5Item4": "Request a copy of your data",
+    "privacy.section6Title": "6. Data Retention",
+    "privacy.section6Content": "We retain your personal information for as long as your account is active or as needed to provide you services. If you delete your account, we will delete or anonymize your personal information, except where we are required to retain it for legal or regulatory purposes.",
+    "privacy.section7Title": "7. Children's Privacy",
+    "privacy.section7Content": "Our services are not intended for individuals under the age of 18. We do not knowingly collect personal information from children. If you believe we have collected information from a child, please contact us immediately.",
+    "privacy.section8Title": "8. Changes to This Privacy Policy",
+    "privacy.section8Content": "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the \"Last updated\" date. You are advised to review this Privacy Policy periodically for any changes.",
+    "privacy.section9Title": "9. Contact Us",
+    "privacy.section9Content": "If you have any questions about this Privacy Policy, please contact us at support@listo.com.",
 
     "dashboard.title": "Welcome back!",
     "dashboard.subtitle": "Here's an overview of your account and quick access to your tools.",
@@ -602,6 +672,8 @@ const I18N = {
     "auth.noAccount": "¿No tienes cuenta?",
     "signup.acceptTerms": "Acepto los",
     "signup.termsLink": "Términos y Condiciones",
+    "signup.and": " y la ",
+    "signup.privacyLink": "Política de Privacidad",
     "auth.goSignup": "Crear una",
     "auth.haveAccount": "¿Ya tienes cuenta?",
     "auth.goLogin": "Inicia sesión",
@@ -935,6 +1007,7 @@ const I18N = {
     "support.termsTitle": "Términos y Condiciones",
     "support.termsDesc": "Revisa nuestros Términos y Condiciones para entender los términos de servicio para usar Listo.",
     "support.viewTerms": "Ver Términos y Condiciones",
+    "support.viewPrivacy": "Ver Política de Privacidad",
 
     "terms.title": "Términos y Condiciones",
     "terms.lastUpdated": "Última actualización:",
@@ -959,6 +1032,49 @@ const I18N = {
     "terms.section8Title": "8. Información de Contacto",
     "terms.section8Content": "Si tiene alguna pregunta sobre estos Términos y Condiciones, contáctenos en support@listo.com.",
     "terms.backHome": "Volver al Inicio",
+
+    "privacy.title": "Política de Privacidad",
+    "privacy.lastUpdated": "Última actualización:",
+    "privacy.backHome": "Volver al Inicio",
+    "privacy.section1Title": "1. Información que Recopilamos",
+    "privacy.section1Content": "Recopilamos información que usted nos proporciona directamente cuando crea una cuenta, usa nuestros servicios o nos contacta. Esto incluye:",
+    "privacy.section1Item1": "Información de la cuenta (nombre, dirección de correo electrónico, contraseña)",
+    "privacy.section1Item2": "Información comercial y documentos que sube (formularios W-9, COI, contratos, facturas, registros de nómina)",
+    "privacy.section1Item3": "Información de uso (cómo interactúa con nuestros servicios)",
+    "privacy.section1Item4": "Información del dispositivo y registros (dirección IP, tipo de navegador, horas de acceso)",
+    "privacy.section2Title": "2. Cómo Usamos Su Información",
+    "privacy.section2Content": "Usamos la información que recopilamos para:",
+    "privacy.section2Item1": "Proporcionar, mantener y mejorar nuestros servicios",
+    "privacy.section2Item2": "Procesar transacciones y enviar información relacionada",
+    "privacy.section2Item3": "Enviar avisos técnicos, actualizaciones y mensajes de soporte",
+    "privacy.section2Item4": "Responder a sus comentarios, preguntas y solicitudes",
+    "privacy.section2Item5": "Monitorear y analizar tendencias, uso y actividades",
+    "privacy.section3Title": "3. Compartir y Divulgar Información",
+    "privacy.section3Content": "No vendemos, intercambiamos ni alquilamos su información personal a terceros. Podemos compartir su información solo en las siguientes circunstancias:",
+    "privacy.section3Item1": "Con proveedores de servicios que nos ayudan a operar nuestra plataforma (por ejemplo, Firebase para autenticación y almacenamiento de datos, SendGrid para entrega de correo electrónico)",
+    "privacy.section3Item2": "Cuando sea requerido por ley o para proteger nuestros derechos y seguridad",
+    "privacy.section3Item3": "En relación con una transferencia comercial (fusión, adquisición, etc.)",
+    "privacy.section3Item4": "Con su consentimiento explícito",
+    "privacy.section4Title": "4. Seguridad de Datos",
+    "privacy.section4Content": "Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger su información personal contra acceso no autorizado, alteración, divulgación o destrucción. Esto incluye:",
+    "privacy.section4Item1": "Cifrado de datos en tránsito y en reposo",
+    "privacy.section4Item2": "Autenticación segura y controles de acceso",
+    "privacy.section4Item3": "Evaluaciones y actualizaciones de seguridad regulares",
+    "privacy.section4Item4": "Acceso limitado a información personal según necesidad",
+    "privacy.section5Title": "5. Sus Derechos y Opciones",
+    "privacy.section5Content": "Usted tiene derecho a:",
+    "privacy.section5Item1": "Acceder y actualizar su información personal a través de la configuración de su cuenta",
+    "privacy.section5Item2": "Eliminar su cuenta y datos asociados en cualquier momento",
+    "privacy.section5Item3": "Optar por no recibir ciertas comunicaciones (aunque aún podemos enviar mensajes importantes relacionados con el servicio)",
+    "privacy.section5Item4": "Solicitar una copia de sus datos",
+    "privacy.section6Title": "6. Retención de Datos",
+    "privacy.section6Content": "Retenemos su información personal mientras su cuenta esté activa o según sea necesario para brindarle servicios. Si elimina su cuenta, eliminaremos o anonimizaremos su información personal, excepto cuando se nos requiera retenerla para fines legales o regulatorios.",
+    "privacy.section7Title": "7. Privacidad de Menores",
+    "privacy.section7Content": "Nuestros servicios no están destinados a personas menores de 18 años. No recopilamos conscientemente información personal de niños. Si cree que hemos recopilado información de un niño, contáctenos inmediatamente.",
+    "privacy.section8Title": "8. Cambios a Esta Política de Privacidad",
+    "privacy.section8Content": "Podemos actualizar esta Política de Privacidad de vez en cuando. Le notificaremos de cualquier cambio publicando la nueva Política de Privacidad en esta página y actualizando la fecha de \"Última actualización\". Se le recomienda revisar esta Política de Privacidad periódicamente para cualquier cambio.",
+    "privacy.section9Title": "9. Contáctenos",
+    "privacy.section9Content": "Si tiene alguna pregunta sobre esta Política de Privacidad, contáctenos en support@listo.com.",
 
     "account.title": "Mi Cuenta",
     "account.subtitle": "Administra la configuración de tu cuenta e información de perfil.",
@@ -2140,6 +2256,24 @@ if (typeof window !== 'undefined') {
   window.updateHeaderAvatar = updateHeaderAvatar;
 }
 
+/* ========== Mobile Logout Button Initialization ========== */
+function initMobileLogoutButton(user, authInstance) {
+  const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
+  if (mobileLogoutBtn) {
+    mobileLogoutBtn.hidden = !user;
+    
+    // Set up mobile logout handler only once, but only if Firebase auth is initialized
+    if (!mobileLogoutBtn.dataset.handlerAttached && authInstance) {
+      mobileLogoutBtn.dataset.handlerAttached = "true";
+      mobileLogoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showLogoutConfirmation();
+      });
+    }
+  }
+}
+
 /* ========== Logout Confirmation Modal ========== */
 function showLogoutConfirmation() {
   // Create modal if it doesn't exist
@@ -2279,18 +2413,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
     // Handle mobile logout button (mobile only)
-    const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
-    if (mobileLogoutBtn) {
-      mobileLogoutBtn.hidden = !user;
-      
-      // Set up mobile logout handler only once
-      if (!mobileLogoutBtn.dataset.handlerAttached && auth) {
-        mobileLogoutBtn.dataset.handlerAttached = "true";
-        mobileLogoutBtn.addEventListener("click", () => {
-          showLogoutConfirmation();
-        });
-      }
-    }
+    initMobileLogoutButton(user, auth);
     
     const headerAvatar = document.getElementById("headerAvatar");
     if (headerAvatar) headerAvatar.hidden = !user;
