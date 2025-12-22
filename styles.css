@@ -1678,9 +1678,7 @@ input:focus, select:focus, textarea:focus{
   cursor: pointer;
   position: relative;
   width: 100%;
-  text-align: left;
-  background: transparent;
-  /* Inherit all sidebar-link styles */
+  /* Match sidebar-link exactly */
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1691,8 +1689,17 @@ input:focus, select:focus, textarea:focus{
   font-weight: 500;
   font-size: 1.05rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 48px;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  max-width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  background: var(--panel);
+  margin: 0;
+  overflow: hidden;
   font-family: inherit;
+  text-align: left;
 }
 
 .sidebar-submenu-toggle::before {
