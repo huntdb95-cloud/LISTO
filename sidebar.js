@@ -61,6 +61,12 @@ function createSidebarHTML(basePath = '') {
                   <span class="sidebar-label">Audit Help</span>
                 </a>
               </li>
+              <li class="sidebar-submenu-item">
+                <a href="${pathPrefix}tools/1099.html" class="sidebar-link sidebar-submenu-link" data-nav="1099">
+                  <span class="sidebar-icon"><i class="bx bx-file"></i></span>
+                  <span class="sidebar-label">1099-NEC Generator</span>
+                </a>
+              </li>
             </ul>
           </li>
           <li class="sidebar-menu-item">
@@ -99,6 +105,7 @@ function initSidebar() {
       currentPath.includes('/job-estimator/') ||
       currentPath.includes('/contract-scanner/') || 
       currentPath.includes('/audit/') || 
+      currentPath.includes('/tools/') ||
       currentPath.includes('/account/') ||
       currentPath.includes('/tools/') ||
       currentPath.includes('/settings/') ||
@@ -185,7 +192,7 @@ function initSidebarBehavior() {
 
 function checkIfSubmenuShouldBeOpen() {
   const currentPath = window.location.pathname.toLowerCase();
-  const toolPaths = ['/invoice/', '/job-estimator/', '/contract-scanner/', '/audit/', '/tools/'];
+  const toolPaths = ['/invoice/', '/job-estimator/', '/contract-scanner/', '/audit/', '/tools/', '/1099'];
   return toolPaths.some(path => currentPath.includes(path));
 }
 

@@ -329,6 +329,42 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    // ========== Tax Forms System ==========
+    
+    // Tax Profile (Payer Information): /users/{uid}/taxProfile/main
+    match /users/{userId}/taxProfile/{docId} {
+      allow read: if isOwner(userId);
+      
+      allow write: if isOwner(userId);
+      // Stores payer business name, address, TIN for 1099 generation
+      // Structure: { businessName, tin, address, city, state, zip, phone, createdAt, updatedAt }
+    }
+    
+    // 1099-NEC Forms: /users/{uid}/taxForms1099/{taxYear}/forms/{formId}
+    match /users/{userId}/taxForms1099/{taxYear}/forms/{formId} {
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['laborerId', 'payeeName', 'payerName', 'totalAmount', 'taxYear', 'pdfStoragePath', 'pdfDownloadURL', 'createdAt'])
+        && request.resource.data.laborerId is string
+        && request.resource.data.laborerId.size() >= 1
+        && request.resource.data.payeeName is string
+        && request.resource.data.payeeName.size() >= 1
+        && request.resource.data.payerName is string
+        && request.resource.data.payerName.size() >= 1
+        && isValidMoney(request.resource.data.totalAmount)
+        && request.resource.data.taxYear is int
+        && request.resource.data.taxYear >= 2000
+        && request.resource.data.taxYear <= 2100
+        && request.resource.data.pdfStoragePath is string
+        && request.resource.data.pdfDownloadURL is string
+        && request.resource.data.createdAt is timestamp;
+      
+      allow update: if false; // Forms are immutable once created
+      
+      allow delete: if isOwner(userId);
+    }
+
     // ========== Default Deny ==========
     
     // Deny all other paths

@@ -230,6 +230,31 @@ function showForm(employee = null) {
   $("coiStatus").textContent = employee?.coiUrl ? "Current file uploaded" : "";
   $("workersCompStatus").textContent = employee?.workersCompUrl ? "Current file uploaded" : "";
   
+  // Populate W9 info if available (for laborers)
+  if (employee?._isLaborer && employee._laborerData?.w9Info) {
+    const w9Info = employee._laborerData.w9Info;
+    $("w9LegalName").value = w9Info.legalName || "";
+    $("w9BusinessName").value = w9Info.businessName || "";
+    $("w9AddressLine1").value = w9Info.addressLine1 || "";
+    $("w9AddressLine2").value = w9Info.addressLine2 || "";
+    $("w9City").value = w9Info.city || "";
+    $("w9State").value = w9Info.state || "";
+    $("w9Zip").value = w9Info.zip || "";
+    $("w9TinType").value = w9Info.tinType || "SSN";
+    $("w9TinLast4").value = w9Info.tinLast4 || "";
+  } else {
+    // Clear W9 info fields
+    $("w9LegalName").value = "";
+    $("w9BusinessName").value = "";
+    $("w9AddressLine1").value = "";
+    $("w9AddressLine2").value = "";
+    $("w9City").value = "";
+    $("w9State").value = "";
+    $("w9Zip").value = "";
+    $("w9TinType").value = "SSN";
+    $("w9TinLast4").value = "";
+  }
+  
   // Show/hide subcontractor fields
   toggleSubcontractorFields();
   
@@ -469,6 +494,36 @@ async function saveLaborer(name, email, phone, type) {
     }
   }
   
+  // Save W9 info if provided
+  const w9LegalName = $("w9LegalName")?.value.trim();
+  const w9BusinessName = $("w9BusinessName")?.value.trim();
+  const w9AddressLine1 = $("w9AddressLine1")?.value.trim();
+  const w9AddressLine2 = $("w9AddressLine2")?.value.trim();
+  const w9City = $("w9City")?.value.trim();
+  const w9State = $("w9State")?.value.trim().toUpperCase();
+  const w9Zip = $("w9Zip")?.value.trim();
+  const w9TinType = $("w9TinType")?.value || "SSN";
+  const w9TinLast4 = $("w9TinLast4")?.value.trim();
+  
+  // Only save W9 info if at least legal name and address are provided
+  if (w9LegalName && w9AddressLine1 && w9City && w9State && w9Zip && w9TinLast4) {
+    laborerData.w9Info = {
+      legalName: w9LegalName,
+      businessName: w9BusinessName || null,
+      addressLine1: w9AddressLine1,
+      addressLine2: w9AddressLine2 || null,
+      city: w9City,
+      state: w9State,
+      zip: w9Zip,
+      tinType: w9TinType,
+      tinLast4: w9TinLast4,
+      updatedAt: Date.now()
+    };
+  } else if (existing?.w9Info) {
+    // Preserve existing W9 info if new info is incomplete
+    laborerData.w9Info = existing.w9Info;
+  }
+  
   // Update laborer in Firestore
   await updateDoc(laborerRef, laborerData);
   
@@ -532,6 +587,17 @@ function init() {
   $("empW9").addEventListener("change", (e) => {
     $("w9Status").textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
   });
+  
+  // W9 Info toggle
+  const toggleW9InfoBtn = $("toggleW9InfoBtn");
+  const w9InfoFields = $("w9InfoFields");
+  if (toggleW9InfoBtn && w9InfoFields) {
+    toggleW9InfoBtn.addEventListener("click", () => {
+      const isVisible = w9InfoFields.style.display !== "none";
+      w9InfoFields.style.display = isVisible ? "none" : "block";
+      toggleW9InfoBtn.textContent = isVisible ? "Show" : "Hide";
+    });
+  }
   $("empCoi").addEventListener("change", (e) => {
     $("coiStatus").textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
   });

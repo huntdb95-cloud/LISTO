@@ -3993,6 +3993,41 @@ input:focus, select:focus, textarea:focus{
   .modal-body .btn-row .btn {
     width: 100%;
   }
+  
+  /* 1099 Generator responsive styles */
+  body[data-page="1099"] .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  body[data-page="1099"] .info-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  body[data-page="1099"] .info-label {
+    margin-bottom: 2px;
+  }
+  
+  body[data-page="1099"] .laborers-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  body[data-page="1099"] .laborer-card {
+    padding: 12px;
+  }
+  
+  body[data-page="1099"] table {
+    font-size: 0.85rem;
+  }
+  
+  body[data-page="1099"] .stat-card {
+    padding: 16px;
+  }
+  
+  body[data-page="1099"] .stat-value {
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 768px) {
