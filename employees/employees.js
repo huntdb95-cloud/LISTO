@@ -165,18 +165,25 @@ function renderEmployeesList() {
 }
 
 // Upload file to Storage
+// Returns { url, storagePath } or null
 async function uploadFile(file, path) {
   if (!file) return null;
   
   const safeName = file.name.replace(/[^\w.\-]+/g, "_");
   const timestamp = Date.now();
-  const storageRef = ref(storage, `${path}/${timestamp}_${safeName}`);
+  const storagePath = `${path}/${timestamp}_${safeName}`;
+  const storageRef = ref(storage, storagePath);
   
   await uploadBytes(storageRef, file, {
     contentType: file.type || "application/octet-stream"
   });
   
-  return await getDownloadURL(storageRef);
+  const downloadURL = await getDownloadURL(storageRef);
+  
+  return {
+    url: downloadURL,
+    storagePath: storagePath
+  };
 }
 
 // Delete file from Storage
@@ -320,23 +327,23 @@ async function saveEmployee(e) {
     if (w9File) {
       showMsg("Uploading W-9...");
       if (existing?.w9Url) await deleteFile(existing.w9Url);
-      const w9Url = await uploadFile(w9File, `users/${currentUid}/employees/${employeeId}/w9`);
-      employeeData.w9Url = w9Url;
+      const w9Result = await uploadFile(w9File, `users/${currentUid}/employees/${employeeId}/w9`);
+      if (w9Result) employeeData.w9Url = w9Result.url;
     }
     
     if (type === "subcontractor") {
       if (coiFile) {
         showMsg("Uploading COI...");
         if (existing?.coiUrl) await deleteFile(existing.coiUrl);
-        const coiUrl = await uploadFile(coiFile, `users/${currentUid}/employees/${employeeId}/coi`);
-        employeeData.coiUrl = coiUrl;
+        const coiResult = await uploadFile(coiFile, `users/${currentUid}/employees/${employeeId}/coi`);
+        if (coiResult) employeeData.coiUrl = coiResult.url;
       }
       
       if (workersCompFile) {
         showMsg("Uploading Workers Compensation document...");
         if (existing?.workersCompUrl) await deleteFile(existing.workersCompUrl);
-        const workersCompUrl = await uploadFile(workersCompFile, `users/${currentUid}/employees/${employeeId}/workersComp`);
-        employeeData.workersCompUrl = workersCompUrl;
+        const workersCompResult = await uploadFile(workersCompFile, `users/${currentUid}/employees/${employeeId}/workersComp`);
+        if (workersCompResult) employeeData.workersCompUrl = workersCompResult.url;
       }
     } else {
       // If changing from subcontractor to employee, remove subcontractor-specific files
@@ -420,22 +427,19 @@ async function saveLaborer(name, email, phone, type) {
       }
     }
     
-    const w9Url = await uploadFile(w9File, `users/${currentUid}/laborers/${laborerId}/documents/w9`);
+    const w9Result = await uploadFile(w9File, `users/${currentUid}/laborers/${laborerId}/documents/w9`);
     
-    // Extract storage path from URL or construct it
-    const safeName = w9File.name.replace(/[^\w.\-]+/g, "_");
-    const timestamp = Date.now();
-    const storagePath = `users/${currentUid}/laborers/${laborerId}/documents/w9/${timestamp}_${safeName}`;
-    
-    laborerData.documents.w9 = {
-      fileName: w9File.name,
-      contentType: w9File.type,
-      size: w9File.size,
-      storagePath: storagePath,
-      downloadURL: w9Url,
-      uploadedAt: Date.now(),
-      updatedAt: Date.now()
-    };
+    if (w9Result) {
+      laborerData.documents.w9 = {
+        fileName: w9File.name,
+        contentType: w9File.type,
+        size: w9File.size,
+        storagePath: w9Result.storagePath, // Use the actual path from uploadFile
+        downloadURL: w9Result.url,
+        uploadedAt: Date.now(),
+        updatedAt: Date.now()
+      };
+    }
   }
   
   if (type === "subcontractor" && coiFile) {
@@ -450,22 +454,19 @@ async function saveLaborer(name, email, phone, type) {
       }
     }
     
-    const coiUrl = await uploadFile(coiFile, `users/${currentUid}/laborers/${laborerId}/documents/coi`);
+    const coiResult = await uploadFile(coiFile, `users/${currentUid}/laborers/${laborerId}/documents/coi`);
     
-    // Extract storage path from URL or construct it
-    const safeName = coiFile.name.replace(/[^\w.\-]+/g, "_");
-    const timestamp = Date.now();
-    const storagePath = `users/${currentUid}/laborers/${laborerId}/documents/coi/${timestamp}_${safeName}`;
-    
-    laborerData.documents.coi = {
-      fileName: coiFile.name,
-      contentType: coiFile.type,
-      size: coiFile.size,
-      storagePath: storagePath,
-      downloadURL: coiUrl,
-      uploadedAt: Date.now(),
-      updatedAt: Date.now()
-    };
+    if (coiResult) {
+      laborerData.documents.coi = {
+        fileName: coiFile.name,
+        contentType: coiFile.type,
+        size: coiFile.size,
+        storagePath: coiResult.storagePath, // Use the actual path from uploadFile
+        downloadURL: coiResult.url,
+        uploadedAt: Date.now(),
+        updatedAt: Date.now()
+      };
+    }
   }
   
   // Update laborer in Firestore
