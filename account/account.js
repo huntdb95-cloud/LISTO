@@ -89,9 +89,75 @@ async function loadProfile() {
     // Display profile picture or initials
     await displayProfilePicture();
     
+    // Populate summary stat cards
+    updateSummaryCards();
+    
   } catch (err) {
     console.error("Error loading profile:", err);
     showError("logoError", "Failed to load profile.");
+  }
+}
+
+// Update summary stat cards with user data
+function updateSummaryCards() {
+  if (!currentUser) return;
+  
+  // Email stat card
+  const emailEl = $("statCardEmail");
+  if (emailEl) {
+    emailEl.textContent = currentUser.email || "—";
+  }
+  
+  // Email verified badge
+  const emailVerifiedEl = $("statCardEmailVerified");
+  if (emailVerifiedEl && currentUser.emailVerified) {
+    emailVerifiedEl.style.display = "inline-flex";
+  } else if (emailVerifiedEl) {
+    emailVerifiedEl.style.display = "none";
+  }
+  
+  // Language stat card
+  const langEl = $("statCardLanguage");
+  if (langEl) {
+    const userLang = currentProfile?.language || "en";
+    langEl.textContent = userLang === "es" ? "Español" : "English";
+  }
+  
+  // Member Since stat card
+  const memberSinceEl = $("statCardMemberSince");
+  if (memberSinceEl && currentUser.metadata?.creationTime) {
+    try {
+      const creationDate = new Date(currentUser.metadata.creationTime);
+      const options = { year: 'numeric', month: 'short' };
+      memberSinceEl.textContent = creationDate.toLocaleDateString('en-US', options);
+    } catch (err) {
+      memberSinceEl.textContent = "—";
+    }
+  } else if (memberSinceEl) {
+    memberSinceEl.textContent = "—";
+  }
+  
+  // Last updated (optional, only show if available)
+  const lastUpdatedEl = $("accountLastUpdated");
+  if (lastUpdatedEl && currentProfile?.updatedAt) {
+    try {
+      // If updatedAt is a Firestore timestamp, convert it
+      let updatedDate;
+      if (currentProfile.updatedAt?.toDate) {
+        updatedDate = currentProfile.updatedAt.toDate();
+      } else if (currentProfile.updatedAt?.seconds) {
+        updatedDate = new Date(currentProfile.updatedAt.seconds * 1000);
+      } else {
+        updatedDate = new Date(currentProfile.updatedAt);
+      }
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      lastUpdatedEl.textContent = `Last updated: ${updatedDate.toLocaleDateString('en-US', options)}`;
+      lastUpdatedEl.style.display = "block";
+    } catch (err) {
+      lastUpdatedEl.style.display = "none";
+    }
+  } else if (lastUpdatedEl) {
+    lastUpdatedEl.style.display = "none";
   }
 }
 
@@ -267,6 +333,9 @@ async function handleLogoUpload(e) {
       await window.updateHeaderAvatar(currentUser);
     }
     
+    // Update summary cards
+    updateSummaryCards();
+    
     showMsg("logoMsg", "Logo uploaded successfully!", false);
     $("logoForm").reset();
     
@@ -366,6 +435,9 @@ async function handleNameUpdate(e) {
       await window.updateHeaderAvatar(currentUser);
     }
     
+    // Update summary cards
+    updateSummaryCards();
+    
     showMsg("nameMsg", "Name updated successfully!", false);
     
   } catch (err) {
@@ -422,6 +494,9 @@ async function handleEmailUpdate(e) {
     
     // Reload profile
     await loadProfile();
+    
+    // Update summary cards
+    updateSummaryCards();
     
     showMsg("emailMsg", "Email updated successfully!", false);
     $("emailForm").reset();
@@ -553,6 +628,9 @@ async function handleLanguageChange(lang) {
     if (typeof window.applyTranslations === 'function') {
       window.applyTranslations(lang);
     }
+    
+    // Update summary cards
+    updateSummaryCards();
     
     showMsg("languageMsg", "Language preference updated successfully!", false);
     
