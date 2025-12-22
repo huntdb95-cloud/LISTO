@@ -1934,6 +1934,46 @@ input:focus, select:focus, textarea:focus{
   .header-actions {
     display: none !important;
   }
+  
+  /* Add padding to body on mobile for landing page bottom nav */
+  body[data-page="landing"] {
+    padding-bottom: 70px;
+  }
+}
+
+/* Mobile Bottom Navigation for Landing Page (mobile only) */
+.mobile-bottom-nav-landing {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  padding: 12px 16px;
+}
+
+.mobile-bottom-nav-landing-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mobile-bottom-nav-landing-content .btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  justify-content: center;
+}
+
+@media (max-width: 920px) {
+  .mobile-bottom-nav-landing {
+    display: block;
+  }
 }
 
 /* Mobile logout button (only visible on mobile) */
