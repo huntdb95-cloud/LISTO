@@ -2878,6 +2878,144 @@ input:focus, select:focus, textarea:focus{
   color: var(--text);
 }
 
+/* ========== General Modal Styles ========== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+  overflow-y: auto;
+}
+
+.modal-overlay[style*="flex"] {
+  display: flex !important;
+}
+
+.modal-content {
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+  position: relative;
+}
+
+.modal-content.modal-large {
+  max-width: 800px;
+}
+
+.modal-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.modal-header .h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.modal-body .form-group {
+  margin-bottom: 20px;
+}
+
+.modal-body .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.modal-body label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.modal-body input,
+.modal-body select,
+.modal-body textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  background: var(--panel);
+  color: var(--text);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.modal-body input:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(77, 167, 99, 0.1);
+}
+
+.modal-body textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.modal-body .btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.modal-body .btn-row .btn {
+  min-width: 100px;
+}
+
 /* ========== Logout Confirmation Modal ========== */
 .logout-modal-overlay {
   position: fixed;
@@ -3573,6 +3711,86 @@ input:focus, select:focus, textarea:focus{
   font-weight: 600;
 }
 
+/* Mobile Jobs Card Layout */
+.contracts-jobs-mobile {
+  display: none;
+}
+
+.contracts-job-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+
+.contracts-job-card.overdue {
+  border-color: rgba(228, 77, 77, 0.3);
+  background: rgba(228, 77, 77, 0.02);
+}
+
+.contracts-job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.contracts-job-card-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.contracts-job-card-status {
+  flex-shrink: 0;
+}
+
+.contracts-job-card-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.contracts-job-card-field:last-child {
+  margin-bottom: 0;
+}
+
+.contracts-job-card-label {
+  font-weight: 600;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.contracts-job-card-value {
+  color: var(--text);
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.contracts-job-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.contracts-job-card-actions .btn {
+  flex: 1;
+}
+
 /* Progress Bar */
 .contracts-progress-bar {
   position: relative;
@@ -3722,7 +3940,7 @@ input:focus, select:focus, textarea:focus{
   
   /* Fix jobs table container to prevent page overflow */
   body[data-page="contracts"] .contracts-jobs-table-container {
-    overflow-x: auto;
+    overflow-x: visible;
     -webkit-overflow-scrolling: touch;
     width: 100%;
     max-width: 100%;
@@ -3730,10 +3948,6 @@ input:focus, select:focus, textarea:focus{
     padding: 0;
   }
   
-  /* Ensure table doesn't exceed container - allow scroll within table container only */
-  body[data-page="contracts"] .contracts-jobs-table {
-    min-width: 600px; /* Allow horizontal scroll within container only */
-  }
   
   /* Fix stat cards grid */
   body[data-page="contracts"] .contracts-stat-cards {
@@ -3756,6 +3970,63 @@ input:focus, select:focus, textarea:focus{
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+  }
+  
+  /* Modal responsive fixes */
+  .modal-overlay {
+    padding: 12px;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-body .btn-row {
+    flex-direction: column;
+  }
+  
+  .modal-body .btn-row .btn {
+    width: 100%;
+  }
+  
+  /* 1099 Generator responsive styles */
+  body[data-page="1099"] .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  body[data-page="1099"] .info-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  body[data-page="1099"] .info-label {
+    margin-bottom: 2px;
+  }
+  
+  body[data-page="1099"] .laborers-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  body[data-page="1099"] .laborer-card {
+    padding: 12px;
+  }
+  
+  body[data-page="1099"] table {
+    font-size: 0.85rem;
+  }
+  
+  body[data-page="1099"] .stat-card {
+    padding: 16px;
+  }
+  
+  body[data-page="1099"] .stat-value {
+    font-size: 1.5rem;
   }
 }
 
@@ -3798,13 +4069,13 @@ input:focus, select:focus, textarea:focus{
     flex: 1;
   }
   
-  .contracts-jobs-table {
-    font-size: 0.85rem;
+  /* Hide table on mobile, show cards */
+  .contracts-jobs-table-container {
+    display: none;
   }
   
-  .contracts-jobs-table th,
-  .contracts-jobs-table td {
-    padding: 8px;
+  .contracts-jobs-mobile {
+    display: block;
   }
   
   .contracts-jobs-section-header {

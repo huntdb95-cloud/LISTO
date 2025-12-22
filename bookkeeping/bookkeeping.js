@@ -189,15 +189,27 @@ function renderLaborerDetail(laborer) {
   if (!laborer) return;
 
   $("detailLaborerName").textContent = laborer.displayName || "Laborer Details";
-  $("laborerId").value = laborer.id || "";
-  $("laborerDisplayName").value = laborer.displayName || "";
-  $("laborerType").value = laborer.laborerType || "";
-  $("laborerPhone").value = laborer.phone || "";
-  $("laborerEmail").value = laborer.email || "";
-  $("laborerAddress").value = laborer.address || "";
-  $("laborerTinLast4").value = laborer.tinLast4 || "";
-  $("laborerNotes").value = laborer.notes || "";
-  $("laborerIsArchived").checked = laborer.isArchived || false;
+  
+  // Store laborer ID for navigation
+  const laborerIdEl = document.getElementById("laborerId");
+  if (!laborerIdEl) {
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
+    hiddenInput.id = "laborerId";
+    hiddenInput.value = laborer.id || "";
+    $("laborerDetailPanel").insertBefore(hiddenInput, $("laborerDetailPanel").firstChild);
+  } else {
+    laborerIdEl.value = laborer.id || "";
+  }
+
+  // Render read-only summary
+  $("summaryDisplayName").textContent = laborer.displayName || "—";
+  $("summaryType").textContent = laborer.laborerType || "—";
+  $("summaryTinLast4").textContent = laborer.tinLast4 || "—";
+  $("summaryPhone").textContent = laborer.phone || "—";
+  $("summaryEmail").textContent = laborer.email || "—";
+  $("summaryAddress").textContent = laborer.address || "—";
+  $("summaryNotes").textContent = laborer.notes || "—";
 
   // Show/hide COI section based on type
   const coiSection = $("coiDocumentSection");
@@ -208,14 +220,13 @@ function renderLaborerDetail(laborer) {
     coiSection.style.display = "none";
   }
 
-  // Render document statuses
+  // Render document statuses (read-only)
   renderDocumentStatus("w9", laborer.documents?.w9);
 }
 
 function renderDocumentStatus(docType, docData) {
   const statusEl = $(`${docType}Status`);
   const infoEl = $(`${docType}Info`);
-  const actionsEl = $(`${docType}Actions`);
   
   if (!docData || !docData.downloadURL) {
     // Not uploaded
@@ -224,13 +235,6 @@ function renderDocumentStatus(docType, docData) {
       statusEl.className = "bookkeeping-document-status bookkeeping-document-status-missing";
     }
     if (infoEl) infoEl.style.display = "none";
-    if (actionsEl) {
-      // Show upload input and button
-      const fileInput = $(`${docType}FileInput`);
-      const uploadBtn = $(`upload${docType.charAt(0).toUpperCase() + docType.slice(1)}Btn`);
-      if (fileInput) fileInput.value = "";
-      if (uploadBtn) uploadBtn.textContent = `Upload ${docType.toUpperCase()}`;
-    }
   } else {
     // Uploaded
     if (statusEl) {
@@ -245,25 +249,6 @@ function renderDocumentStatus(docType, docData) {
         <div><a href="${escapeHtml(docData.downloadURL)}" target="_blank" style="color: #059669; text-decoration: underline;">View/Download</a></div>
       `;
       infoEl.style.display = "block";
-    }
-    if (actionsEl) {
-      // Show replace and remove buttons
-      const fileInput = $(`${docType}FileInput`);
-      const uploadBtn = $(`upload${docType.charAt(0).toUpperCase() + docType.slice(1)}Btn`);
-      if (fileInput) fileInput.value = "";
-      if (uploadBtn) uploadBtn.textContent = `Replace ${docType.toUpperCase()}`;
-      
-      // Add remove button if not exists
-      let removeBtn = $(`remove${docType.charAt(0).toUpperCase() + docType.slice(1)}Btn`);
-      if (!removeBtn && actionsEl) {
-        removeBtn = document.createElement("button");
-        removeBtn.id = `remove${docType.charAt(0).toUpperCase() + docType.slice(1)}Btn`;
-        removeBtn.className = "bookkeeping-btn bookkeeping-btn-danger";
-        removeBtn.textContent = `Remove`;
-        removeBtn.type = "button";
-        removeBtn.addEventListener("click", () => removeDocument(docType));
-        actionsEl.appendChild(removeBtn);
-      }
     }
   }
 }
@@ -670,45 +655,19 @@ function init() {
   const addLaborerBtn = $("addLaborerBtn");
   if (addLaborerBtn) {
     addLaborerBtn.addEventListener("click", () => {
-      selectedLaborerId = null;
-      $("laborerForm")?.reset();
-      $("laborerId").value = "";
-      $("laborerDetailPanel").style.display = "block";
-      $("detailLaborerName").textContent = "New Laborer";
-      $("coiDocumentSection").style.display = "none";
-      renderDocumentStatus("w9", null);
-      showMessage("", false);
+      // Navigate to Employee Management to add new laborer
+      window.location.href = "../employees/employees.html";
     });
   }
 
-  const saveLaborerBtn = $("saveLaborerBtn");
-  if (saveLaborerBtn) {
-    saveLaborerBtn.addEventListener("click", saveLaborer);
-  }
-
-  const cancelEditBtn = $("cancelEditBtn");
-  if (cancelEditBtn) {
-    cancelEditBtn.addEventListener("click", () => {
-      if (selectedLaborerId) {
-        const laborer = laborers.find(l => l.id === selectedLaborerId);
-        if (laborer) renderLaborerDetail(laborer);
+  const editLaborerBtn = $("editLaborerBtn");
+  if (editLaborerBtn) {
+    editLaborerBtn.addEventListener("click", () => {
+      const laborerId = $("laborerId")?.value;
+      if (laborerId) {
+        window.location.href = `../employees/employees.html?laborerId=${encodeURIComponent(laborerId)}`;
       } else {
-        $("laborerDetailPanel").style.display = "none";
-      }
-      showMessage("", false);
-    });
-  }
-
-  const laborerTypeSelect = $("laborerType");
-  if (laborerTypeSelect) {
-    laborerTypeSelect.addEventListener("change", (e) => {
-      const coiSection = $("coiDocumentSection");
-      if (e.target.value === "Subcontractor") {
-        coiSection.style.display = "block";
-        // Initialize COI section state to clear any stale remove buttons from previously edited laborer
-        renderDocumentStatus("coi", null);
-      } else {
-        coiSection.style.display = "none";
+        showMessage("No laborer selected", true);
       }
     });
   }
@@ -718,15 +677,7 @@ function init() {
     laborerSearch.addEventListener("input", renderLaborersList);
   }
 
-  const uploadW9Btn = $("uploadW9Btn");
-  if (uploadW9Btn) {
-    uploadW9Btn.addEventListener("click", () => uploadDocument("w9"));
-  }
-
-  const uploadCoiBtn = $("uploadCoiBtn");
-  if (uploadCoiBtn) {
-    uploadCoiBtn.addEventListener("click", () => uploadDocument("coi"));
-  }
+  // W9 and COI upload removed - now handled in Employee Management
 
   const addPaymentBtn = $("addPaymentBtn");
   if (addPaymentBtn) {

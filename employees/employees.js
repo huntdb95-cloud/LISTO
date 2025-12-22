@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/f
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -26,6 +27,7 @@ const $ = (id) => document.getElementById(id);
 let currentUid = null;
 let employees = [];
 let editingEmployeeId = null;
+let editingLaborerId = null; // Track if we're editing a laborer from Bookkeeping
 
 // Helper functions
 function showMsg(msg, isError = false) {
@@ -66,6 +68,49 @@ async function loadEmployees() {
     console.error("Error loading employees:", err);
     $("employeesList").innerHTML = `<div class="form-error">Error loading employees: ${getFriendlyError(err)}</div>`;
   }
+}
+
+// Load laborer from laborers collection
+async function loadLaborer(laborerId) {
+  if (!currentUid || !laborerId) return null;
+  
+  try {
+    const laborerRef = doc(db, "users", currentUid, "laborers", laborerId);
+    const laborerSnap = await getDoc(laborerRef);
+    
+    if (laborerSnap.exists()) {
+      return { id: laborerSnap.id, ...laborerSnap.data() };
+    }
+    return null;
+  } catch (err) {
+    console.error("Error loading laborer:", err);
+    return null;
+  }
+}
+
+// Map laborer data to employee form structure
+function mapLaborerToEmployeeForm(laborer) {
+  if (!laborer) return null;
+  
+  // Map laborerType: "Worker" -> "employee", "Subcontractor" -> "subcontractor"
+  let type = "employee";
+  if (laborer.laborerType === "Subcontractor") {
+    type = "subcontractor";
+  }
+  
+  return {
+    id: laborer.id,
+    name: laborer.displayName || "",
+    email: laborer.email || "",
+    phone: laborer.phone || "",
+    type: type,
+    w9Url: laborer.documents?.w9?.downloadURL || null,
+    coiUrl: laborer.documents?.coi?.downloadURL || null,
+    workersCompUrl: null, // Laborers don't have workersComp in current model
+    // Store original laborer data for saving back
+    _isLaborer: true,
+    _laborerData: laborer
+  };
 }
 
 // Render employees list
@@ -120,18 +165,25 @@ function renderEmployeesList() {
 }
 
 // Upload file to Storage
+// Returns { url, storagePath } or null
 async function uploadFile(file, path) {
   if (!file) return null;
   
   const safeName = file.name.replace(/[^\w.\-]+/g, "_");
   const timestamp = Date.now();
-  const storageRef = ref(storage, `${path}/${timestamp}_${safeName}`);
+  const storagePath = `${path}/${timestamp}_${safeName}`;
+  const storageRef = ref(storage, storagePath);
   
   await uploadBytes(storageRef, file, {
     contentType: file.type || "application/octet-stream"
   });
   
-  return await getDownloadURL(storageRef);
+  const downloadURL = await getDownloadURL(storageRef);
+  
+  return {
+    url: downloadURL,
+    storagePath: storagePath
+  };
 }
 
 // Delete file from Storage
@@ -156,8 +208,9 @@ async function deleteFile(url) {
 // Show form
 function showForm(employee = null) {
   editingEmployeeId = employee ? employee.id : null;
+  editingLaborerId = employee?._isLaborer ? employee.id : null;
   $("employeeFormCard").style.display = "block";
-  $("formTitle").textContent = employee ? "Edit Employee" : "Add Employee";
+  $("formTitle").textContent = employee ? (employee._isLaborer ? "Edit Laborer" : "Edit Employee") : "Add Employee";
   
   // Reset form
   $("employeeForm").reset();
@@ -177,6 +230,31 @@ function showForm(employee = null) {
   $("coiStatus").textContent = employee?.coiUrl ? "Current file uploaded" : "";
   $("workersCompStatus").textContent = employee?.workersCompUrl ? "Current file uploaded" : "";
   
+  // Populate W9 info if available (for laborers)
+  if (employee?._isLaborer && employee._laborerData?.w9Info) {
+    const w9Info = employee._laborerData.w9Info;
+    $("w9LegalName").value = w9Info.legalName || "";
+    $("w9BusinessName").value = w9Info.businessName || "";
+    $("w9AddressLine1").value = w9Info.addressLine1 || "";
+    $("w9AddressLine2").value = w9Info.addressLine2 || "";
+    $("w9City").value = w9Info.city || "";
+    $("w9State").value = w9Info.state || "";
+    $("w9Zip").value = w9Info.zip || "";
+    $("w9TinType").value = w9Info.tinType || "SSN";
+    $("w9TinLast4").value = w9Info.tinLast4 || "";
+  } else {
+    // Clear W9 info fields
+    $("w9LegalName").value = "";
+    $("w9BusinessName").value = "";
+    $("w9AddressLine1").value = "";
+    $("w9AddressLine2").value = "";
+    $("w9City").value = "";
+    $("w9State").value = "";
+    $("w9Zip").value = "";
+    $("w9TinType").value = "SSN";
+    $("w9TinLast4").value = "";
+  }
+  
   // Show/hide subcontractor fields
   toggleSubcontractorFields();
   
@@ -190,6 +268,7 @@ function showForm(employee = null) {
 function hideForm() {
   $("employeeFormCard").style.display = "none";
   editingEmployeeId = null;
+  editingLaborerId = null;
   clearMessages();
 }
 
@@ -199,7 +278,7 @@ function toggleSubcontractorFields() {
   $("subcontractorFields").style.display = type === "subcontractor" ? "block" : "none";
 }
 
-// Save employee
+// Save employee or laborer
 async function saveEmployee(e) {
   e.preventDefault();
   
@@ -214,7 +293,7 @@ async function saveEmployee(e) {
   try {
     btn.disabled = true;
     clearMessages();
-    showMsg("Saving employee...");
+    showMsg(editingLaborerId ? "Saving laborer..." : "Saving employee...");
     
     const name = $("empName").value.trim();
     const email = $("empEmail").value.trim();
@@ -231,6 +310,13 @@ async function saveEmployee(e) {
       return;
     }
     
+    // If editing a laborer, save to laborers collection
+    if (editingLaborerId) {
+      await saveLaborer(name, email, phone, type);
+      return;
+    }
+    
+    // Otherwise, save to employees collection (existing logic)
     const nameLower = name.toLowerCase();
     const employeeData = {
       name,
@@ -266,23 +352,23 @@ async function saveEmployee(e) {
     if (w9File) {
       showMsg("Uploading W-9...");
       if (existing?.w9Url) await deleteFile(existing.w9Url);
-      const w9Url = await uploadFile(w9File, `users/${currentUid}/employees/${employeeId}/w9`);
-      employeeData.w9Url = w9Url;
+      const w9Result = await uploadFile(w9File, `users/${currentUid}/employees/${employeeId}/w9`);
+      if (w9Result) employeeData.w9Url = w9Result.url;
     }
     
     if (type === "subcontractor") {
       if (coiFile) {
         showMsg("Uploading COI...");
         if (existing?.coiUrl) await deleteFile(existing.coiUrl);
-        const coiUrl = await uploadFile(coiFile, `users/${currentUid}/employees/${employeeId}/coi`);
-        employeeData.coiUrl = coiUrl;
+        const coiResult = await uploadFile(coiFile, `users/${currentUid}/employees/${employeeId}/coi`);
+        if (coiResult) employeeData.coiUrl = coiResult.url;
       }
       
       if (workersCompFile) {
         showMsg("Uploading Workers Compensation document...");
         if (existing?.workersCompUrl) await deleteFile(existing.workersCompUrl);
-        const workersCompUrl = await uploadFile(workersCompFile, `users/${currentUid}/employees/${employeeId}/workersComp`);
-        employeeData.workersCompUrl = workersCompUrl;
+        const workersCompResult = await uploadFile(workersCompFile, `users/${currentUid}/employees/${employeeId}/workersComp`);
+        if (workersCompResult) employeeData.workersCompUrl = workersCompResult.url;
       }
     } else {
       // If changing from subcontractor to employee, remove subcontractor-specific files
@@ -315,6 +401,139 @@ async function saveEmployee(e) {
   } finally {
     btn.disabled = oldDisabled;
   }
+}
+
+// Save laborer to laborers collection
+async function saveLaborer(name, email, phone, type) {
+  
+  // Map type back to laborerType: "employee" -> "Worker", "subcontractor" -> "Subcontractor"
+  const laborerType = type === "subcontractor" ? "Subcontractor" : "Worker";
+  
+  const laborerId = editingLaborerId;
+  const laborerRef = doc(db, "users", currentUid, "laborers", laborerId);
+  const laborerDoc = await getDoc(laborerRef);
+  const existing = laborerDoc.exists() ? laborerDoc.data() : null;
+  
+  // Build laborer data
+  const laborerData = {
+    displayName: name,
+    laborerType: laborerType,
+    email: email || null,
+    phone: phone || null,
+    updatedAt: serverTimestamp()
+  };
+  
+  // Preserve existing fields
+  if (existing) {
+    laborerData.address = existing.address || null;
+    laborerData.tinLast4 = existing.tinLast4 || null;
+    laborerData.notes = existing.notes || null;
+    laborerData.isArchived = existing.isArchived || false;
+    laborerData.documents = existing.documents || {};
+    laborerData.createdAt = existing.createdAt;
+  } else {
+    laborerData.documents = {};
+    laborerData.createdAt = serverTimestamp();
+  }
+  
+  // Handle file uploads
+  const w9File = $("empW9").files[0];
+  const coiFile = $("empCoi").files[0];
+  
+  if (w9File) {
+    showMsg("Uploading W-9...");
+    // Delete old W9 if exists
+    if (existing?.documents?.w9?.storagePath) {
+      try {
+        const oldRef = ref(storage, existing.documents.w9.storagePath);
+        await deleteObject(oldRef);
+      } catch (err) {
+        console.warn("Error deleting old W9:", err);
+      }
+    }
+    
+    const w9Result = await uploadFile(w9File, `users/${currentUid}/laborers/${laborerId}/documents/w9`);
+    
+    if (w9Result) {
+      laborerData.documents.w9 = {
+        fileName: w9File.name,
+        contentType: w9File.type,
+        size: w9File.size,
+        storagePath: w9Result.storagePath, // Use the actual path from uploadFile
+        downloadURL: w9Result.url,
+        uploadedAt: Date.now(),
+        updatedAt: Date.now()
+      };
+    }
+  }
+  
+  if (type === "subcontractor" && coiFile) {
+    showMsg("Uploading COI...");
+    // Delete old COI if exists
+    if (existing?.documents?.coi?.storagePath) {
+      try {
+        const oldRef = ref(storage, existing.documents.coi.storagePath);
+        await deleteObject(oldRef);
+      } catch (err) {
+        console.warn("Error deleting old COI:", err);
+      }
+    }
+    
+    const coiResult = await uploadFile(coiFile, `users/${currentUid}/laborers/${laborerId}/documents/coi`);
+    
+    if (coiResult) {
+      laborerData.documents.coi = {
+        fileName: coiFile.name,
+        contentType: coiFile.type,
+        size: coiFile.size,
+        storagePath: coiResult.storagePath, // Use the actual path from uploadFile
+        downloadURL: coiResult.url,
+        uploadedAt: Date.now(),
+        updatedAt: Date.now()
+      };
+    }
+  }
+  
+  // Save W9 info if provided
+  const w9LegalName = $("w9LegalName")?.value.trim();
+  const w9BusinessName = $("w9BusinessName")?.value.trim();
+  const w9AddressLine1 = $("w9AddressLine1")?.value.trim();
+  const w9AddressLine2 = $("w9AddressLine2")?.value.trim();
+  const w9City = $("w9City")?.value.trim();
+  const w9State = $("w9State")?.value.trim().toUpperCase();
+  const w9Zip = $("w9Zip")?.value.trim();
+  const w9TinType = $("w9TinType")?.value || "SSN";
+  const w9TinLast4 = $("w9TinLast4")?.value.trim();
+  
+  // Only save W9 info if at least legal name and address are provided
+  if (w9LegalName && w9AddressLine1 && w9City && w9State && w9Zip && w9TinLast4) {
+    laborerData.w9Info = {
+      legalName: w9LegalName,
+      businessName: w9BusinessName || null,
+      addressLine1: w9AddressLine1,
+      addressLine2: w9AddressLine2 || null,
+      city: w9City,
+      state: w9State,
+      zip: w9Zip,
+      tinType: w9TinType,
+      tinLast4: w9TinLast4,
+      updatedAt: Date.now()
+    };
+  } else if (existing?.w9Info) {
+    // Preserve existing W9 info if new info is incomplete
+    laborerData.w9Info = existing.w9Info;
+  }
+  
+  // Update laborer in Firestore
+  await updateDoc(laborerRef, laborerData);
+  
+  showMsg("Laborer saved successfully!", false);
+  
+  setTimeout(() => {
+    hideForm();
+    // Optionally navigate back to bookkeeping
+    // window.location.href = "../bookkeeping/bookkeeping.html";
+  }, 1500);
 }
 
 // Delete employee
@@ -368,6 +587,17 @@ function init() {
   $("empW9").addEventListener("change", (e) => {
     $("w9Status").textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
   });
+  
+  // W9 Info toggle
+  const toggleW9InfoBtn = $("toggleW9InfoBtn");
+  const w9InfoFields = $("w9InfoFields");
+  if (toggleW9InfoBtn && w9InfoFields) {
+    toggleW9InfoBtn.addEventListener("click", () => {
+      const isVisible = w9InfoFields.style.display !== "none";
+      w9InfoFields.style.display = isVisible ? "none" : "block";
+      toggleW9InfoBtn.textContent = isVisible ? "Show" : "Hide";
+    });
+  }
   $("empCoi").addEventListener("change", (e) => {
     $("coiStatus").textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
   });
@@ -375,10 +605,26 @@ function init() {
     $("workersCompStatus").textContent = e.target.files[0] ? `Selected: ${e.target.files[0].name}` : "";
   });
   
+  // Check for laborerId in query string
+  const urlParams = new URLSearchParams(window.location.search);
+  const laborerId = urlParams.get("laborerId");
+  
   // Auth state listener
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUid = user.uid;
+      
+      // If laborerId is in URL, load and show that laborer
+      if (laborerId) {
+        const laborer = await loadLaborer(laborerId);
+        if (laborer) {
+          const employeeForm = mapLaborerToEmployeeForm(laborer);
+          showForm(employeeForm);
+        } else {
+          showMsg("Laborer not found.", true);
+        }
+      }
+      
       await loadEmployees();
     } else {
       currentUid = null;
