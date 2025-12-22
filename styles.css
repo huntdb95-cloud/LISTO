@@ -1882,8 +1882,8 @@ input:focus, select:focus, textarea:focus{
 
 /* Style the navlink text span */
 .sidebar .sidebar-link .navlink {
-  display: inline-block;
   flex: 1;
+  min-width: 0;
 }
 
 /* Sidebar icon styling */
