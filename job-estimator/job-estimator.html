@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Job Cost Estimator</title>
+  <meta name="description" content="Create job cost estimates and link them to saved jobs." />
+
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    .job-estimator-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .job-estimator-page .card {
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .job-estimator-page .section-head {
+      margin-bottom: 24px;
+    }
+    
+    .job-estimator-page .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    
+    .job-estimator-page .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    
+    .job-estimator-page label {
+      display: block;
+      font-size: 0.9rem;
+      opacity: .85;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    .job-estimator-page input,
+    .job-estimator-page textarea,
+    .job-estimator-page select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,.15);
+      background: #fff;
+      font-size: 0.95rem;
+    }
+    
+    .job-estimator-page textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    .job-estimator-page .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(0,0,0,.6);
+    }
+    
+    .job-estimator-page .empty-state a {
+      color: var(--primary, #111827);
+      text-decoration: underline;
+    }
+    
+    .job-estimator-page .category-section {
+      margin-bottom: 32px;
+    }
+    
+    .job-estimator-page .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .job-estimator-page .category-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    
+    .job-estimator-page table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+    
+    .job-estimator-page th,
+    .job-estimator-page td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0,0,0,.1);
+    }
+    
+    .job-estimator-page th {
+      font-size: 0.85rem;
+      opacity: .7;
+      font-weight: 600;
+    }
+    
+    .job-estimator-page td input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    
+    .job-estimator-page .num {
+      text-align: right;
+    }
+    
+    .job-estimator-page .category-total {
+      text-align: right;
+      font-weight: 600;
+      padding: 12px 10px;
+      border-top: 2px solid rgba(0,0,0,.15);
+    }
+    
+    .job-estimator-page .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .job-estimator-page .btn-small {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+    
+    .job-estimator-page .summary-card {
+      background: rgba(17,24,39,.03);
+      border: 1px solid rgba(17,24,39,.1);
+    }
+    
+    .job-estimator-page .summary-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    
+    .job-estimator-page .summary-line.grand {
+      border-top: 2px solid rgba(0,0,0,.2);
+      border-bottom: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    
+    .job-estimator-page .summary-line input {
+      width: 80px;
+      text-align: right;
+    }
+    
+    .job-estimator-page .estimates-list {
+      margin-top: 20px;
+    }
+    
+    .job-estimator-page .estimate-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .job-estimator-page .estimate-item:hover {
+      background: rgba(0,0,0,.03);
+    }
+    
+    .job-estimator-page .estimate-item-info {
+      flex: 1;
+    }
+    
+    .job-estimator-page .estimate-item-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .job-estimator-page .estimate-item-meta {
+      font-size: 0.85rem;
+      opacity: .7;
+    }
+    
+    .job-estimator-page .estimate-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .job-estimator-page .btn-danger {
+      background: #b91c1c;
+      color: white;
+    }
+    
+    .job-estimator-page .btn-danger:hover {
+      background: #991b1b;
+    }
+    
+    .job-estimator-page .actions-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    
+    @media (max-width: 860px) {
+      .job-estimator-page .grid-2,
+      .job-estimator-page .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      
+      .job-estimator-page table {
+        font-size: 0.85rem;
+      }
+      
+      .job-estimator-page th,
+      .job-estimator-page td {
+        padding: 8px 4px;
+      }
+      
+      .job-estimator-page .category-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      
+      .job-estimator-page .estimate-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      
+      .job-estimator-page .estimate-item-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  </style>
+</head>
+<body data-page="job-estimator" data-requires-auth="true">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+          <img id="headerAvatarImage" alt="Profile" style="display: none;" />
+          <span id="headerAvatarInitials" class="header-avatar-initials"></span>
+        </a>
+      </div>
+      <a aria-label="Listo Home" class="brand" href="../dashboard.html">
+        <img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
+      </a>
+      <div class="header-actions">
+      </div>
+    </div>
+  </header>
+  <div class="app-layout">
+    <div id="sidebar"></div>
+    <main id="main">
+      <section class="section">
+        <div class="container job-estimator-page">
+          <div class="section-head">
+            <h1 class="page-title">Job Cost Estimator</h1>
+            <p class="muted">Create an estimate and link it to a saved job under a builder.</p>
+          </div>
+
+          <!-- Builder + Job Selector -->
+          <div class="card">
+            <h2 class="h2" style="margin-top: 0;">Select Builder & Job</h2>
+            <div class="divider"></div>
+            <div class="grid-2" style="margin-top: 16px;">
+              <div>
+                <label for="builderSelect">Builder</label>
+                <select id="builderSelect">
+                  <option value="">-- Select Builder --</option>
+                </select>
+              </div>
+              <div>
+                <label for="jobSelect">Job</label>
+                <select id="jobSelect" disabled>
+                  <option value="">-- Select Builder First --</option>
+                </select>
+              </div>
+            </div>
+            <div id="emptyState" class="empty-state" style="display: none; margin-top: 20px;">
+              <p>No builders or jobs found. <a href="../contracts/contracts.html">Go to Contracts</a> to create a builder and job first.</p>
+            </div>
+          </div>
+
+          <!-- Estimate Details -->
+          <div class="card" id="estimateCard" style="display: none;">
+            <h2 class="h2" style="margin-top: 0;">Estimate Details</h2>
+            <div class="divider"></div>
+            <div class="grid-2" style="margin-top: 16px;">
+              <div>
+                <label for="estimateName">Estimate Name</label>
+                <input type="text" id="estimateName" placeholder="Estimate name" />
+              </div>
+              <div>
+                <label for="estimateNotes">Notes (Optional)</label>
+                <textarea id="estimateNotes" placeholder="Additional notes..."></textarea>
+              </div>
+            </div>
+
+            <!-- Cost Categories -->
+            <div class="category-section">
+              <div class="category-header">
+                <h3>Labor</h3>
+                <button type="button" class="btn small primary" onclick="addRow('labor')">+ Add Row</button>
+              </div>
+              <table id="laborTable">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th class="num">Hours</th>
+                    <th class="num">Rate</th>
+                    <th class="num">Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="laborBody">
+                  <tr>
+                    <td><input type="text" placeholder="Description" class="row-desc" /></td>
+                    <td class="num"><input type="number" step="0.01" placeholder="0" class="row-hours" /></td>
+                    <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-rate" /></td>
+                    <td class="num row-subtotal">$0.00</td>
+                    <td><button type="button" class="btn small ghost" onclick="removeRow(this, 'labor')">Remove</button></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" class="category-total">Labor Total:</td>
+                    <td class="num category-total" id="laborTotal">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="category-section">
+              <div class="category-header">
+                <h3>Materials</h3>
+                <button type="button" class="btn small primary" onclick="addRow('materials')">+ Add Row</button>
+              </div>
+              <table id="materialsTable">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Unit Cost</th>
+                    <th class="num">Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="materialsBody">
+                  <tr>
+                    <td><input type="text" placeholder="Description" class="row-desc" /></td>
+                    <td class="num"><input type="number" step="0.01" placeholder="0" class="row-qty" /></td>
+                    <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-unit-cost" /></td>
+                    <td class="num row-subtotal">$0.00</td>
+                    <td><button type="button" class="btn small ghost" onclick="removeRow(this, 'materials')">Remove</button></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" class="category-total">Materials Total:</td>
+                    <td class="num category-total" id="materialsTotal">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="category-section">
+              <div class="category-header">
+                <h3>Subcontractors</h3>
+                <button type="button" class="btn small primary" onclick="addRow('subcontractors')">+ Add Row</button>
+              </div>
+              <table id="subcontractorsTable">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th class="num">Amount</th>
+                    <th class="num">Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="subcontractorsBody">
+                  <tr>
+                    <td><input type="text" placeholder="Description" class="row-desc" /></td>
+                    <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-amount" /></td>
+                    <td class="num row-subtotal">$0.00</td>
+                    <td><button type="button" class="btn small ghost" onclick="removeRow(this, 'subcontractors')">Remove</button></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" class="category-total">Subcontractors Total:</td>
+                    <td class="num category-total" id="subcontractorsTotal">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="category-section">
+              <div class="category-header">
+                <h3>Other</h3>
+                <button type="button" class="btn small primary" onclick="addRow('other')">+ Add Row</button>
+              </div>
+              <table id="otherTable">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th class="num">Amount</th>
+                    <th class="num">Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="otherBody">
+                  <tr>
+                    <td><input type="text" placeholder="Description" class="row-desc" /></td>
+                    <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-amount" /></td>
+                    <td class="num row-subtotal">$0.00</td>
+                    <td><button type="button" class="btn small ghost" onclick="removeRow(this, 'other')">Remove</button></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" class="category-total">Other Total:</td>
+                    <td class="num category-total" id="otherTotal">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Summary -->
+            <div class="card summary-card" style="margin-top: 24px;">
+              <h3 class="h3" style="margin-top: 0;">Summary</h3>
+              <div class="summary-line">
+                <span>Subtotal:</span>
+                <span id="summarySubtotal">$0.00</span>
+              </div>
+              <div class="summary-line">
+                <span>Overhead %:</span>
+                <input type="number" step="0.01" id="overheadPct" value="10" min="0" max="100" />
+              </div>
+              <div class="summary-line">
+                <span>Overhead Amount:</span>
+                <span id="overheadAmount">$0.00</span>
+              </div>
+              <div class="summary-line">
+                <span>Profit %:</span>
+                <input type="number" step="0.01" id="profitPct" value="15" min="0" max="100" />
+              </div>
+              <div class="summary-line">
+                <span>Profit Amount:</span>
+                <span id="profitAmount">$0.00</span>
+              </div>
+              <div class="summary-line">
+                <label style="display: inline-flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="taxEnabled" />
+                  <span>Tax %:</span>
+                </label>
+                <input type="number" step="0.01" id="taxPct" value="0" min="0" max="100" disabled style="width: 80px; text-align: right;" />
+              </div>
+              <div class="summary-line" id="taxLine" style="display: none;">
+                <span>Tax Amount:</span>
+                <span id="taxAmount">$0.00</span>
+              </div>
+              <div class="summary-line grand">
+                <span>Grand Total:</span>
+                <span id="grandTotal">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions-bar">
+              <button type="button" class="btn primary" id="saveBtn">Save Estimate</button>
+              <button type="button" class="btn secondary" id="saveAsCopyBtn">Save as Copy</button>
+              <button type="button" class="btn ghost" id="newEstimateBtn">New Estimate</button>
+            </div>
+            <div id="saveMsg" style="margin-top: 12px;"></div>
+          </div>
+
+          <!-- Saved Estimates List -->
+          <div class="card" id="estimatesListCard" style="display: none;">
+            <h2 class="h2" style="margin-top: 0;">Saved Estimates</h2>
+            <div class="divider"></div>
+            <div id="estimatesList" class="estimates-list">
+              <div class="muted">Loading estimates...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="container footer-inner">
+          <div>
+            <p class="footer-note">Built to help subcontractors look sharp, stay compliant, and win more work.</p>
+          </div>
+          <div class="footer-links">
+            <a href="../contracts/contracts.html">Contracts</a>
+            <a href="../payroll/payroll.html">Payroll</a>
+            <a href="../audit/audit.html">Insurance Audit Help</a>
+            <a href="../support.html">Support</a>
+          </div>
+        </div>
+        <div class="container footer-bottom">
+          <span class="muted">© <span id="year"></span> Listo</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../sidebar.js"></script>
+  <script src="../scripts.js" type="module"></script>
+  <script type="module" src="job-estimator.js"></script>
+</body>
+</html>
+
