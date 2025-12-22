@@ -1673,6 +1673,7 @@ input:focus, select:focus, textarea:focus{
   flex-direction: column;
   flex: 1 1 0;
   min-height: 0;
+  width: 100%;
 }
 
 .sidebar-submenu-toggle {
@@ -1694,6 +1695,7 @@ input:focus, select:focus, textarea:focus{
   min-height: 0;
   max-height: none;
   max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   justify-content: flex-start;
   background: var(--panel);
