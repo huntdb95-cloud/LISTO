@@ -11,6 +11,7 @@ const form = document.getElementById("signupForm");
 const displayNameEl = document.getElementById("displayName");
 const emailEl = document.getElementById("signupEmail");
 const passEl = document.getElementById("signupPassword");
+const confirmPassEl = document.getElementById("confirmPassword");
 const errorEl = document.getElementById("signupError");
 
 function setError(text) {
@@ -38,6 +39,7 @@ form.addEventListener("submit", async (e) => {
   const displayName = cleanName(displayNameEl?.value);
   const email = (emailEl?.value || "").trim();
   const password = passEl?.value || "";
+  const confirmPassword = confirmPassEl?.value || "";
   const acceptTerms = document.getElementById("acceptTerms")?.checked;
 
   if (!displayName) {
@@ -46,6 +48,10 @@ form.addEventListener("submit", async (e) => {
   }
   if (displayName.length > 80) {
     setError("Display name is too long (max 80 characters).");
+    return;
+  }
+  if (password !== confirmPassword) {
+    setError("Passwords do not match. Please try again.");
     return;
   }
   if (!acceptTerms) {
