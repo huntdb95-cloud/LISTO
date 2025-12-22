@@ -165,10 +165,10 @@ body[data-page="landing"] .lang-switch-mobile {
   
   /* Position language toggle absolutely to stay with sticky header, at the very edge of the screen */
   /* Container has width: calc(100% - 40px) with margin: 0 auto, so 20px margin on each side */
-  /* Header-inner has 20px right padding, so we need to extend past both: -20px (margin) - 20px (padding) + 10px (offset) = -30px */
+  /* Header-inner has 20px right padding, so we need to extend past both: -20px (margin) - 20px (padding) + 20px (offset) = -20px */
   body[data-page="landing"] .lang-switch-mobile {
     position: absolute;
-    right: -30px; /* Extend past container margin and header-inner padding to reach 10px from screen edge */
+    right: -20px; /* Extend past container margin and header-inner padding to reach 20px from screen edge */
     top: 50%; /* Center vertically in header */
     transform: translateY(-50%); /* Properly center the element */
     z-index: 10;
