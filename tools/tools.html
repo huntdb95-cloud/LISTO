@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Listo — Tools</title>
+<meta content="Access Listo tools: Audit Help, Contract Scanner, and Invoice Builder." name="description"/>
+<link href="../styles.css" rel="stylesheet"/>
+</head>
+<body data-page="tools" data-requires-auth="true">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="container header-inner">
+<div class="header-left">
+<button aria-controls="sideNav" aria-expanded="false" class="sidebar-toggle" type="button"><span class="sr-only">Open navigation</span><span aria-hidden="true" class="hamburger"></span></button>
+<a href="../account/account.html" class="header-avatar" id="headerAvatar" title="My Account" aria-label="My Account" hidden>
+<img id="headerAvatarImage" alt="Profile" style="display: none;" />
+<span id="headerAvatarInitials" class="header-avatar-initials"></span>
+</a>
+</div>
+<a aria-label="Listo Home" class="brand" href="../dashboard.html">
+<img alt="Listo" class="brand-logo" src="../images/logo2.png"/>
+</a>
+
+<div class="header-actions">
+<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
+          Log out
+        </button>
+</div>
+</div>
+</header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="nav-menu sidebar-nav" id="sideNav">
+<a class="sidebar-link nav-link" data-i18n="nav.dashboard" href="../dashboard.html">Home</a>
+<a class="sidebar-link nav-link" data-i18n="nav.contracts" href="../contracts/contracts.html">Contracts</a>
+<a class="sidebar-link nav-link" data-i18n="nav.bookkeeping" href="../bookkeeping/bookkeeping.html">Bookkeeping</a>
+<div class="sidebar-submenu">
+  <button class="sidebar-link sidebar-submenu-toggle" data-i18n="nav.tools">Tools</button>
+  <div class="sidebar-submenu-content">
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.audit" href="../audit/audit.html">Audit Help</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.contractScanner" href="../contract-scanner/contract-scanner.html">Contract Scanner</a>
+    <a class="sidebar-link sidebar-submenu-link" data-i18n="nav.invoiceBuilder" href="../invoice/invoice.html">Invoice Builder</a>
+  </div>
+</div>
+<a class="sidebar-link nav-link" data-i18n="nav.support" href="../support.html">Support</a>
+</div></aside><main id="main">
+
+<section class="section">
+<div class="container">
+<div class="section-head">
+<h1 class="page-title" data-i18n="tools.pageTitle">Tools</h1>
+<p class="muted" data-i18n="tools.pageSubtitle">
+            Access all available tools to help manage your business.
+          </p>
+</div>
+
+<div class="grid-2">
+<!-- Audit Help Card -->
+<div class="card pad">
+<h2 class="h2" data-i18n="nav.audit">Audit Help</h2>
+<p class="muted" data-i18n="tools.t5Desc">
+              Prepare for audits with organized document packages. Upload files, answer questions, and generate PDF reports.
+            </p>
+<div class="divider"></div>
+<div style="margin-top: 16px;">
+<a href="../audit/audit.html" class="btn primary" data-i18n="tools.openTool">Open Tool →</a>
+</div>
+</div>
+
+<!-- Contract Scanner Card -->
+<div class="card pad">
+<h2 class="h2" data-i18n="nav.contractScanner">Contract Scanner</h2>
+<p class="muted" data-i18n="tools.t4Desc">
+              Upload contracts and get instant Spanish translations. OCR technology extracts text from PDFs and images.
+            </p>
+<div class="divider"></div>
+<div style="margin-top: 16px;">
+<a href="../contract-scanner/contract-scanner.html" class="btn primary" data-i18n="tools.openTool">Open Tool →</a>
+</div>
+</div>
+
+<!-- Invoice Builder Card -->
+<div class="card pad">
+<h2 class="h2" data-i18n="nav.invoiceBuilder">Invoice Builder</h2>
+<p class="muted" data-i18n="tools.t2Desc">
+              Create professional invoices in minutes. Save templates, export PDFs, and email directly to clients.
+            </p>
+<div class="divider"></div>
+<div style="margin-top: 16px;">
+<a href="../invoice/invoice.html" class="btn primary" data-i18n="tools.openTool">Open Tool →</a>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <div class="mobile-bottom-nav-items">
+    <a href="../dashboard.html" class="mobile-bottom-nav-item" data-nav="home">
+      <div class="mobile-bottom-nav-icon">🏠</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.dashboard">Home</div>
+    </a>
+    <a href="../contracts/contracts.html" class="mobile-bottom-nav-item" data-nav="contracts">
+      <div class="mobile-bottom-nav-icon">📄</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.contracts">Contracts</div>
+    </a>
+    <a href="../bookkeeping/bookkeeping.html" class="mobile-bottom-nav-item" data-nav="bookkeeping">
+      <div class="mobile-bottom-nav-icon">📊</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.bookkeeping">Bookkeeping</div>
+    </a>
+    <a href="../tools/tools.html" class="mobile-bottom-nav-item active" data-nav="tools">
+      <div class="mobile-bottom-nav-icon">🔧</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.tools">Tools</div>
+    </a>
+    <a href="../settings/settings.html" class="mobile-bottom-nav-item" data-nav="settings">
+      <div class="mobile-bottom-nav-icon">⚙️</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.settings">Settings</div>
+    </a>
+  </div>
+</nav>
+
+<footer class="site-footer">
+<div class="container footer-inner">
+<div>
+<p class="footer-note" data-i18n="footer.note">Built to help subcontractors look sharp, stay compliant, and win more work.</p>
+</div>
+<div class="footer-links">
+<a data-i18n="nav.contracts" href="../contracts/contracts.html">Contracts</a>
+<a data-i18n="nav.payroll" href="../payroll/payroll.html">Payroll</a>
+<a data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
+<a data-i18n="nav.support" href="../support.html">Support</a>
+</div>
+</div>
+<div class="container footer-bottom">
+<span class="muted">© <span id="year"></span> Listo</span>
+</div>
+</footer>
+</main></div>
+
+<script src="../scripts.js" type="module"></script>
+</body>
+</html>
+
