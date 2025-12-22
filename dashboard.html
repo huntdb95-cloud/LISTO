@@ -26,9 +26,6 @@
 </a>
 
 <div class="header-actions">
-<button class="btn small ghost" data-i18n="auth.logout" hidden="" id="logoutBtn" type="button">
-          Log out
-        </button>
 </div>
 </div>
 </header><div class="layout"><aside aria-label="Primary" class="sidebar"><div class="menu_content">
@@ -58,22 +55,29 @@
 <span class="navlink">Bookkeeping</span>
 </a>
 </li>
-</ul>
-<ul class="menu_items">
-<div class="menu_title menu_tools"></div>
 <li class="item">
-<div class="nav_link submenu_item" data-i18n="nav.tools">
+<a href="audit/audit.html" class="nav_link" data-i18n="nav.audit">
 <span class="navlink_icon">
-<i class="bx bx-wrench"></i>
+<i class="bx bx-clipboard"></i>
 </span>
-<span class="navlink">Tools</span>
-<i class="bx bx-chevron-right arrow-left"></i>
-</div>
-<ul class="menu_items submenu">
-<a href="audit/audit.html" class="nav_link sublink" data-i18n="nav.audit">Audit Help</a>
-<a href="contract-scanner/contract-scanner.html" class="nav_link sublink" data-i18n="nav.contractScanner">Contract Scanner</a>
-<a href="invoice/invoice.html" class="nav_link sublink" data-i18n="nav.invoiceBuilder">Invoice Builder</a>
-</ul>
+<span class="navlink">Audit Help</span>
+</a>
+</li>
+<li class="item">
+<a href="contract-scanner/contract-scanner.html" class="nav_link" data-i18n="nav.contractScanner">
+<span class="navlink_icon">
+<i class="bx bx-scan"></i>
+</span>
+<span class="navlink">Contract Scanner</span>
+</a>
+</li>
+<li class="item">
+<a href="invoice/invoice.html" class="nav_link" data-i18n="nav.invoiceBuilder">
+<span class="navlink_icon">
+<i class="bx bx-receipt"></i>
+</span>
+<span class="navlink">Invoice Builder</span>
+</a>
 </li>
 </ul>
 <ul class="menu_items">
@@ -86,7 +90,23 @@
 <span class="navlink">Support</span>
 </a>
 </li>
+<li class="item">
+<a href="account/account.html" class="nav_link" data-i18n="nav.account">
+<span class="navlink_icon">
+<i class="bx bx-user"></i>
+</span>
+<span class="navlink">My Account</span>
+</a>
+</li>
 </ul>
+<div class="sidebar-bottom">
+<button class="sidebar-logout-btn" data-i18n="auth.logout" id="sidebarLogoutBtn" type="button" hidden>
+<span class="navlink_icon">
+<i class="bx bx-log-out"></i>
+</span>
+<span class="navlink">Log out</span>
+</button>
+</div>
 </div></aside><main id="main">
 
 <section class="section">

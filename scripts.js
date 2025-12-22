@@ -583,6 +583,7 @@ const I18N = {
     "nav.bookkeeping": "Contabilidad",
     "nav.tools": "Herramientas",
     "nav.audit": "Ayuda de Auditoría",
+    "nav.account": "Mi Cuenta",
     "nav.contractScanner": "Escáner de Contratos",
     "nav.invoiceBuilder": "Generador de Facturas",
     "nav.support": "Soporte",
@@ -2598,14 +2599,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!ok) return;
 
   onAuthStateChanged(auth, async (user) => {
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-      logoutBtn.hidden = !user;
+    // Handle sidebar logout button (desktop)
+    const sidebarLogoutBtn = document.getElementById("sidebarLogoutBtn");
+    if (sidebarLogoutBtn) {
+      sidebarLogoutBtn.hidden = !user;
       
       // Set up logout handler only once per button instance
-      if (!logoutBtn.dataset.handlerAttached && auth) {
-        logoutBtn.dataset.handlerAttached = "true";
-        logoutBtn.addEventListener("click", (e) => {
+      if (!sidebarLogoutBtn.dataset.handlerAttached && auth) {
+        sidebarLogoutBtn.dataset.handlerAttached = "true";
+        sidebarLogoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
           showLogoutConfirmation();
