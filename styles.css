@@ -3657,6 +3657,108 @@ input:focus, select:focus, textarea:focus{
   }
 }
 
+/* Mobile: Fix overflow issues on iPhone widths (320px - 480px) */
+@media (max-width: 480px) {
+  /* Ensure container uses full width with padding instead of calc */
+  body[data-page="contracts"] .container {
+    width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+    box-sizing: border-box;
+  }
+  
+  /* Fix header-inner padding and ensure grid doesn't overflow */
+  body[data-page="contracts"] .header-inner {
+    padding: 16px 12px;
+    gap: 8px;
+    min-width: 0; /* Allow grid to shrink */
+    /* Keep existing grid-template-columns from @media (max-width: 1023px) */
+  }
+  
+  /* Ensure brand logo doesn't overflow */
+  body[data-page="contracts"] .brand-logo {
+    max-width: 100%;
+    height: auto;
+    max-height: 64px;
+  }
+  
+  /* Fix page-wrap padding when combined with contracts-dashboard */
+  body[data-page="contracts"] .page-wrap.contracts-dashboard {
+    padding: 16px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure contracts-dashboard doesn't add extra padding */
+  body[data-page="contracts"] .contracts-dashboard {
+    padding: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  /* Fix header actions to prevent overflow */
+  body[data-page="contracts"] .contracts-dashboard-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  body[data-page="contracts"] .contracts-dashboard-header-actions .btn {
+    min-width: 0;
+    flex: 1 1 auto;
+    max-width: 100%;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+  }
+  
+  /* Ensure search and filters don't overflow */
+  body[data-page="contracts"] .contracts-search-input,
+  body[data-page="contracts"] .contracts-filter-select {
+    max-width: 100%;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  
+  /* Fix jobs table container to prevent page overflow */
+  body[data-page="contracts"] .contracts-jobs-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Ensure table doesn't exceed container - allow scroll within table container only */
+  body[data-page="contracts"] .contracts-jobs-table {
+    min-width: 600px; /* Allow horizontal scroll within container only */
+  }
+  
+  /* Fix stat cards grid */
+  body[data-page="contracts"] .contracts-stat-cards {
+    gap: 12px;
+  }
+  
+  /* Ensure all inputs and selects are constrained */
+  body[data-page="contracts"] .contracts-dashboard input,
+  body[data-page="contracts"] .contracts-dashboard select,
+  body[data-page="contracts"] .contracts-dashboard textarea,
+  body[data-page="contracts"] .contracts-dashboard button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure main content area doesn't overflow */
+  body[data-page="contracts"] .app-layout > main {
+    padding-left: 0;
+    padding-right: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
 @media (max-width: 768px) {
   .contracts-dashboard {
     padding: 20px 16px;
