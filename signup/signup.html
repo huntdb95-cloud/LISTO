@@ -11,7 +11,13 @@
 <body class="auth-page" data-page="signup">
   <main class="auth-center">
     <div class="auth-stack">
-      <div class="auth-hero">
+      <div class="auth-hero" style="position: relative;">
+        <div style="position: absolute; top: 0; right: 0;">
+          <div aria-label="Language toggle" class="lang-switch" role="group">
+            <button aria-pressed="true" class="chip" data-lang="en" type="button">EN</button>
+            <button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
+          </div>
+        </div>
         <a href="../index.html" class="auth-logo-wrap" aria-label="Go to home">
           <img src="../images/logo.png" alt="Listo" class="auth-logo" />
         </a>
@@ -75,6 +81,7 @@
     </div>
   </main>
 
+  <script type="module" src="../scripts.js"></script>
   <script type="module" src="./signup.js"></script>
 </body>
 </html>

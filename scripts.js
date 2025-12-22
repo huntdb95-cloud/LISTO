@@ -426,7 +426,10 @@ const I18N = {
     "account.newPasswordLabel": "New Password",
     "account.passwordHint": "Minimum 6 characters",
     "account.confirmPasswordLabel": "Confirm New Password",
-    "account.updatePassword": "Update Password"
+    "account.updatePassword": "Update Password",
+    "account.languageTitle": "Language Preference",
+    "account.languageDesc": "Choose your preferred language for the application interface.",
+    "account.languageLabel": "Language"
   },
 
   es: {
@@ -829,7 +832,10 @@ const I18N = {
     "account.newPasswordLabel": "Nueva Contraseña",
     "account.passwordHint": "Mínimo 6 caracteres",
     "account.confirmPasswordLabel": "Confirmar Nueva Contraseña",
-    "account.updatePassword": "Actualizar Contraseña"
+    "account.updatePassword": "Actualizar Contraseña",
+    "account.languageTitle": "Preferencia de Idioma",
+    "account.languageDesc": "Elige tu idioma preferido para la interfaz de la aplicación.",
+    "account.languageLabel": "Idioma"
   }
 };
 
@@ -877,12 +883,68 @@ function applyTranslations(lang) {
   setPressedButtons(lang);
   localStorage.setItem(LANG_KEY, lang);
 }
+
+// Make applyTranslations available globally for account.js
+if (typeof window !== 'undefined') {
+  window.applyTranslations = applyTranslations;
+}
+
+async function loadUserLanguage(user) {
+  if (!user || !db) return null;
+  
+  try {
+    const profileRef = doc(db, "users", user.uid, "private", "profile");
+    const profileSnap = await getDoc(profileRef);
+    if (profileSnap.exists()) {
+      const profileData = profileSnap.data();
+      return profileData.language || null;
+    }
+  } catch (err) {
+    console.warn("Error loading user language:", err);
+  }
+  return null;
+}
+
 function initLanguage() {
+  // For non-authenticated pages (login, signup, forgot password, landing), use localStorage
   const saved = localStorage.getItem(LANG_KEY);
   const lang = (saved && I18N[saved]) ? saved : "en";
   applyTranslations(lang);
   document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => applyTranslations(btn.getAttribute("data-lang")));
+  });
+}
+
+async function initLanguageForUser(user) {
+  if (!user) {
+    initLanguage();
+    return;
+  }
+  
+  // Load language from Firestore profile
+  const userLang = await loadUserLanguage(user);
+  const lang = (userLang && I18N[userLang]) ? userLang : (localStorage.getItem(LANG_KEY) || "en");
+  
+  applyTranslations(lang);
+  
+  // Set up language toggle buttons if they exist (for login/signup/forgot pages)
+  document.querySelectorAll("[data-lang]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const selectedLang = btn.getAttribute("data-lang");
+      applyTranslations(selectedLang);
+      // For authenticated users, save to Firestore
+      if (user) {
+        try {
+          const profileRef = doc(db, "users", user.uid, "private", "profile");
+          await setDoc(profileRef, {
+            language: selectedLang,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (err) {
+          console.warn("Error saving language preference:", err);
+        }
+      }
+    });
   });
 }
 
@@ -1862,7 +1924,6 @@ if (typeof window !== 'undefined') {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  initLanguage();
   initSidebarNav();
   initYear();
 
@@ -1875,6 +1936,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const headerAvatar = document.getElementById("headerAvatar");
     if (headerAvatar) headerAvatar.hidden = !user;
+    
+    // Initialize language based on auth state
+    await initLanguageForUser(user);
     
     if (user) {
       await updateHeaderAvatar(user);
