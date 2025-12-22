@@ -887,7 +887,6 @@ img { max-width: 100%; display: block; }
 }
 .auth-card{ padding-bottom: 18px; }
 .auth-title{ margin: 0 0 6px; font-size: clamp(1.6rem, 2.2vw, 2rem); color: var(--text); }
-.auth-form{ padding: 0 18px 18px; display: grid; gap: 12px; }
 
 .field{ display: grid; gap: 6px; }
 .field-label{ color: var(--muted); font-weight: 650; font-size: 0.95rem; }
@@ -2171,11 +2170,13 @@ input:focus, select:focus, textarea:focus{
   place-items: center;
   padding: 24px 16px;
   overflow-y: auto;
+  align-content: center;
 }
 
 /* Create a "stack" so logo area + card feels like one unit */
 .auth-stack{
   width: min(560px, 94vw);
+  max-width: 100%;
   display: grid;
   gap: 8px;
   align-items: center;
@@ -2214,12 +2215,15 @@ input:focus, select:focus, textarea:focus{
 /* Card: slightly translucent so it blends with background */
 .auth-card{
   width: 100%;
+  max-width: 100%;
   background: rgba(255,255,255,0.78);
   border: 1px solid rgba(21,31,28,0.12);
   border-radius: 18px;
   box-shadow: 0 18px 50px rgba(21,31,28,0.12);
   backdrop-filter: blur(10px);
-  overflow: hidden;
+  overflow: visible;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 /* Tighten spacing inside auth cards */
@@ -2238,7 +2242,10 @@ input:focus, select:focus, textarea:focus{
 
 .auth-form{
   padding: 0 18px 18px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: visible;
 }
 
 .auth-form .field {
@@ -2246,6 +2253,12 @@ input:focus, select:focus, textarea:focus{
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  display: grid;
+  gap: 6px;
+}
+
+.auth-form .field:last-of-type {
+  margin-bottom: 0;
 }
 
 .auth-form .checkbox-label {
@@ -2254,7 +2267,18 @@ input:focus, select:focus, textarea:focus{
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.auth-form .checkbox-label input[type="checkbox"] {
+  margin-top: 4px;
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
 }
 
 .auth-form .checkbox-label span {
@@ -2263,6 +2287,25 @@ input:focus, select:focus, textarea:focus{
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: inline;
+}
+
+.auth-form .form-error {
+  margin: 0 0 4px 0;
+  padding: 0;
+  order: 100;
+}
+
+.auth-form .btn {
+  margin-top: 0;
+  order: 101;
+}
+
+.auth-form .auth-links {
+  order: 102;
+  margin-top: 4px;
 }
 
 .auth-links{
