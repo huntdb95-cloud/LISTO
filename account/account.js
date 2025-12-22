@@ -40,6 +40,20 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     await loadProfile();
     setupEventListeners();
+    
+    // Initialize prequalification status and uploads
+    if (typeof window.loadPrequalStatus === 'function' && typeof window.updatePrequalUI === 'function') {
+      const prequalData = await window.loadPrequalStatus(user.uid);
+      window.updatePrequalUI(prequalData);
+    }
+    
+    // Initialize Business License and Workers Comp uploads
+    if (typeof window.initBusinessLicenseUpload === 'function') {
+      window.initBusinessLicenseUpload(user);
+    }
+    if (typeof window.initWorkersCompUpload === 'function') {
+      window.initWorkersCompUpload(user);
+    }
   } else {
     // Should be redirected by scripts.js, but handle gracefully
     console.warn("No user authenticated");

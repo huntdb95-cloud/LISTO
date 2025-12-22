@@ -169,6 +169,135 @@
 </form>
 </div>
 </div>
+
+<!-- Pre-Qualification Documents Section -->
+<div class="card">
+<h2 data-i18n="prequal.sectionTitle">Pre-Qualification Documents</h2>
+<p class="muted" data-i18n="prequal.sectionDesc">Complete these documents to become pre-qualified for work with general contractors.</p>
+
+<div class="dashboard-grid" style="margin-top: 24px;">
+<!-- W-9 Card -->
+<div class="dashboard-card">
+<div class="dashboard-card-header">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="w9Dot"></span>
+<h2 class="h2" data-i18n="prequal.itemW9Card">Fill out Your W9</h2>
+</div>
+</div>
+<div class="divider"></div>
+<p class="muted small" data-i18n="prequal.itemW9Desc">Fill and submit your W-9.</p>
+<div class="dashboard-card-actions">
+<a class="btn primary" href="../w9.html" data-i18n="prequal.completeW9">Complete W-9</a>
+<a class="btn ghost" href="../w9.html" id="w9ViewBtn" data-i18n="prequal.viewDocument" style="display: none;">View W-9</a>
+</div>
+</div>
+
+<!-- COI Card -->
+<div class="dashboard-card">
+<div class="dashboard-card-header">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="coiDot"></span>
+<h2 class="h2" data-i18n="prequal.itemCOICard">Upload your Certificate of Insurance</h2>
+</div>
+</div>
+<div class="divider"></div>
+<p class="muted small" id="coiMetaText" data-i18n="prequal.itemCOIDesc">Upload an active COI and set the expiration date.</p>
+<div class="dashboard-card-actions">
+<a class="btn primary" href="../coi.html" data-i18n="prequal.completeCOI">Complete COI</a>
+<a class="btn ghost" href="#" id="coiViewBtn" data-i18n="prequal.viewDocument" target="_blank" rel="noopener" style="display: none;">View COI</a>
+</div>
+</div>
+
+<!-- Agreement Card -->
+<div class="dashboard-card">
+<div class="dashboard-card-header">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="agreementDot"></span>
+<h2 class="h2" data-i18n="prequal.itemAgreementCard">Sign a Subcontractors Agreement</h2>
+</div>
+</div>
+<div class="divider"></div>
+<p class="muted small" data-i18n="prequal.itemAgreementDesc">Review and sign your agreement.</p>
+<div class="dashboard-card-actions">
+<a class="btn primary" href="../agreement.html" data-i18n="prequal.completeAgreement">Complete Agreement</a>
+<a class="btn ghost" href="../agreement.html" id="agreementViewBtn" data-i18n="prequal.viewDocument" style="display: none;">View Agreement</a>
+</div>
+</div>
+
+<!-- Business License Card -->
+<div class="dashboard-card">
+<div class="dashboard-card-header">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="businessLicenseDot"></span>
+<h2 class="h2" data-i18n="prequal.itemBusinessLicense">Business License</h2>
+</div>
+</div>
+<div class="divider"></div>
+<p class="muted small" data-i18n="prequal.itemBusinessLicenseDesc">Upload your business license if applicable.</p>
+<form class="dashboard-upload-form" id="businessLicenseForm">
+<label class="field">
+<span class="field-label" data-i18n="prequal.uploadFile">Upload File</span>
+<input accept=".pdf,.png,.jpg,.jpeg" id="businessLicenseFile" type="file"/>
+<span class="muted small" data-i18n="prequal.fileHint">Accepted: PDF, PNG, JPG</span>
+</label>
+<button class="btn primary" id="businessLicenseUploadBtn" type="submit" data-i18n="prequal.uploadBtn">Upload</button>
+<p aria-live="polite" class="muted small" id="businessLicenseMsg" role="status"></p>
+<p aria-live="polite" class="form-error" id="businessLicenseErr" role="alert"></p>
+</form>
+<div class="dashboard-current-file" id="businessLicenseCurrent" hidden>
+<div class="kv-row">
+<div class="muted" data-i18n="prequal.currentFile">Current File:</div>
+<div class="kv-val" id="businessLicenseFileName">—</div>
+</div>
+<div class="kv-row">
+<div class="muted" data-i18n="prequal.uploaded">Uploaded:</div>
+<div class="kv-val" id="businessLicenseUploaded">—</div>
+</div>
+<div class="dashboard-card-actions" style="margin-top: 12px;">
+<a class="btn ghost small" data-i18n="prequal.viewDocument" href="#" id="businessLicenseViewLink" rel="noopener" target="_blank" hidden>View</a>
+<a class="mini-link" data-i18n="prequal.download" href="#" id="businessLicenseDownloadLink" rel="noopener" target="_blank" hidden>Download</a>
+</div>
+</div>
+</div>
+
+<!-- Workers Comp Exemption Card -->
+<div class="dashboard-card">
+<div class="dashboard-card-header">
+<div class="dashboard-status">
+<span aria-hidden="true" class="dot dot-off" id="workersCompDot"></span>
+<h2 class="h2" data-i18n="prequal.itemWorkersComp">Workers Compensation Exemption</h2>
+</div>
+</div>
+<div class="divider"></div>
+<p class="muted small" data-i18n="prequal.itemWorkersCompDesc">Upload your workers compensation exemption certificate if applicable.</p>
+<form class="dashboard-upload-form" id="workersCompForm">
+<label class="field">
+<span class="field-label" data-i18n="prequal.uploadFile">Upload File</span>
+<input accept=".pdf,.png,.jpg,.jpeg" id="workersCompFile" type="file"/>
+<span class="muted small" data-i18n="prequal.fileHint">Accepted: PDF, PNG, JPG</span>
+</label>
+<button class="btn primary" id="workersCompUploadBtn" type="submit" data-i18n="prequal.uploadBtn">Upload</button>
+<p aria-live="polite" class="muted small" id="workersCompMsg" role="status"></p>
+<p aria-live="polite" class="form-error" id="workersCompErr" role="alert"></p>
+</form>
+<div class="dashboard-current-file" id="workersCompCurrent" hidden>
+<div class="kv-row">
+<div class="muted" data-i18n="prequal.currentFile">Current File:</div>
+<div class="kv-val" id="workersCompFileName">—</div>
+</div>
+<div class="kv-row">
+<div class="muted" data-i18n="prequal.uploaded">Uploaded:</div>
+<div class="kv-val" id="workersCompUploaded">—</div>
+</div>
+<div class="dashboard-card-actions" style="margin-top: 12px;">
+<a class="btn ghost small" data-i18n="prequal.viewDocument" href="#" id="workersCompViewLink" rel="noopener" target="_blank" hidden>View</a>
+<a class="mini-link" data-i18n="prequal.download" href="#" id="workersCompDownloadLink" rel="noopener" target="_blank" hidden>Download</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 </main></div>
