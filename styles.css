@@ -79,7 +79,7 @@ img { max-width: 100%; display: block; }
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
   box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 1px 2px rgba(21,31,28,0.03);
 }
 
@@ -1704,6 +1704,7 @@ input:focus, select:focus, textarea:focus{
   z-index: 100;
   overflow-y: auto;
   box-shadow: 0 0 1px var(--border);
+  border-right: 1px solid var(--border-strong);
   transition: none; /* Permanent - no transitions */
 }
 
