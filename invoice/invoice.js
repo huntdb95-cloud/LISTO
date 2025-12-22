@@ -74,8 +74,9 @@ function makeInvoiceNumber() {
 
 function setStatus(text, kind = "") {
   const pill = el("statusPill");
+  if (!pill) return;
   pill.textContent = text;
-  pill.className = `pill ${kind}`.trim();
+  pill.className = `invoice-pill ${kind}`.trim();
 }
 
 function setSendResult(text, kind = "") {
@@ -106,10 +107,16 @@ function removeItem(index) {
 
 function renderItems() {
   const body = el("itemsBody");
+  const cardsContainer = el("itemsCards");
+  if (!body || !cardsContainer) return;
+  
   body.innerHTML = "";
+  cardsContainer.innerHTML = "";
 
   state.items.forEach((item, idx) => {
+    // Create table row for desktop
     const tr = document.createElement("tr");
+    tr.dataset.itemIndex = idx;
 
     const tdDesc = document.createElement("td");
     const desc = document.createElement("input");
@@ -117,13 +124,14 @@ function renderItems() {
     desc.placeholder = "Labor / materials / service";
     desc.addEventListener("input", () => {
       state.items[idx].description = desc.value;
+      updateItemCard(idx); // Update card view
       setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
     tdDesc.appendChild(desc);
 
     const tdQty = document.createElement("td");
-    tdQty.className = "num";
+    tdQty.className = "invoice-num";
     const qty = document.createElement("input");
     qty.type = "number";
     qty.step = "1";
@@ -131,13 +139,14 @@ function renderItems() {
     qty.value = item.qty ?? 1;
     qty.addEventListener("input", () => {
       state.items[idx].qty = num(qty.value);
+      updateItemCard(idx); // Update card view
       setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
     tdQty.appendChild(qty);
 
     const tdUnit = document.createElement("td");
-    tdUnit.className = "num";
+    tdUnit.className = "invoice-num";
     const unit = document.createElement("input");
     unit.type = "number";
     unit.step = "0.01";
@@ -145,21 +154,24 @@ function renderItems() {
     unit.value = item.unitPrice ?? 0;
     unit.addEventListener("input", () => {
       state.items[idx].unitPrice = num(unit.value);
+      updateItemCard(idx); // Update card view
       setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
       recalcTotals();
     });
     tdUnit.appendChild(unit);
 
     const tdLine = document.createElement("td");
-    tdLine.className = "num";
+    tdLine.className = "invoice-num";
+    tdLine.dataset.lineTotal = idx;
     const lineTotal = (num(item.qty) * num(item.unitPrice));
     tdLine.textContent = money(lineTotal);
 
     const tdActions = document.createElement("td");
-    tdActions.className = "num";
+    tdActions.className = "invoice-num";
     const btn = document.createElement("button");
-    btn.className = "btn danger";
+    btn.className = "invoice-btn danger";
     btn.style.padding = "8px 10px";
+    btn.style.fontSize = "0.9rem";
     btn.textContent = "Remove";
     btn.addEventListener("click", () => removeItem(idx));
     tdActions.appendChild(btn);
@@ -171,17 +183,175 @@ function renderItems() {
     tr.appendChild(tdActions);
 
     body.appendChild(tr);
+    
+    // Create card for mobile
+    createItemCard(item, idx, cardsContainer);
   });
 
   if (state.items.length === 0) {
+    // Empty state for table
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 5;
-    td.className = "muted";
+    td.className = "invoice-muted";
     td.style.padding = "16px";
-    td.textContent = "No items yet. Click “Add Item”.";
+    td.style.textAlign = "center";
+    td.textContent = "No items yet. Click \"Add Item\".";
     tr.appendChild(td);
     body.appendChild(tr);
+    
+    // Empty state for cards
+    const emptyCard = document.createElement("div");
+    emptyCard.className = "invoice-muted";
+    emptyCard.style.padding = "24px";
+    emptyCard.style.textAlign = "center";
+    emptyCard.textContent = "No items yet. Click \"Add Item\".";
+    cardsContainer.appendChild(emptyCard);
+  }
+}
+
+function createItemCard(item, idx, container) {
+  const card = document.createElement("div");
+  card.className = "invoice-item-card";
+  card.dataset.itemIndex = idx;
+
+  const header = document.createElement("div");
+  header.className = "invoice-item-card-header";
+
+  const descContainer = document.createElement("div");
+  descContainer.className = "invoice-item-card-desc";
+  const desc = document.createElement("input");
+  desc.value = item.description || "";
+  desc.placeholder = "Labor / materials / service";
+  desc.addEventListener("input", () => {
+    state.items[idx].description = desc.value;
+    updateItemTableRow(idx); // Update table view
+    setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
+    recalcTotals();
+  });
+  descContainer.appendChild(desc);
+
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "invoice-btn danger invoice-item-card-remove";
+  removeBtn.style.padding = "8px 12px";
+  removeBtn.style.fontSize = "0.9rem";
+  removeBtn.textContent = "Remove";
+  removeBtn.addEventListener("click", () => removeItem(idx));
+
+  header.appendChild(descContainer);
+  header.appendChild(removeBtn);
+
+  const fields = document.createElement("div");
+  fields.className = "invoice-item-card-fields";
+
+  const qtyField = document.createElement("div");
+  qtyField.className = "invoice-item-card-field";
+  const qtyLabel = document.createElement("label");
+  qtyLabel.className = "invoice-label";
+  qtyLabel.textContent = "Quantity";
+  const qty = document.createElement("input");
+  qty.type = "number";
+  qty.step = "1";
+  qty.min = "0";
+  qty.value = item.qty ?? 1;
+  qty.addEventListener("input", () => {
+    state.items[idx].qty = num(qty.value);
+    updateItemTableRow(idx);
+    updateItemCardTotal(idx);
+    setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
+    recalcTotals();
+  });
+  qtyField.appendChild(qtyLabel);
+  qtyField.appendChild(qty);
+
+  const unitField = document.createElement("div");
+  unitField.className = "invoice-item-card-field";
+  const unitLabel = document.createElement("label");
+  unitLabel.className = "invoice-label";
+  unitLabel.textContent = "Unit Price";
+  const unit = document.createElement("input");
+  unit.type = "number";
+  unit.step = "0.01";
+  unit.min = "0";
+  unit.value = item.unitPrice ?? 0;
+  unit.addEventListener("input", () => {
+    state.items[idx].unitPrice = num(unit.value);
+    updateItemTableRow(idx);
+    updateItemCardTotal(idx);
+    setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
+    recalcTotals();
+  });
+  unitField.appendChild(unitLabel);
+  unitField.appendChild(unit);
+
+  fields.appendChild(qtyField);
+  fields.appendChild(unitField);
+
+  const totalRow = document.createElement("div");
+  totalRow.className = "invoice-item-card-total";
+  totalRow.dataset.cardTotal = idx;
+  const totalLabel = document.createElement("span");
+  totalLabel.className = "invoice-item-card-total-label";
+  totalLabel.textContent = "Line Total:";
+  const totalValue = document.createElement("span");
+  totalValue.className = "invoice-item-card-total-value";
+  const lineTotal = (num(item.qty) * num(item.unitPrice));
+  totalValue.textContent = money(lineTotal);
+  totalRow.appendChild(totalLabel);
+  totalRow.appendChild(totalValue);
+
+  card.appendChild(header);
+  card.appendChild(fields);
+  card.appendChild(totalRow);
+
+  container.appendChild(card);
+}
+
+function updateItemCard(idx) {
+  const card = document.querySelector(`.invoice-item-card[data-item-index="${idx}"]`);
+  if (card && state.items[idx]) {
+    const item = state.items[idx];
+    const descInput = card.querySelector('.invoice-item-card-desc input');
+    const qtyInput = card.querySelector('.invoice-item-card-field:first-child input');
+    const unitInput = card.querySelector('.invoice-item-card-field:last-child input');
+    
+    if (descInput) descInput.value = item.description || "";
+    if (qtyInput) qtyInput.value = item.qty ?? 1;
+    if (unitInput) unitInput.value = item.unitPrice ?? 0;
+    
+    updateItemCardTotal(idx);
+  }
+}
+
+function updateItemCardTotal(idx) {
+  const totalRow = document.querySelector(`.invoice-item-card[data-item-index="${idx}"] [data-card-total="${idx}"]`);
+  if (totalRow && state.items[idx]) {
+    const item = state.items[idx];
+    const totalValue = totalRow.querySelector('.invoice-item-card-total-value');
+    if (totalValue) {
+      const lineTotal = (num(item.qty) * num(item.unitPrice));
+      totalValue.textContent = money(lineTotal);
+    }
+  }
+}
+
+function updateItemTableRow(idx) {
+  const tr = document.querySelector(`#itemsBody tr[data-item-index="${idx}"]`);
+  if (tr && state.items[idx]) {
+    const item = state.items[idx];
+    const descInput = tr.querySelector('td:first-child input');
+    const qtyInput = tr.querySelector('td:nth-child(2) input');
+    const unitInput = tr.querySelector('td:nth-child(3) input');
+    
+    if (descInput) descInput.value = item.description || "";
+    if (qtyInput) qtyInput.value = item.qty ?? 1;
+    if (unitInput) unitInput.value = item.unitPrice ?? 0;
+    
+    const tdLine = tr.querySelector('td[data-line-total]');
+    if (tdLine) {
+      const lineTotal = (num(item.qty) * num(item.unitPrice));
+      tdLine.textContent = money(lineTotal);
+    }
   }
 }
 
@@ -202,11 +372,23 @@ function recalcTotals() {
   el("depositOut").textContent = money(deposit);
   el("totalOut").textContent = money(total);
 
-  // Update per-line totals too
-  [...document.querySelectorAll("#itemsBody tr")].forEach((tr, idx) => {
-    const tdLine = tr.children?.[3];
-    if (tdLine && state.items[idx]) {
-      tdLine.textContent = money(num(state.items[idx].qty) * num(state.items[idx].unitPrice));
+  // Update per-line totals in table view
+  [...document.querySelectorAll("#itemsBody tr[data-item-index]")].forEach((tr) => {
+    const idx = parseInt(tr.dataset.itemIndex);
+    if (state.items[idx]) {
+      const tdLine = tr.querySelector('td[data-line-total]');
+      if (tdLine) {
+        const lineTotal = num(state.items[idx].qty) * num(state.items[idx].unitPrice);
+        tdLine.textContent = money(lineTotal);
+      }
+    }
+  });
+  
+  // Update per-line totals in card view
+  [...document.querySelectorAll(".invoice-item-card[data-item-index]")].forEach((card) => {
+    const idx = parseInt(card.dataset.itemIndex);
+    if (state.items[idx]) {
+      updateItemCardTotal(idx);
     }
   });
 
