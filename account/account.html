@@ -31,20 +31,53 @@
   <div id="sidebar"></div>
   <main id="main">
 
-<div class="page-wrap">
-<div class="page-title">
-<div>
-<h1 data-i18n="account.title">My Account</h1>
-<div class="muted" data-i18n="account.subtitle">Manage your account settings and profile information.</div>
+<div class="page-wrap account-dashboard">
+<!-- Dashboard Header -->
+<div class="account-dashboard-header">
+<div class="account-dashboard-header-content">
+<h1 class="account-dashboard-title" data-i18n="account.title">My Account</h1>
+<p class="account-dashboard-subtitle" data-i18n="account.subtitle">Manage your profile, security, and preferences</p>
+</div>
+<div class="account-dashboard-header-meta">
+<span class="account-dashboard-last-updated" id="accountLastUpdated" style="display: none;"></span>
 </div>
 </div>
 
-<div class="account-layout">
-<!-- Profile Section -->
+<!-- Summary Stat Cards -->
+<div class="account-stat-cards">
+<div class="account-stat-card">
+<div class="account-stat-card-label">Email</div>
+<div class="account-stat-card-value" id="statCardEmail">—</div>
+<div class="account-stat-card-badge" id="statCardEmailVerified" style="display: none;">
+<span class="account-stat-badge-text">Verified</span>
+</div>
+</div>
+<div class="account-stat-card">
+<div class="account-stat-card-label">Account Status</div>
+<div class="account-stat-card-value">Active</div>
+</div>
+<div class="account-stat-card">
+<div class="account-stat-card-label">Language</div>
+<div class="account-stat-card-value" id="statCardLanguage">—</div>
+</div>
+<div class="account-stat-card">
+<div class="account-stat-card-label">Member Since</div>
+<div class="account-stat-card-value" id="statCardMemberSince">—</div>
+</div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="account-dashboard-grid">
+<!-- Left Column: Profile -->
+<div class="account-dashboard-column">
 <div class="card account-profile-card">
+<div class="account-card-header">
 <h2 data-i18n="account.profileTitle">Profile</h2>
-<p class="muted" data-i18n="account.profileDesc">Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.</p>
+<p class="account-card-description" data-i18n="account.profileDesc">Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.</p>
+</div>
+<div class="account-card-divider"></div>
 
+<div class="account-card-content">
 <div class="profile-picture-container">
 <div class="profile-avatar" id="profileAvatar">
 <img id="avatarImage" alt="Profile" style="display: none;" />
@@ -58,14 +91,14 @@
 <input type="file" id="logoFile" accept="image/*" />
 <div class="small muted" data-i18n="account.logoHint">Accepted: JPG, PNG, GIF, WebP (max 5MB)</div>
 </div>
-<button type="submit" class="btn primary" id="logoUploadBtn" data-i18n="account.uploadLogo">Upload Logo</button>
+<button type="submit" class="btn primary account-form-button" id="logoUploadBtn" data-i18n="account.uploadLogo">Upload Logo</button>
 <div id="logoMsg" class="form-msg"></div>
 <div id="logoError" class="form-error"></div>
 </form>
 
-<button type="button" class="btn ghost" id="removeLogoBtn" style="display: none; margin-top: 16px;" data-i18n="account.removeLogo">Remove Logo</button>
+<button type="button" class="btn ghost account-form-button" id="removeLogoBtn" style="display: none;" data-i18n="account.removeLogo">Remove Logo</button>
 
-<div class="divider"></div>
+<div class="account-card-divider"></div>
 
 <!-- Name -->
 <div class="form-section">
@@ -77,17 +110,25 @@
 <label for="userName" data-i18n="account.nameLabel">Full Name</label>
 <input type="text" id="userName" placeholder="John Doe" />
 </div>
-<button type="submit" class="btn primary" id="nameUpdateBtn" data-i18n="account.updateName">Update Name</button>
+<button type="submit" class="btn primary account-form-button" id="nameUpdateBtn" data-i18n="account.updateName">Update Name</button>
 <div id="nameMsg" class="form-msg"></div>
 <div id="nameError" class="form-error"></div>
 </form>
 </div>
 </div>
+</div>
+</div>
 
+<!-- Right Column: Security + Preferences -->
+<div class="account-dashboard-column">
 <!-- Security Section -->
 <div class="card account-security-card">
+<div class="account-card-header">
 <h2 data-i18n="account.infoTitle">Security</h2>
+</div>
+<div class="account-card-divider"></div>
 
+<div class="account-card-content">
 <!-- Email Change -->
 <div class="form-section">
 <h3 data-i18n="account.emailTitle">Email Address</h3>
@@ -103,13 +144,13 @@
 <label for="emailPassword" data-i18n="account.passwordConfirm">Current Password (required)</label>
 <input type="password" id="emailPassword" required />
 </div>
-<button type="submit" class="btn primary" id="emailUpdateBtn" data-i18n="account.updateEmail">Update Email</button>
+<button type="submit" class="btn primary account-form-button" id="emailUpdateBtn" data-i18n="account.updateEmail">Update Email</button>
 <div id="emailMsg" class="form-msg"></div>
 <div id="emailError" class="form-error"></div>
 </form>
 </div>
 
-<div class="divider"></div>
+<div class="account-card-divider"></div>
 
 <!-- Password Change -->
 <div class="form-section">
@@ -130,17 +171,22 @@
 <label for="confirmPassword" data-i18n="account.confirmPasswordLabel">Confirm New Password</label>
 <input type="password" id="confirmPassword" required minlength="6" />
 </div>
-<button type="submit" class="btn primary" id="passwordUpdateBtn" data-i18n="account.updatePassword">Update Password</button>
+<button type="submit" class="btn primary account-form-button" id="passwordUpdateBtn" data-i18n="account.updatePassword">Update Password</button>
 <div id="passwordMsg" class="form-msg"></div>
 <div id="passwordError" class="form-error"></div>
 </form>
 </div>
 </div>
+</div>
 
 <!-- Preferences Section -->
 <div class="card account-preferences-card">
+<div class="account-card-header">
 <h2>Preferences</h2>
+</div>
+<div class="account-card-divider"></div>
 
+<div class="account-card-content">
 <!-- Language Preference -->
 <div class="form-section">
 <h3 data-i18n="account.languageTitle">Language Preference</h3>
@@ -159,12 +205,19 @@
 </form>
 </div>
 </div>
+</div>
+</div>
+</div>
 
-<!-- Pre-Qualification Documents Section -->
+<!-- Pre-Qualification Documents Section (Full Width) -->
 <div class="card account-prequal-card">
+<div class="account-card-header">
 <h2 data-i18n="prequal.sectionTitle">Pre-Qualification Documents</h2>
-<p class="muted" data-i18n="prequal.sectionDesc">Complete these documents to become pre-qualified for work with general contractors.</p>
+<p class="account-card-description" data-i18n="prequal.sectionDesc">Complete these documents to become pre-qualified for work with general contractors.</p>
+</div>
+<div class="account-card-divider"></div>
 
+<div class="account-card-content">
 <div class="dashboard-grid" style="margin-top: 24px;">
 <!-- W-9 Card -->
 <div class="dashboard-card">
@@ -325,5 +378,3 @@
 
 </body>
 </html>
-
-

@@ -4,175 +4,10 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Listo — Contracts</title>
-<meta content="Manage your pre-qualification documents and active builder contracts with jobs." name="description"/>
+<title>Listo — Contracts & Jobs</title>
+<meta content="Manage your builder contracts and track jobs with a professional dashboard." name="description"/>
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
 <link href="../styles.css" rel="stylesheet"/>
-<style>
-  .contract-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .contract-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-  .contract-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin: 0;
-  }
-  .contract-actions {
-    display: flex;
-    gap: 8px;
-  }
-  .jobs-section {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
-  .job-card {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-  .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-  }
-  .job-title {
-    font-weight: 600;
-    margin: 0;
-  }
-  .job-actions {
-    display: flex;
-    gap: 8px;
-  }
-  .document-links {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-  .document-link {
-    font-size: 0.9rem;
-  }
-  
-  /* Job Status Badge */
-  .job-status-badge {
-    display: inline-block;
-    transition: all 0.2s;
-  }
-  
-  .job-status-badge.paid {
-    background: rgba(16, 185, 129, 0.15);
-    color: #059669;
-  }
-  
-  .job-status-badge.unpaid {
-    background: rgba(245, 158, 11, 0.15);
-    color: #d97706;
-  }
-  
-  .job-status-badge:hover {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-  
-  /* Modal Styles */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    animation: fadeIn 0.2s ease-out;
-  }
-  
-  .modal-content {
-    background: var(--panel);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: slideUp 0.3s ease-out;
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-  }
-  
-  .modal-header .h2 {
-    margin: 0;
-  }
-  
-  .modal-close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-sm);
-    transition: all 0.2s;
-  }
-  
-  .modal-close:hover {
-    background: var(--bg);
-    color: var(--text);
-  }
-  
-  .modal-body {
-    padding: 24px;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-</style>
 </head>
 <body data-page="contracts" data-requires-auth="true">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -195,167 +30,410 @@
 <div class="app-layout">
   <div id="sidebar"></div>
   <main id="main">
-<section class="section">
-<div class="container">
-<div class="section-head">
-<h1 class="page-title" data-i18n="contracts.title">Contracts</h1>
-<p class="muted" data-i18n="contracts.subtitle">
-            Manage your active builder contracts and track jobs.
-          </p>
+
+<div class="page-wrap contracts-dashboard">
+<!-- Dashboard Header -->
+<div class="contracts-dashboard-header">
+<div class="contracts-dashboard-header-content">
+<h1 class="contracts-dashboard-title">Contracts & Jobs</h1>
+<p class="contracts-dashboard-subtitle">Manage your builder contracts and track project jobs</p>
 </div>
+<div class="contracts-dashboard-header-actions">
+<button type="button" class="btn primary" id="newBuilderBtn">
+<span>New Builder</span>
+</button>
+<button type="button" class="btn ghost" id="newContractBtn" style="display: none;">
+<span>New Contract</span>
+</button>
+</div>
+</div>
+
+<!-- Summary Stat Cards -->
+<div class="contracts-stat-cards">
+<div class="contracts-stat-card">
+<div class="contracts-stat-card-label">Active Contracts</div>
+<div class="contracts-stat-card-value" id="statActiveContracts">0</div>
+</div>
+<div class="contracts-stat-card">
+<div class="contracts-stat-card-label">Open Jobs</div>
+<div class="contracts-stat-card-value" id="statOpenJobs">0</div>
+</div>
+<div class="contracts-stat-card">
+<div class="contracts-stat-card-label">Overdue Jobs</div>
+<div class="contracts-stat-card-value contracts-stat-card-value-warning" id="statOverdueJobs">0</div>
+</div>
+<div class="contracts-stat-card">
+<div class="contracts-stat-card-label">Total Contract Value</div>
+<div class="contracts-stat-card-value" id="statTotalValue">$0</div>
+</div>
+</div>
+
+<!-- Search and Filters Bar -->
+<div class="contracts-toolbar">
+<div class="contracts-search">
+<input type="text" id="contractsSearch" placeholder="Search builders, contracts, jobs..." class="contracts-search-input" />
+</div>
+<div class="contracts-filters">
+<select id="filterStatus" class="contracts-filter-select">
+<option value="">All Statuses</option>
+<option value="active">Active</option>
+<option value="on-hold">On Hold</option>
+<option value="closed">Closed</option>
+<option value="draft">Draft</option>
+</select>
+<select id="filterBuilder" class="contracts-filter-select">
+<option value="">All Builders</option>
+</select>
+<select id="sortBy" class="contracts-filter-select">
+<option value="updated">Last Updated</option>
+<option value="name">Name</option>
+<option value="dueDate">Due Date</option>
+<option value="value">Contract Value</option>
+</select>
+</div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="contracts-main-grid">
+<!-- Left: Builder/Contract List -->
+<div class="contracts-sidebar">
+<div class="contracts-list-header">
+<h2 class="contracts-list-title">Builders & Contracts</h2>
+</div>
+<div class="contracts-list-container">
+<div id="contractsList" class="contracts-list">
+<div class="contracts-loading">Loading...</div>
+</div>
+</div>
+</div>
+
+<!-- Right: Contract Details + Jobs -->
+<div class="contracts-detail-panel">
+<div id="contractDetailView" class="contracts-detail-view" style="display: none;">
+<!-- Contract Header -->
+<div class="contracts-detail-header">
+<div class="contracts-detail-header-content">
+<h2 class="contracts-detail-title" id="detailContractTitle">—</h2>
+<div class="contracts-detail-meta">
+<span class="contracts-status-badge" id="detailContractStatus">—</span>
+<span class="contracts-detail-builder" id="detailContractBuilder">—</span>
+</div>
+</div>
+<div class="contracts-detail-header-actions">
+<button type="button" class="btn small" id="editContractBtn">Edit</button>
+<button type="button" class="btn small ghost" id="duplicateContractBtn">Duplicate</button>
+<button type="button" class="btn small ghost" id="deleteContractBtn">Delete</button>
+</div>
+</div>
+
+<!-- Contract Info Tabs -->
+<div class="contracts-detail-tabs">
+<button type="button" class="contracts-tab contracts-tab-active" data-tab="overview">Overview</button>
+<button type="button" class="contracts-tab" data-tab="jobs">Jobs</button>
+<button type="button" class="contracts-tab" data-tab="notes">Notes</button>
+</div>
+
+<!-- Overview Tab -->
+<div class="contracts-tab-content contracts-tab-content-active" id="tabOverview">
+<div class="contracts-detail-section">
+<h3 class="contracts-detail-section-title">Contract Information</h3>
+<div class="contracts-detail-grid">
+<div class="contracts-detail-field">
+<label>Contract Number</label>
+<div class="contracts-detail-value" id="detailContractNumber">—</div>
+</div>
+<div class="contracts-detail-field">
+<label>Start Date</label>
+<div class="contracts-detail-value" id="detailStartDate">—</div>
+</div>
+<div class="contracts-detail-field">
+<label>End Date</label>
+<div class="contracts-detail-value" id="detailEndDate">—</div>
+</div>
+<div class="contracts-detail-field">
+<label>Payment Terms</label>
+<div class="contracts-detail-value" id="detailPaymentTerms">—</div>
+</div>
+</div>
+</div>
+
+<div class="contracts-detail-section">
+<h3 class="contracts-detail-section-title">Financial Summary</h3>
+<div class="contracts-financial-grid">
+<div class="contracts-financial-item">
+<label>Total Contract Value</label>
+<div class="contracts-financial-value" id="detailTotalValue">$0.00</div>
+</div>
+<div class="contracts-financial-item">
+<label>Deposit</label>
+<div class="contracts-financial-value" id="detailDeposit">$0.00</div>
+</div>
+<div class="contracts-financial-item">
+<label>Retainage %</label>
+<div class="contracts-financial-value" id="detailRetainage">0%</div>
+</div>
+<div class="contracts-financial-item">
+<label>Remaining Balance</label>
+<div class="contracts-financial-value" id="detailRemaining">$0.00</div>
+</div>
+</div>
+</div>
+
+<div class="contracts-detail-section">
+<h3 class="contracts-detail-section-title">Scope of Work</h3>
+<div class="contracts-detail-value" id="detailScope">—</div>
+</div>
+</div>
+
+<!-- Jobs Tab -->
+<div class="contracts-tab-content" id="tabJobs">
+<div class="contracts-jobs-header">
+<h3 class="contracts-detail-section-title">Jobs</h3>
+<button type="button" class="btn primary small" id="newJobBtn">New Job</button>
+</div>
+<div class="contracts-jobs-container">
+<div id="jobsTableContainer" class="contracts-jobs-table-container">
+<table class="contracts-jobs-table" id="jobsTable">
+<thead>
+<tr>
+<th>Job Name</th>
+<th>Address</th>
+<th>Status</th>
+<th>Start Date</th>
+<th>Due Date</th>
+<th>Progress</th>
+<th>Budget</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="jobsTableBody">
+<tr>
+<td colspan="8" class="contracts-empty-state">No jobs yet. Click "New Job" to add one.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- Notes Tab -->
+<div class="contracts-tab-content" id="tabNotes">
+<div class="contracts-detail-section">
+<h3 class="contracts-detail-section-title">Notes</h3>
+<div class="contracts-detail-value" id="detailNotes">—</div>
+</div>
+</div>
+</div>
+
+<!-- Empty State -->
+<div id="contractEmptyState" class="contracts-empty-view">
+<div class="contracts-empty-content">
+<h2>No Contract Selected</h2>
+<p>Select a contract from the list to view details, or create a new builder and contract to get started.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+  </main>
+</div>
+
+<!-- Modals -->
+<!-- Builder Modal -->
+<div id="builderModal" class="modal-overlay" style="display: none;">
+<div class="modal-content modal-large">
+<div class="modal-header">
+<h2 class="h2" id="builderModalTitle">New Builder</h2>
+<button type="button" class="modal-close" onclick="hideBuilderModal()" aria-label="Close">&times;</button>
+</div>
+<div class="modal-body">
+<form id="builderForm">
+<input type="hidden" id="builderId" />
+<div class="form-group">
+<label for="builderName">Builder Name *</label>
+<input type="text" id="builderName" required placeholder="ABC Construction" />
+</div>
+<div class="form-group">
+<label for="builderEmail">Email</label>
+<input type="email" id="builderEmail" placeholder="contact@example.com" />
+</div>
+<div class="form-group">
+<label for="builderPhone">Phone</label>
+<input type="tel" id="builderPhone" placeholder="(555) 123-4567" />
+</div>
+<div class="form-group">
+<label for="builderAddress">Address</label>
+<textarea id="builderAddress" rows="2" placeholder="123 Main St, City, State ZIP"></textarea>
+</div>
+<div class="form-group">
+<label for="builderNotes">Notes</label>
+<textarea id="builderNotes" rows="4" placeholder="Additional notes about this builder..."></textarea>
+</div>
+<div id="builderFormMsg" class="form-msg"></div>
+<div id="builderFormError" class="form-error"></div>
+<div class="btn-row" style="margin-top: 20px;">
+<button type="submit" class="btn primary" id="saveBuilderBtn">Save Builder</button>
+<button type="button" class="btn ghost" onclick="hideBuilderModal()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+
 <!-- Contract Modal -->
 <div id="contractModal" class="modal-overlay" style="display: none;">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 class="h2" id="contractModalTitle" data-i18n="contracts.addContract">Add Builder Contract</h2>
-      <button type="button" class="modal-close" onclick="hideContractModal()" aria-label="Close">&times;</button>
-    </div>
-    <div class="modal-body">
-      <form id="contractForm">
-        <input type="hidden" id="contractId" />
-        
-        <div class="form-group">
-          <label for="builderName" data-i18n="contracts.builderName">Builder Name *</label>
-          <input type="text" id="builderName" required placeholder="ABC Construction" />
-        </div>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="builderCoi" data-i18n="contracts.builderCoi">Builder-Specific COI</label>
-            <input type="file" id="builderCoi" accept=".pdf,.png,.jpg,.jpeg" />
-            <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
-            <div id="builderCoiStatus" class="small muted" style="margin-top: 6px;"></div>
-          </div>
-          
-          <div class="form-group">
-            <label for="subAgreementType" data-i18n="contracts.subAgreementType">Subcontractor Agreement *</label>
-            <select id="subAgreementType" required>
-              <option value="">Select option</option>
-              <option value="sign" data-i18n="contracts.signStandard">Sign Standard Agreement</option>
-              <option value="upload" data-i18n="contracts.uploadSigned">Upload Signed Agreement</option>
-            </select>
-          </div>
-          
-          <div id="subAgreementSignOption" class="form-group" style="display: none;">
-            <div class="small muted" data-i18n="contracts.signStandardDesc">You will be redirected to sign the standard subcontractor agreement.</div>
-            <button type="button" class="btn small primary" id="signAgreementBtn" data-i18n="contracts.goToSign">Go to Sign Agreement</button>
-          </div>
-          
-          <div id="subAgreementUploadOption" class="form-group" style="display: none;">
-            <label for="subAgreement" data-i18n="contracts.uploadSignedAgreement">Upload Signed Agreement</label>
-            <input type="file" id="subAgreement" accept=".pdf,.png,.jpg,.jpeg" />
-            <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
-            <div id="subAgreementStatus" class="small muted" style="margin-top: 6px;"></div>
-          </div>
-        </div>
-        
-        <div id="contractFormMsg" class="form-msg" style="margin-top: 10px;"></div>
-        <div id="contractFormError" class="form-error" style="margin-top: 10px;"></div>
-        
-        <div class="btn-row" style="margin-top: 20px;">
-          <button type="submit" class="btn primary" id="saveContractBtn" data-i18n="contracts.saveContract">Save Contract</button>
-          <button type="button" class="btn ghost" onclick="hideContractModal()" data-i18n="contracts.cancel">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<div class="modal-content modal-large">
+<div class="modal-header">
+<h2 class="h2" id="contractModalTitle">New Contract</h2>
+<button type="button" class="modal-close" onclick="hideContractModal()" aria-label="Close">&times;</button>
+</div>
+<div class="modal-body">
+<form id="contractForm">
+<input type="hidden" id="contractId" />
+<input type="hidden" id="contractBuilderId" />
+<div class="form-group">
+<label for="contractTitle">Contract Title *</label>
+<input type="text" id="contractTitle" required placeholder="Main Contract" />
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label for="contractNumber">Contract Number</label>
+<input type="text" id="contractNumber" placeholder="CON-2024-001" />
+</div>
+<div class="form-group">
+<label for="contractStatus">Status *</label>
+<select id="contractStatus" required>
+<option value="draft">Draft</option>
+<option value="active" selected>Active</option>
+<option value="on-hold">On Hold</option>
+<option value="closed">Closed</option>
+</select>
+</div>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label for="contractStartDate">Start Date</label>
+<input type="date" id="contractStartDate" />
+</div>
+<div class="form-group">
+<label for="contractEndDate">End Date</label>
+<input type="date" id="contractEndDate" />
+</div>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label for="contractTotalValue">Total Contract Value</label>
+<input type="number" id="contractTotalValue" step="0.01" min="0" placeholder="0.00" />
+</div>
+<div class="form-group">
+<label for="contractDeposit">Deposit</label>
+<input type="number" id="contractDeposit" step="0.01" min="0" placeholder="0.00" />
+</div>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label for="contractRetainagePct">Retainage %</label>
+<input type="number" id="contractRetainagePct" step="0.1" min="0" max="100" placeholder="0" />
+</div>
+<div class="form-group">
+<label for="contractPaymentTerms">Payment Terms</label>
+<input type="text" id="contractPaymentTerms" placeholder="Net 30" />
+</div>
+</div>
+<div class="form-group">
+<label for="contractScope">Scope of Work</label>
+<textarea id="contractScope" rows="4" placeholder="Describe the scope of work..."></textarea>
+</div>
+<div class="form-group">
+<label for="contractNotes">Notes</label>
+<textarea id="contractNotes" rows="4" placeholder="Additional contract notes..."></textarea>
+</div>
+<div id="contractFormMsg" class="form-msg"></div>
+<div id="contractFormError" class="form-error"></div>
+<div class="btn-row" style="margin-top: 20px;">
+<button type="submit" class="btn primary" id="saveContractBtn">Save Contract</button>
+<button type="button" class="btn ghost" onclick="hideContractModal()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
 </div>
 
 <!-- Job Modal -->
 <div id="jobModal" class="modal-overlay" style="display: none;">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 class="h2" id="jobModalTitle" data-i18n="contracts.addJob">Add Job</h2>
-      <button type="button" class="modal-close" onclick="hideJobModal()" aria-label="Close">&times;</button>
-    </div>
-    <div class="modal-body">
-      <form id="jobForm">
-        <input type="hidden" id="jobContractId" />
-        <input type="hidden" id="jobId" />
-        
-        <div class="form-group">
-          <label for="jobName" data-i18n="contracts.jobName">Job Name *</label>
-          <input type="text" id="jobName" required placeholder="Project Name" />
-        </div>
-        
-        <div class="form-group">
-          <label for="jobAddress" data-i18n="contracts.jobAddress">Address</label>
-          <input type="text" id="jobAddress" placeholder="123 Main St, City, State ZIP" />
-        </div>
-        
-        <div class="form-group">
-          <label for="jobDescription" data-i18n="contracts.jobDescription">Description of Work</label>
-          <textarea id="jobDescription" rows="4" placeholder="Describe the work being performed..."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label for="jobProjectCoi" data-i18n="contracts.projectCoi">Project COI</label>
-          <input type="file" id="jobProjectCoi" accept=".pdf,.png,.jpg,.jpeg" />
-          <div class="small muted" data-i18n="contracts.fileHint">PDF, PNG, or JPG (max 10MB)</div>
-          <div id="jobProjectCoiStatus" class="small muted" style="margin-top: 6px;"></div>
-        </div>
-        
-        <div id="jobFormMsg" class="form-msg" style="margin-top: 10px;"></div>
-        <div id="jobFormError" class="form-error" style="margin-top: 10px;"></div>
-        
-        <div class="btn-row" style="margin-top: 20px;">
-          <button type="submit" class="btn primary" id="saveJobBtn" data-i18n="contracts.saveJob">Save Job</button>
-          <button type="button" class="btn ghost" onclick="hideJobModal()" data-i18n="contracts.cancel">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<div class="modal-content modal-large">
+<div class="modal-header">
+<h2 class="h2" id="jobModalTitle">New Job</h2>
+<button type="button" class="modal-close" onclick="hideJobModal()" aria-label="Close">&times;</button>
 </div>
-
-
-<!-- Active Contracts -->
-<div class="card pad mb">
-<div class="row-between">
-<h2 class="h2" data-i18n="contracts.activeContracts">Active Contracts</h2>
-<button type="button" class="btn primary" id="addContractBtn" data-i18n="contracts.addContract">Add Builder Contract</button>
+<div class="modal-body">
+<form id="jobForm">
+<input type="hidden" id="jobId" />
+<input type="hidden" id="jobContractId" />
+<input type="hidden" id="jobBuilderId" />
+<div class="form-group">
+<label for="jobName">Job Name *</label>
+<input type="text" id="jobName" required placeholder="Project Name" />
 </div>
-<div class="divider"></div>
-
-<div id="activeContractsList">
-<div class="muted" data-i18n="contracts.loading">Loading...</div>
+<div class="form-group">
+<label for="jobAddress">Address</label>
+<input type="text" id="jobAddress" placeholder="123 Main St, City, State ZIP" />
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label for="jobStatus">Status *</label>
+<select id="jobStatus" required>
+<option value="not-started">Not Started</option>
+<option value="in-progress" selected>In Progress</option>
+<option value="waiting">Waiting</option>
+<option value="completed">Completed</option>
+<option value="invoiced">Invoiced</option>
+<option value="paid">Paid</option>
+</select>
+</div>
+<div class="form-group">
+<label for="jobPriority">Priority</label>
+<select id="jobPriority">
+<option value="normal" selected>Normal</option>
+<option value="high">High</option>
+<option value="low">Low</option>
+</select>
 </div>
 </div>
-
-<!-- Inactive Contracts -->
-<div class="card pad" style="margin-top: 32px;">
-<div class="row-between">
-<h2 class="h2" data-i18n="contracts.inactiveContracts">Inactive Contracts</h2>
+<div class="form-grid">
+<div class="form-group">
+<label for="jobStartDate">Start Date</label>
+<input type="date" id="jobStartDate" />
 </div>
-<div class="divider"></div>
-
-<div id="inactiveContractsList">
-<div class="muted" data-i18n="contracts.noInactiveContracts">No inactive contracts.</div>
+<div class="form-group">
+<label for="jobDueDate">Due Date</label>
+<input type="date" id="jobDueDate" />
 </div>
 </div>
-</section>
-
-<footer class="site-footer">
-<div class="container footer-inner">
-<div>
-<div class="brand footer-brand">
-<img alt="Listo" class="brand-logo footer-logo" src="../images/logo.png"/>
+<div class="form-grid">
+<div class="form-group">
+<label for="jobBudget">Budget</label>
+<input type="number" id="jobBudget" step="0.01" min="0" placeholder="0.00" />
 </div>
-<p class="muted" data-i18n="footer.note">
-            Built to help subcontractors look sharp, stay compliant, and win more work.
-          </p>
-</div>
-<div class="footer-links">
-<a data-i18n="nav.contracts" href="../contracts/contracts.html">Contracts</a>
-<a data-i18n="nav.bookkeeping" href="../bookkeeping/bookkeeping.html">Bookkeeping</a>
-<a data-i18n="nav.audit" href="../audit/audit.html">Insurance Audit Help</a>
-<a data-i18n="nav.support" href="../support.html">Support</a>
+<div class="form-group">
+<label for="jobProgressPct">Progress %</label>
+<input type="number" id="jobProgressPct" step="1" min="0" max="100" placeholder="0" />
 </div>
 </div>
-<div class="container footer-bottom">
-<span class="muted">© <span id="year"></span> Listo</span>
+<div class="form-group">
+<label for="jobNotes">Notes</label>
+<textarea id="jobNotes" rows="4" placeholder="Job notes..."></textarea>
 </div>
-</footer>
-  </main>
+<div id="jobFormMsg" class="form-msg"></div>
+<div id="jobFormError" class="form-error"></div>
+<div class="btn-row" style="margin-top: 20px;">
+<button type="submit" class="btn primary" id="saveJobBtn">Save Job</button>
+<button type="button" class="btn ghost" onclick="hideJobModal()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
 </div>
 
 <!-- Mobile Bottom Navigation -->
@@ -389,4 +467,3 @@
 <script type="module" src="./contracts.js"></script>
 </body>
 </html>
-

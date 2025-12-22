@@ -182,6 +182,68 @@ service cloud.firestore {
 
     // ========== Contracts System ==========
     
+    // Builders: /users/{uid}/builders/{builderId}
+    match /users/{userId}/builders/{builderId} {
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['name', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.createdAt is timestamp;
+      
+      allow update: if isOwner(userId)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 200;
+      
+      allow delete: if isOwner(userId);
+      
+      // Contracts subcollection: /users/{uid}/builders/{builderId}/contracts/{contractId}
+      match /contracts/{contractId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasAll(['title', 'status', 'createdAt'])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 200
+          && request.resource.data.status in ['draft', 'active', 'on-hold', 'closed']
+          && request.resource.data.createdAt is timestamp;
+        
+        allow update: if isOwner(userId)
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 200
+          && (!('status' in request.resource.data) || request.resource.data.status in ['draft', 'active', 'on-hold', 'closed']);
+        
+        allow delete: if isOwner(userId);
+        
+        // Jobs subcollection: /users/{uid}/builders/{builderId}/contracts/{contractId}/jobs/{jobId}
+        match /jobs/{jobId} {
+          allow read: if isOwner(userId);
+          
+          allow create: if isOwner(userId)
+            && request.resource.data.keys().hasAll(['jobName', 'status', 'createdAt'])
+            && request.resource.data.jobName is string
+            && request.resource.data.jobName.size() >= 1
+            && request.resource.data.jobName.size() <= 200
+            && request.resource.data.status in ['not-started', 'in-progress', 'waiting', 'completed', 'invoiced', 'paid']
+            && request.resource.data.createdAt is timestamp;
+          
+          allow update: if isOwner(userId)
+            && request.resource.data.jobName is string
+            && request.resource.data.jobName.size() >= 1
+            && request.resource.data.jobName.size() <= 200
+            && (!('status' in request.resource.data) || request.resource.data.status in ['not-started', 'in-progress', 'waiting', 'completed', 'invoiced', 'paid']);
+          
+          allow delete: if isOwner(userId);
+        }
+      }
+    }
+    
+    // Legacy contracts structure (for backward compatibility during migration)
     // Builder contracts: /users/{uid}/contracts/{contractId}
     match /users/{userId}/contracts/{contractId} {
       allow read: if isOwner(userId);
