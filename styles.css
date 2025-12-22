@@ -229,6 +229,25 @@ body[data-page="landing"] .lang-switch-mobile {
   font-weight: 600;
 }
 
+/* Don't apply header nav-link styles to sidebar */
+.sidebar .nav-link {
+  background: transparent;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-weight: normal;
+}
+
+.sidebar .nav-link:hover {
+  background: var(--brand);
+  color: white;
+}
+
+.sidebar .nav-link.active {
+  background: var(--brand);
+  color: white;
+  font-weight: 600;
+}
+
 /* Mobile menu button */
 .nav-toggle{
   display: none;
@@ -1822,7 +1841,7 @@ input:focus, select:focus, textarea:focus{
 
 /* Sidebar links should be block-level, not inline */
 .sidebar .sidebar-link {
-  display: flex;
+  display: flex !important;
   align-items: center;
   width: 100%;
   padding: 8px 15px;
@@ -1833,11 +1852,38 @@ input:focus, select:focus, textarea:focus{
   transition: all 0.2s;
   margin: 2px 10px;
   box-sizing: border-box;
+  /* Override header nav-link styles */
+  font-weight: normal;
+  position: static;
 }
 
 .sidebar .sidebar-link:hover {
   color: white;
   background: var(--brand);
+}
+
+/* Override header nav-link styles for sidebar */
+.sidebar .sidebar-link.nav-link {
+  background: transparent;
+  padding: 8px 15px;
+  border-radius: 8px;
+}
+
+.sidebar .sidebar-link.nav-link:hover {
+  background: var(--brand);
+  color: white;
+}
+
+.sidebar .sidebar-link.nav-link.active {
+  background: var(--brand);
+  color: white;
+  font-weight: 600;
+}
+
+/* Style the navlink text span */
+.sidebar .sidebar-link .navlink {
+  display: inline-block;
+  flex: 1;
 }
 
 /* Sidebar icon styling */
@@ -1846,12 +1892,30 @@ input:focus, select:focus, textarea:focus{
   font-size: 22px;
   min-width: 50px;
   line-height: 40px;
-  display: inline-block;
+  display: inline-block !important;
   text-align: center;
   border-radius: 6px;
   color: inherit;
   transition: all 0.2s;
   margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar .sidebar-link .navlink_icon i {
+  display: inline-block !important;
+  font-size: inherit;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure icons are always visible in sidebar */
+.sidebar .navlink_icon,
+.sidebar .sidebar-link .navlink_icon,
+.sidebar .sidebar-submenu-toggle .navlink_icon,
+.sidebar .sidebar-submenu-link .navlink_icon {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .sidebar .sidebar-link:hover .navlink_icon {
