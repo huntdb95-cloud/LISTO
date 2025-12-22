@@ -336,8 +336,12 @@ async function refreshBuilderSelect() {
   
   const contracts = await loadContracts();
   select.innerHTML = '<option value="">— Select a builder —</option>';
-  jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
-  jobSelect.style.display = "none";
+  
+  // Only access jobSelect if it exists
+  if (jobSelect) {
+    jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+    jobSelect.style.display = "none";
+  }
   
   contracts.forEach(contract => {
     const opt = document.createElement("option");
