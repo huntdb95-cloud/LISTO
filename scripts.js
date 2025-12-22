@@ -1182,13 +1182,16 @@ function requireAuthGuard(user) {
 
 /* ========= Auth UI ========= */
 let logoutHandlerAttached = false;
+let loginFormHandlerAttached = false;
+let signupFormHandlerAttached = false;
 
 function initAuthUI() {
   // Logout handler is now set up in onAuthStateChanged to ensure auth is initialized
-  // This function is kept for backward compatibility
+  // Form handlers are also set up here with deduplication to prevent multiple listeners
 
   const loginForm = document.getElementById("loginForm");
-  if (loginForm && auth) {
+  if (loginForm && auth && !loginFormHandlerAttached) {
+    loginFormHandlerAttached = true;
     const err = document.getElementById("loginMsg");
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1205,7 +1208,8 @@ function initAuthUI() {
   }
 
   const signupForm = document.getElementById("signupForm");
-  if (signupForm && auth) {
+  if (signupForm && auth && !signupFormHandlerAttached) {
+    signupFormHandlerAttached = true;
     const err = document.getElementById("signupError");
     signupForm.addEventListener("submit", async (e) => {
       e.preventDefault();
