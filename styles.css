@@ -108,6 +108,58 @@ img { max-width: 100%; display: block; }
   align-items: center;
 }
 
+/* Mobile language toggle for index page */
+.lang-switch-mobile {
+  display: none; /* Hidden by default */
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+/* Mobile language toggle for index page */
+@media (max-width: 920px) {
+  /* Hide desktop language toggle on mobile for index page */
+  body[data-page="landing"] .lang-switch-desktop {
+    display: none;
+  }
+  
+  /* Show mobile language toggle */
+  body[data-page="landing"] .lang-switch-mobile {
+    display: inline-flex;
+  }
+  
+  /* Ensure logo stays centered on mobile for index page */
+  body[data-page="landing"] .header-inner {
+    grid-template-columns: 1fr auto;
+    position: relative;
+  }
+  
+  body[data-page="landing"] .header-inner > .brand {
+    grid-column: 1;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+  }
+  
+  /* Position language toggle on the right */
+  body[data-page="landing"] .lang-switch-mobile {
+    grid-column: 2;
+    position: relative;
+    right: 0;
+    top: auto;
+    transform: none;
+  }
+  
+  /* Hide header-actions on mobile for index page (or adjust as needed) */
+  body[data-page="landing"] .header-actions {
+    display: none;
+  }
+}
+
 .brand{
   display: flex;
   align-items: center;
