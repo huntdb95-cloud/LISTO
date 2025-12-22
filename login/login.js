@@ -40,7 +40,17 @@ form.addEventListener("submit", async (e) => {
       const urlParams = new URLSearchParams(window.location.search);
       const next = urlParams.get("next");
       if (next) {
-        window.location.href = next.startsWith("/") ? `..${next}` : `../${next}`;
+        // Handle absolute paths, relative paths, and paths that already include ../
+        if (next.startsWith("/")) {
+          // Absolute path - prepend .. to go up from login/ directory
+          window.location.href = `..${next}`;
+        } else if (next.startsWith("../") || next.startsWith("./")) {
+          // Already a relative path - use as-is
+          window.location.href = next;
+        } else {
+          // Simple filename or relative path - prepend ../
+          window.location.href = `../${next}`;
+        }
       } else {
         window.location.href = "../dashboard.html";
       }

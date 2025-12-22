@@ -69,7 +69,7 @@ form.addEventListener("submit", async (e) => {
       createdAt: serverTimestamp()
     });
 
-    window.location.href = "../index.html";
+    window.location.href = "../dashboard.html";
   } catch (err) {
     console.error(err);
     setError(friendlyAuthError(err));

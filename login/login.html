@@ -24,28 +24,28 @@
             <button aria-pressed="false" class="chip" data-lang="es" type="button">ES</button>
           </div>
         </div>
-        <h1 class="auth-title">Sign in</h1>
-        <p class="auth-subtitle">Access your account to manage payroll and documents.</p>
+        <h1 class="auth-title" data-i18n="auth.loginTitle">Sign in</h1>
+        <p class="auth-subtitle" data-i18n="auth.loginSubtitle">Access your account to manage payroll and documents.</p>
       </div>
 
       <form id="loginForm" class="auth-form" autocomplete="on">
         <div class="field">
-          <label class="field-label" for="email">Email</label>
-          <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@company.com" />
+          <label class="field-label" for="email" data-i18n="auth.email">Email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@company.com" data-i18n-placeholder="auth.emailPlaceholder" />
         </div>
 
         <div class="field">
-          <label class="field-label" for="password">Password</label>
-          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••" />
+          <label class="field-label" for="password" data-i18n="auth.password">Password</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••" data-i18n-placeholder="auth.passwordPlaceholderLogin" />
         </div>
 
         <p id="loginMsg" class="form-error" aria-live="polite"></p>
 
-        <button class="btn primary" type="submit">Log In</button>
+        <button class="btn primary" type="submit" data-i18n="auth.loginBtn">Log In</button>
 
         <div class="auth-links">
-          <a class="mini-link" href="../signup/signup.html">Create account</a>
-          <a class="mini-link" href="../forgot/forgot.html">Forgot password</a>
+          <a class="mini-link" href="../signup/signup.html" data-i18n="auth.createAccountLink">Create account</a>
+          <a class="mini-link" href="../forgot/forgot.html" data-i18n="auth.forgotPassword">Forgot password</a>
         </div>
       </form>
     </section>
