@@ -41,6 +41,7 @@ const I18N = {
     "nav.audit": "Audit Help",
     "nav.contractScanner": "Contract Scanner",
     "nav.invoiceBuilder": "Invoice Builder",
+    "nav.jobEstimator": "Job Cost Estimator",
     "nav.account": "My Account",
     "nav.support": "Support",
     "nav.settings": "Settings",
@@ -108,6 +109,7 @@ const I18N = {
     "tools.t6F1": "FAQs",
     "tools.t6F2": "Guides",
     "tools.t6F3": "Direct support",
+    "tools.t7Desc": "Create detailed job cost estimates with labor, materials, subcontractors, and markups. Link estimates to your saved jobs.",
     "tools.openTool": "Open Tool →",
 
     "how.title": "How it works",
@@ -586,6 +588,7 @@ const I18N = {
     "nav.account": "Mi Cuenta",
     "nav.contractScanner": "Escáner de Contratos",
     "nav.invoiceBuilder": "Generador de Facturas",
+    "nav.jobEstimator": "Estimador de Costos de Trabajo",
     "nav.support": "Soporte",
     "nav.settings": "Configuración",
     "tools.pageTitle": "Herramientas",
@@ -655,6 +658,7 @@ const I18N = {
     "tools.t6F1": "Preguntas frecuentes",
     "tools.t6F2": "Guías",
     "tools.t6F3": "Soporte directo",
+    "tools.t7Desc": "Crea estimaciones detalladas de costos de trabajo con mano de obra, materiales, subcontratistas y márgenes. Vincula estimaciones a tus trabajos guardados.",
     "tools.openTool": "Abrir Herramienta →",
 
     "how.title": "Cómo funciona",

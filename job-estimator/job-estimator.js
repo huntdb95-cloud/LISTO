@@ -1,0 +1,744 @@
+// job-estimator.js
+// Job Cost Estimator - Create and manage job cost estimates
+
+import { auth, db } from "../config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  getDoc,
+  doc,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy,
+  where,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const $ = (id) => document.getElementById(id);
+
+let currentUid = null;
+let builders = [];
+let jobs = [];
+let currentEstimateId = null;
+let currentBuilderId = null;
+let currentJobId = null;
+
+// Initialize
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUid = user.uid;
+    await loadBuilders();
+    setupEventListeners();
+  } else {
+    window.location.href = "../login/login.html";
+  }
+});
+
+// Load builders
+async function loadBuilders() {
+  if (!currentUid) return;
+  
+  try {
+    const buildersCol = collection(db, "users", currentUid, "builders");
+    const buildersSnap = await getDocs(query(buildersCol, orderBy("name")));
+    
+    builders = buildersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    const builderSelect = $("builderSelect");
+    if (!builderSelect) return;
+    
+    builderSelect.innerHTML = '<option value="">-- Select Builder --</option>';
+    
+    if (builders.length === 0) {
+      $("emptyState").style.display = "block";
+      return;
+    }
+    
+    $("emptyState").style.display = "none";
+    
+    builders.forEach(builder => {
+      const option = document.createElement("option");
+      option.value = builder.id;
+      option.textContent = builder.name || "Unnamed Builder";
+      builderSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Error loading builders:", err);
+    showMessage("Error loading builders. Please refresh.", true);
+  }
+}
+
+// Load jobs for selected builder
+async function loadJobs(builderId) {
+  if (!currentUid || !builderId) return;
+  
+  try {
+    jobs = [];
+    const builder = builders.find(b => b.id === builderId);
+    if (!builder) return;
+    
+    // Get all contracts for this builder
+    const contractsCol = collection(db, "users", currentUid, "builders", builderId, "contracts");
+    const contractsSnap = await getDocs(query(contractsCol, orderBy("title")));
+    
+    // Get all jobs from all contracts
+    for (const contractDoc of contractsSnap.docs) {
+      const jobsCol = collection(db, "users", currentUid, "builders", builderId, "contracts", contractDoc.id, "jobs");
+      const jobsSnap = await getDocs(query(jobsCol, orderBy("jobName")));
+      
+      jobsSnap.docs.forEach(jobDoc => {
+        jobs.push({
+          id: jobDoc.id,
+          contractId: contractDoc.id,
+          builderId: builderId,
+          ...jobDoc.data()
+        });
+      });
+    }
+    
+    const jobSelect = $("jobSelect");
+    if (!jobSelect) return;
+    
+    jobSelect.innerHTML = '<option value="">-- Select Job --</option>';
+    jobSelect.disabled = false;
+    
+    if (jobs.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No jobs found";
+      option.disabled = true;
+      jobSelect.appendChild(option);
+      return;
+    }
+    
+    jobs.forEach(job => {
+      const option = document.createElement("option");
+      option.value = job.id;
+      option.textContent = job.jobName || "Unnamed Job";
+      jobSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Error loading jobs:", err);
+    showMessage("Error loading jobs. Please refresh.", true);
+  }
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  const builderSelect = $("builderSelect");
+  const jobSelect = $("jobSelect");
+  const saveBtn = $("saveBtn");
+  const saveAsCopyBtn = $("saveAsCopyBtn");
+  const newEstimateBtn = $("newEstimateBtn");
+  const taxEnabled = $("taxEnabled");
+  
+  if (builderSelect) {
+    builderSelect.addEventListener("change", async (e) => {
+      const builderId = e.target.value;
+      currentBuilderId = builderId;
+      currentJobId = null;
+      currentEstimateId = null;
+      
+      if (builderId) {
+        await loadJobs(builderId);
+        $("estimateCard").style.display = "none";
+        $("estimatesListCard").style.display = "none";
+      } else {
+        jobSelect.innerHTML = '<option value="">-- Select Builder First --</option>';
+        jobSelect.disabled = true;
+        $("estimateCard").style.display = "none";
+        $("estimatesListCard").style.display = "none";
+      }
+    });
+  }
+  
+  if (jobSelect) {
+    jobSelect.addEventListener("change", async (e) => {
+      const jobId = e.target.value;
+      currentJobId = jobId;
+      currentEstimateId = null;
+      
+      if (jobId) {
+        const job = jobs.find(j => j.id === jobId);
+        if (job) {
+          // Set default estimate name
+          const today = new Date();
+          const dateStr = today.toLocaleDateString();
+          $("estimateName").value = `Estimate – ${job.jobName} – ${dateStr}`;
+          
+          $("estimateCard").style.display = "block";
+          await loadEstimatesForJob(jobId);
+        }
+      } else {
+        $("estimateCard").style.display = "none";
+        $("estimatesListCard").style.display = "none";
+      }
+    });
+  }
+  
+  if (saveBtn) {
+    saveBtn.addEventListener("click", saveEstimate);
+  }
+  
+  if (saveAsCopyBtn) {
+    saveAsCopyBtn.addEventListener("click", () => saveEstimate(true));
+  }
+  
+  if (newEstimateBtn) {
+    newEstimateBtn.addEventListener("click", newEstimate);
+  }
+  
+  if (taxEnabled) {
+    taxEnabled.addEventListener("change", (e) => {
+      const taxPct = $("taxPct");
+      const taxLine = $("taxLine");
+      if (taxPct) taxPct.disabled = !e.target.checked;
+      if (taxLine) taxLine.style.display = e.target.checked ? "block" : "none";
+      calculateTotals();
+    });
+  }
+  
+  // Add input listeners for calculations
+  setupCalculationListeners();
+}
+
+// Setup calculation listeners
+function setupCalculationListeners() {
+  // Labor table
+  const laborBody = $("laborBody");
+  if (laborBody) {
+    laborBody.addEventListener("input", (e) => {
+      if (e.target.classList.contains("row-hours") || e.target.classList.contains("row-rate")) {
+        calculateRowTotal(e.target.closest("tr"), "labor");
+      }
+    });
+  }
+  
+  // Materials table
+  const materialsBody = $("materialsBody");
+  if (materialsBody) {
+    materialsBody.addEventListener("input", (e) => {
+      if (e.target.classList.contains("row-qty") || e.target.classList.contains("row-unit-cost")) {
+        calculateRowTotal(e.target.closest("tr"), "materials");
+      }
+    });
+  }
+  
+  // Subcontractors table
+  const subcontractorsBody = $("subcontractorsBody");
+  if (subcontractorsBody) {
+    subcontractorsBody.addEventListener("input", (e) => {
+      if (e.target.classList.contains("row-amount")) {
+        calculateRowTotal(e.target.closest("tr"), "subcontractors");
+      }
+    });
+  }
+  
+  // Other table
+  const otherBody = $("otherBody");
+  if (otherBody) {
+    otherBody.addEventListener("input", (e) => {
+      if (e.target.classList.contains("row-amount")) {
+        calculateRowTotal(e.target.closest("tr"), "other");
+      }
+    });
+  }
+  
+  // Summary inputs
+  const overheadPct = $("overheadPct");
+  const profitPct = $("profitPct");
+  const taxPct = $("taxPct");
+  
+  if (overheadPct) overheadPct.addEventListener("input", calculateTotals);
+  if (profitPct) profitPct.addEventListener("input", calculateTotals);
+  if (taxPct) taxPct.addEventListener("input", calculateTotals);
+}
+
+// Calculate row total
+function calculateRowTotal(row, category) {
+  const subtotalCell = row.querySelector(".row-subtotal");
+  if (!subtotalCell) return;
+  
+  let subtotal = 0;
+  
+  if (category === "labor") {
+    const hours = parseFloat(row.querySelector(".row-hours")?.value || 0);
+    const rate = parseFloat(row.querySelector(".row-rate")?.value || 0);
+    subtotal = hours * rate;
+  } else if (category === "materials") {
+    const qty = parseFloat(row.querySelector(".row-qty")?.value || 0);
+    const unitCost = parseFloat(row.querySelector(".row-unit-cost")?.value || 0);
+    subtotal = qty * unitCost;
+  } else if (category === "subcontractors" || category === "other") {
+    subtotal = parseFloat(row.querySelector(".row-amount")?.value || 0);
+  }
+  
+  subtotalCell.textContent = formatCurrency(subtotal);
+  calculateTotals();
+}
+
+// Calculate all totals
+function calculateTotals() {
+  // Category totals
+  const laborTotal = calculateCategoryTotal("labor");
+  const materialsTotal = calculateCategoryTotal("materials");
+  const subcontractorsTotal = calculateCategoryTotal("subcontractors");
+  const otherTotal = calculateCategoryTotal("other");
+  
+  $("laborTotal").textContent = formatCurrency(laborTotal);
+  $("materialsTotal").textContent = formatCurrency(materialsTotal);
+  $("subcontractorsTotal").textContent = formatCurrency(subcontractorsTotal);
+  $("otherTotal").textContent = formatCurrency(otherTotal);
+  
+  // Subtotal
+  const subtotal = laborTotal + materialsTotal + subcontractorsTotal + otherTotal;
+  $("summarySubtotal").textContent = formatCurrency(subtotal);
+  
+  // Overhead
+  const overheadPct = parseFloat($("overheadPct")?.value || 0);
+  const overheadAmount = subtotal * (overheadPct / 100);
+  $("overheadAmount").textContent = formatCurrency(overheadAmount);
+  
+  // Profit (on subtotal + overhead)
+  const profitPct = parseFloat($("profitPct")?.value || 0);
+  const profitBase = subtotal + overheadAmount;
+  const profitAmount = profitBase * (profitPct / 100);
+  $("profitAmount").textContent = formatCurrency(profitAmount);
+  
+  // Tax (if enabled)
+  const taxEnabled = $("taxEnabled")?.checked || false;
+  let taxAmount = 0;
+  if (taxEnabled) {
+    const taxPct = parseFloat($("taxPct")?.value || 0);
+    const taxBase = subtotal + overheadAmount + profitAmount;
+    taxAmount = taxBase * (taxPct / 100);
+    $("taxAmount").textContent = formatCurrency(taxAmount);
+  }
+  
+  // Grand total
+  const grandTotal = subtotal + overheadAmount + profitAmount + taxAmount;
+  $("grandTotal").textContent = formatCurrency(grandTotal);
+}
+
+// Calculate category total
+function calculateCategoryTotal(category) {
+  const body = $(`${category}Body`);
+  if (!body) return 0;
+  
+  let total = 0;
+  const rows = body.querySelectorAll("tr");
+  
+  rows.forEach(row => {
+    const subtotalText = row.querySelector(".row-subtotal")?.textContent || "$0.00";
+    const subtotal = parseFloat(subtotalText.replace(/[^0-9.-]/g, "")) || 0;
+    total += subtotal;
+  });
+  
+  return total;
+}
+
+// Add row
+window.addRow = function(category) {
+  const body = $(`${category}Body`);
+  if (!body) return;
+  
+  const row = document.createElement("tr");
+  
+  if (category === "labor") {
+    row.innerHTML = `
+      <td><input type="text" placeholder="Description" class="row-desc" /></td>
+      <td class="num"><input type="number" step="0.01" placeholder="0" class="row-hours" /></td>
+      <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-rate" /></td>
+      <td class="num row-subtotal">$0.00</td>
+      <td><button type="button" class="btn small ghost" onclick="removeRow(this, '${category}')">Remove</button></td>
+    `;
+  } else if (category === "materials") {
+    row.innerHTML = `
+      <td><input type="text" placeholder="Description" class="row-desc" /></td>
+      <td class="num"><input type="number" step="0.01" placeholder="0" class="row-qty" /></td>
+      <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-unit-cost" /></td>
+      <td class="num row-subtotal">$0.00</td>
+      <td><button type="button" class="btn small ghost" onclick="removeRow(this, '${category}')">Remove</button></td>
+    `;
+  } else {
+    row.innerHTML = `
+      <td><input type="text" placeholder="Description" class="row-desc" /></td>
+      <td class="num"><input type="number" step="0.01" placeholder="0.00" class="row-amount" /></td>
+      <td class="num row-subtotal">$0.00</td>
+      <td><button type="button" class="btn small ghost" onclick="removeRow(this, '${category}')">Remove</button></td>
+    `;
+  }
+  
+  body.appendChild(row);
+  calculateTotals();
+};
+
+// Remove row
+window.removeRow = function(btn, category) {
+  const row = btn.closest("tr");
+  if (row) {
+    row.remove();
+    calculateTotals();
+  }
+};
+
+// Format currency
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(amount || 0);
+}
+
+// Get estimate data
+function getEstimateData() {
+  const job = jobs.find(j => j.id === currentJobId);
+  if (!job) return null;
+  
+  const categories = {
+    labor: getCategoryData("labor"),
+    materials: getCategoryData("materials"),
+    subcontractors: getCategoryData("subcontractors"),
+    other: getCategoryData("other")
+  };
+  
+  return {
+    builderId: currentBuilderId,
+    jobId: currentJobId,
+    jobName: job.jobName || "Unknown Job",
+    estimateName: $("estimateName")?.value.trim() || "Untitled Estimate",
+    notes: $("estimateNotes")?.value.trim() || null,
+    categories,
+    overheadPct: parseFloat($("overheadPct")?.value || 0),
+    profitPct: parseFloat($("profitPct")?.value || 0),
+    taxPct: $("taxEnabled")?.checked ? parseFloat($("taxPct")?.value || 0) : 0,
+    totals: {
+      labor: calculateCategoryTotal("labor"),
+      materials: calculateCategoryTotal("materials"),
+      subcontractors: calculateCategoryTotal("subcontractors"),
+      other: calculateCategoryTotal("other"),
+      subtotal: parseFloat($("summarySubtotal")?.textContent.replace(/[^0-9.-]/g, "") || 0),
+      overhead: parseFloat($("overheadAmount")?.textContent.replace(/[^0-9.-]/g, "") || 0),
+      profit: parseFloat($("profitAmount")?.textContent.replace(/[^0-9.-]/g, "") || 0),
+      tax: parseFloat($("taxAmount")?.textContent.replace(/[^0-9.-]/g, "") || 0),
+      grandTotal: parseFloat($("grandTotal")?.textContent.replace(/[^0-9.-]/g, "") || 0)
+    }
+  };
+}
+
+// Get category data
+function getCategoryData(category) {
+  const body = $(`${category}Body`);
+  if (!body) return [];
+  
+  const rows = body.querySelectorAll("tr");
+  const items = [];
+  
+  rows.forEach(row => {
+    const desc = row.querySelector(".row-desc")?.value.trim();
+    if (!desc) return; // Skip empty rows
+    
+    if (category === "labor") {
+      const hours = parseFloat(row.querySelector(".row-hours")?.value || 0);
+      const rate = parseFloat(row.querySelector(".row-rate")?.value || 0);
+      items.push({ description: desc, hours, rate, subtotal: hours * rate });
+    } else if (category === "materials") {
+      const qty = parseFloat(row.querySelector(".row-qty")?.value || 0);
+      const unitCost = parseFloat(row.querySelector(".row-unit-cost")?.value || 0);
+      items.push({ description: desc, qty, unitCost, subtotal: qty * unitCost });
+    } else {
+      const amount = parseFloat(row.querySelector(".row-amount")?.value || 0);
+      items.push({ description: desc, amount, subtotal: amount });
+    }
+  });
+  
+  return items;
+}
+
+// Save estimate
+async function saveEstimate(isCopy = false) {
+  if (!currentUid || !currentBuilderId || !currentJobId) {
+    showMessage("Please select a builder and job first.", true);
+    return;
+  }
+  
+  const estimateData = getEstimateData();
+  if (!estimateData) {
+    showMessage("Error getting estimate data.", true);
+    return;
+  }
+  
+  if (!estimateData.estimateName) {
+    showMessage("Estimate name is required.", true);
+    return;
+  }
+  
+  try {
+    const estimatesCol = collection(db, "users", currentUid, "estimates");
+    
+    if (isCopy || !currentEstimateId) {
+      // Create new estimate
+      estimateData.createdAt = serverTimestamp();
+      estimateData.updatedAt = serverTimestamp();
+      await addDoc(estimatesCol, estimateData);
+      showMessage("Estimate saved successfully!", false);
+      currentEstimateId = null;
+      await loadEstimatesForJob(currentJobId);
+    } else {
+      // Update existing estimate
+      const estimateRef = doc(db, "users", currentUid, "estimates", currentEstimateId);
+      estimateData.updatedAt = serverTimestamp();
+      await updateDoc(estimateRef, estimateData);
+      showMessage("Estimate updated successfully!", false);
+      await loadEstimatesForJob(currentJobId);
+    }
+  } catch (err) {
+    console.error("Error saving estimate:", err);
+    showMessage("Error saving estimate. Please try again.", true);
+  }
+}
+
+// Load estimates for job
+async function loadEstimatesForJob(jobId) {
+  if (!currentUid || !jobId) return;
+  
+  try {
+    const estimatesCol = collection(db, "users", currentUid, "estimates");
+    // Use where clause only (no orderBy to avoid index requirement)
+    const q = query(
+      estimatesCol,
+      where("jobId", "==", jobId)
+    );
+    const snap = await getDocs(q);
+    
+    let estimates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    // Sort by updatedAt in memory (most recent first)
+    estimates.sort((a, b) => {
+      const getTime = (est) => {
+        if (!est.updatedAt) return 0;
+        if (est.updatedAt.toDate) return est.updatedAt.toDate().getTime();
+        if (est.updatedAt.seconds) return est.updatedAt.seconds * 1000;
+        if (est.updatedAt instanceof Date) return est.updatedAt.getTime();
+        return new Date(est.updatedAt).getTime() || 0;
+      };
+      return getTime(b) - getTime(a); // Descending
+    });
+    
+    const listContainer = $("estimatesList");
+    if (!listContainer) return;
+    
+    if (estimates.length === 0) {
+      listContainer.innerHTML = '<div class="muted">No saved estimates for this job.</div>';
+      $("estimatesListCard").style.display = "none";
+      return;
+    }
+    
+    $("estimatesListCard").style.display = "block";
+    
+    listContainer.innerHTML = estimates.map(est => {
+      let updatedAt;
+      if (est.updatedAt) {
+        if (est.updatedAt.toDate) {
+          updatedAt = est.updatedAt.toDate();
+        } else if (est.updatedAt instanceof Date) {
+          updatedAt = est.updatedAt;
+        } else {
+          updatedAt = new Date(est.updatedAt);
+        }
+      } else {
+        updatedAt = new Date();
+      }
+      
+      const dateStr = updatedAt.toLocaleDateString();
+      const timeStr = updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const grandTotal = est.totals?.grandTotal || 0;
+      const safeName = (est.estimateName || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      
+      return `
+        <div class="estimate-item" onclick="loadEstimate('${est.id}')">
+          <div class="estimate-item-info">
+            <div class="estimate-item-name">${safeName || "Untitled Estimate"}</div>
+            <div class="estimate-item-meta">Updated: ${dateStr} ${timeStr} • Total: ${formatCurrency(grandTotal)}</div>
+          </div>
+          <div class="estimate-item-actions">
+            <button type="button" class="btn small ghost" onclick="event.stopPropagation(); loadEstimate('${est.id}')">Load</button>
+            <button type="button" class="btn small ghost btn-danger" onclick="event.stopPropagation(); deleteEstimate('${est.id}', '${safeName}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } catch (err) {
+    console.error("Error loading estimates:", err);
+    showMessage("Error loading estimates.", true);
+  }
+}
+
+// Load estimate
+window.loadEstimate = async function(estimateId) {
+  if (!currentUid) return;
+  
+  try {
+    const estimateRef = doc(db, "users", currentUid, "estimates", estimateId);
+    const snap = await getDoc(estimateRef);
+    
+    if (!snap.exists()) {
+      showMessage("Estimate not found.", true);
+      return;
+    }
+  
+    const estimate = snap.data();
+    currentEstimateId = estimateId;
+    
+    // Set basic fields
+    $("estimateName").value = estimate.estimateName || "";
+    $("estimateNotes").value = estimate.notes || "";
+    $("overheadPct").value = estimate.overheadPct || 10;
+    $("profitPct").value = estimate.profitPct || 15;
+    $("taxPct").value = estimate.taxPct || 0;
+    $("taxEnabled").checked = (estimate.taxPct || 0) > 0;
+    $("taxPct").disabled = !$("taxEnabled").checked;
+    $("taxLine").style.display = $("taxEnabled").checked ? "block" : "none";
+    
+    // Load categories
+    loadCategory("labor", estimate.categories?.labor || []);
+    loadCategory("materials", estimate.categories?.materials || []);
+    loadCategory("subcontractors", estimate.categories?.subcontractors || []);
+    loadCategory("other", estimate.categories?.other || []);
+    
+    calculateTotals();
+    showMessage("Estimate loaded.", false);
+  } catch (err) {
+    console.error("Error loading estimate:", err);
+    showMessage("Error loading estimate.", true);
+  }
+};
+
+// Load category
+function loadCategory(category, items) {
+  const body = $(`${category}Body`);
+  if (!body) return;
+  
+  body.innerHTML = "";
+  
+  if (items.length === 0) {
+    // Add one empty row
+    addRow(category);
+    return;
+  }
+  
+  items.forEach(item => {
+    const row = document.createElement("tr");
+    
+    if (category === "labor") {
+      row.innerHTML = `
+        <td><input type="text" value="${escapeHtml(item.description || "")}" class="row-desc" /></td>
+        <td class="num"><input type="number" step="0.01" value="${item.hours || 0}" class="row-hours" /></td>
+        <td class="num"><input type="number" step="0.01" value="${item.rate || 0}" class="row-rate" /></td>
+        <td class="num row-subtotal">${formatCurrency(item.subtotal || 0)}</td>
+        <td><button type="button" class="btn small ghost" onclick="removeRow(this, '${category}')">Remove</button></td>
+      `;
+    } else if (category === "materials") {
+      row.innerHTML = `
+        <td><input type="text" value="${escapeHtml(item.description || "")}" class="row-desc" /></td>
+        <td class="num"><input type="number" step="0.01" value="${item.qty || 0}" class="row-qty" /></td>
+        <td class="num"><input type="number" step="0.01" value="${item.unitCost || 0}" class="row-unit-cost" /></td>
+        <td class="num row-subtotal">${formatCurrency(item.subtotal || 0)}</td>
+        <td><button type="button" class="btn small ghost" onclick="removeRow(this, '${category}')">Remove</button></td>
+      `;
+    } else {
+      row.innerHTML = `
+        <td><input type="text" value="${escapeHtml(item.description || "")}" class="row-desc" /></td>
+        <td class="num"><input type="number" step="0.01" value="${item.amount || 0}" class="row-amount" /></td>
+        <td class="num row-subtotal">${formatCurrency(item.subtotal || 0)}</td>
+        <td><button type="button" class="btn small ghost" onclick="removeRow(this, '${category}')">Remove</button></td>
+      `;
+    }
+    
+    body.appendChild(row);
+  });
+}
+
+// Delete estimate
+window.deleteEstimate = async function(estimateId, estimateName) {
+  if (!confirm(`Delete estimate "${estimateName}"? This cannot be undone.`)) {
+    return;
+  }
+  
+  if (!currentUid) return;
+  
+  try {
+    const estimateRef = doc(db, "users", currentUid, "estimates", estimateId);
+    await deleteDoc(estimateRef);
+    showMessage("Estimate deleted.", false);
+    await loadEstimatesForJob(currentJobId);
+    
+    if (currentEstimateId === estimateId) {
+      currentEstimateId = null;
+      newEstimate();
+    }
+  } catch (err) {
+    console.error("Error deleting estimate:", err);
+    showMessage("Error deleting estimate.", true);
+  }
+};
+
+// New estimate
+function newEstimate() {
+  currentEstimateId = null;
+  
+  const job = jobs.find(j => j.id === currentJobId);
+  if (job) {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString();
+    $("estimateName").value = `Estimate – ${job.jobName} – ${dateStr}`;
+  }
+  
+  $("estimateNotes").value = "";
+  $("overheadPct").value = 10;
+  $("profitPct").value = 15;
+  $("taxPct").value = 0;
+  $("taxEnabled").checked = false;
+  $("taxPct").disabled = true;
+  $("taxLine").style.display = "none";
+  
+  // Clear all categories
+  ["labor", "materials", "subcontractors", "other"].forEach(cat => {
+    const body = $(`${cat}Body`);
+    if (body) {
+      body.innerHTML = "";
+      addRow(cat);
+    }
+  });
+  
+  calculateTotals();
+  showMessage("New estimate ready.", false);
+}
+
+// Show message
+function showMessage(text, isError = false) {
+  const msgEl = $("saveMsg");
+  if (!msgEl) return;
+  
+  msgEl.textContent = text;
+  msgEl.className = isError ? "form-error" : "muted";
+  msgEl.style.display = "block";
+  
+  if (!isError) {
+    setTimeout(() => {
+      msgEl.textContent = "";
+      msgEl.style.display = "none";
+    }, 3000);
+  }
+}
+
+// Escape HTML
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
