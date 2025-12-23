@@ -596,6 +596,11 @@ function renderJobsSection() {
 // ========== SELECTION ==========
 
 async function selectBuilder(builderId) {
+  if (!currentUid) {
+    showToast("Please wait, signing in...", false);
+    return;
+  }
+  
   selectedBuilderId = builderId;
   jobs = [];
   await loadAllData(); // Load data first (this will also call renderJobsSection)
@@ -1021,6 +1026,10 @@ function updateDetailField(id, value) {
 }
 
 function getFriendlyError(err) {
+  // Check for permission errors specifically
+  if (err?.code === "permission-denied" || err?.code === "PERMISSION_DENIED") {
+    return "You may not be signed in or you don't have access to this record. Please sign out and sign back in.";
+  }
   if (err?.message) return err.message;
   if (typeof err === "string") return err;
   return "An error occurred. Please try again.";
