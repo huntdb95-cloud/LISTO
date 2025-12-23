@@ -508,7 +508,17 @@ function getCategoryData(category) {
 
 // Save estimate
 async function saveEstimate(isCopy = false) {
-  if (!currentUid || !currentBuilderId || !currentJobId) {
+  // Check auth state
+  if (!currentUid) {
+    const user = auth.currentUser;
+    if (!user) {
+      showMessage("Please sign in to save estimates.", true);
+      return;
+    }
+    currentUid = user.uid;
+  }
+  
+  if (!currentBuilderId || !currentJobId) {
     showMessage("Please select a builder and job first.", true);
     return;
   }
@@ -519,7 +529,7 @@ async function saveEstimate(isCopy = false) {
     return;
   }
   
-  if (!estimateData.estimateName) {
+  if (!estimateData.estimateName || estimateData.estimateName.trim() === "") {
     showMessage("Estimate name is required.", true);
     return;
   }
@@ -530,29 +540,53 @@ async function saveEstimate(isCopy = false) {
     
     if (isCopy || !currentEstimateId) {
       // Create new estimate
-      estimateData.createdAt = serverTimestamp();
-      estimateData.updatedAt = serverTimestamp();
-      await addDoc(estimatesCol, estimateData);
+      const estimateToSave = {
+        ...estimateData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      const newDocRef = await addDoc(estimatesCol, estimateToSave);
       showMessage("Estimate saved successfully!", false);
-      currentEstimateId = null;
+      currentEstimateId = isCopy ? null : newDocRef.id;
       await loadEstimatesForJob(currentJobId);
     } else {
       // Update existing estimate
       const estimateRef = doc(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates", currentEstimateId);
-      estimateData.updatedAt = serverTimestamp();
-      await updateDoc(estimateRef, estimateData);
+      const estimateToSave = {
+        ...estimateData,
+        updatedAt: serverTimestamp()
+      };
+      // Don't overwrite createdAt
+      delete estimateToSave.createdAt;
+      await updateDoc(estimateRef, estimateToSave);
       showMessage("Estimate updated successfully!", false);
       await loadEstimatesForJob(currentJobId);
     }
   } catch (err) {
     console.error("Error saving estimate:", err);
-    showMessage("Error saving estimate. Please try again.", true);
+    const errorMsg = err?.code === "permission-denied" 
+      ? "Permission denied. Please sign out and sign back in."
+      : err?.message || "Error saving estimate. Please try again.";
+    showMessage(errorMsg, true);
   }
 }
 
 // Load estimates for job
 async function loadEstimatesForJob(jobId) {
-  if (!currentUid || !jobId || !currentBuilderId) return;
+  // Check auth state
+  if (!currentUid) {
+    const user = auth.currentUser;
+    if (!user) {
+      console.warn("Cannot load estimates: not authenticated");
+      return;
+    }
+    currentUid = user.uid;
+  }
+  
+  if (!jobId || !currentBuilderId) {
+    console.warn("Cannot load estimates: missing jobId or builderId");
+    return;
+  }
   
   try {
     // Load estimates from job subcollection
@@ -696,7 +730,14 @@ function renderEstimatesList(estimates, container) {
 
 // Load latest estimate for job (auto-load on job selection)
 async function loadLatestEstimateForJob(jobId) {
-  if (!currentUid || !jobId || !currentBuilderId) return;
+  // Check auth state
+  if (!currentUid) {
+    const user = auth.currentUser;
+    if (!user) return;
+    currentUid = user.uid;
+  }
+  
+  if (!jobId || !currentBuilderId) return;
   
   try {
     const estimatesCol = collection(db, "users", currentUid, "builders", currentBuilderId, "jobs", jobId, "estimates");
@@ -768,7 +809,25 @@ async function loadEstimateData(estimateId, estimate) {
 
 // Load estimate
 window.loadEstimate = async function(estimateId) {
-  if (!currentUid || !currentBuilderId || !currentJobId) return;
+  // Check auth state
+  if (!currentUid) {
+    const user = auth.currentUser;
+    if (!user) {
+      showMessage("Please sign in to load estimates.", true);
+      return;
+    }
+    currentUid = user.uid;
+  }
+  
+  if (!currentBuilderId || !currentJobId) {
+    showMessage("Please select a builder and job first.", true);
+    return;
+  }
+  
+  if (!estimateId) {
+    showMessage("Invalid estimate ID.", true);
+    return;
+  }
   
   try {
     const estimateRef = doc(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates", estimateId);
@@ -784,7 +843,10 @@ window.loadEstimate = async function(estimateId) {
     showMessage("Estimate loaded.", false);
   } catch (err) {
     console.error("Error loading estimate:", err);
-    showMessage("Error loading estimate.", true);
+    const errorMsg = err?.code === "permission-denied" 
+      ? "Permission denied. Please sign out and sign back in."
+      : err?.message || "Error loading estimate.";
+    showMessage(errorMsg, true);
   }
 };
 
@@ -839,7 +901,25 @@ window.deleteEstimate = async function(estimateId, estimateName) {
     return;
   }
   
-  if (!currentUid || !currentBuilderId || !currentJobId) return;
+  // Check auth state
+  if (!currentUid) {
+    const user = auth.currentUser;
+    if (!user) {
+      showMessage("Please sign in to delete estimates.", true);
+      return;
+    }
+    currentUid = user.uid;
+  }
+  
+  if (!currentBuilderId || !currentJobId) {
+    showMessage("Please select a builder and job first.", true);
+    return;
+  }
+  
+  if (!estimateId) {
+    showMessage("Invalid estimate ID.", true);
+    return;
+  }
   
   try {
     const estimateRef = doc(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates", estimateId);
@@ -853,7 +933,10 @@ window.deleteEstimate = async function(estimateId, estimateName) {
     }
   } catch (err) {
     console.error("Error deleting estimate:", err);
-    showMessage("Error deleting estimate.", true);
+    const errorMsg = err?.code === "permission-denied" 
+      ? "Permission denied. Please sign out and sign back in."
+      : err?.message || "Error deleting estimate.";
+    showMessage(errorMsg, true);
   }
 };
 

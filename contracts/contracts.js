@@ -23,13 +23,15 @@ const $$ = (selector) => document.querySelectorAll(selector);
 // State
 let currentUid = null;
 let builders = [];
-let jobs = [];
+let allJobs = []; // All jobs across all builders
+let jobs = []; // Filtered jobs for selected builder
 let selectedBuilderId = null;
 let filteredData = { builders: [], jobs: [] };
 let searchTerm = "";
 let filterStatus = "";
 let filterBuilder = "";
 let sortBy = "updated";
+let builderJobCounts = {}; // Map of builderId -> job count
 
 // ========== MIGRATION FROM OLD DATA STRUCTURE ==========
 
@@ -251,16 +253,42 @@ async function loadAllData() {
     const buildersSnap = await getDocs(query(buildersCol, orderBy("name")));
     builders = buildersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     
-    // Load jobs for selected builder (directly under builder, no contracts)
-    jobs = [];
+    // Load ALL jobs across all builders upfront
+    allJobs = [];
+    builderJobCounts = {};
+    
+    for (const builder of builders) {
+      try {
+        const jobsCol = collection(db, "users", currentUid, "builders", builder.id, "jobs");
+        const jobsSnap = await getDocs(jobsCol);
+        const builderJobs = jobsSnap.docs.map(d => ({
+          id: d.id,
+          builderId: builder.id,
+          ...d.data()
+        }));
+        allJobs.push(...builderJobs);
+        builderJobCounts[builder.id] = builderJobs.length;
+      } catch (err) {
+        console.warn(`Error loading jobs for builder ${builder.id}:`, err);
+        builderJobCounts[builder.id] = 0;
+      }
+    }
+    
+    // Filter jobs for selected builder
+    jobs = selectedBuilderId 
+      ? allJobs.filter(j => j.builderId === selectedBuilderId)
+      : [];
+    
+    // Sort filtered jobs by due date
     if (selectedBuilderId) {
-      const jobsCol = collection(db, "users", currentUid, "builders", selectedBuilderId, "jobs");
-      const jobsSnap = await getDocs(query(jobsCol, orderBy("dueDate", "asc")));
-      jobs = jobsSnap.docs.map(d => ({
-        id: d.id,
-        builderId: selectedBuilderId,
-        ...d.data()
-      }));
+      jobs.sort((a, b) => {
+        const aDate = a.dueDate?.toDate ? a.dueDate.toDate() : (a.dueDate ? new Date(a.dueDate) : null);
+        const bDate = b.dueDate?.toDate ? b.dueDate.toDate() : (b.dueDate ? new Date(b.dueDate) : null);
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate - bDate;
+      });
     }
     
     updateSummaryCards();
@@ -276,8 +304,11 @@ async function loadAllData() {
 // ========== SUMMARY CARDS ==========
 
 function updateSummaryCards() {
-  const openJobs = jobs.filter(j => !["completed", "paid"].includes(j.status)).length;
-  const overdueJobs = jobs.filter(j => {
+  // Calculate global open jobs total from ALL jobs (not filtered by selected builder)
+  const openJobs = allJobs.filter(j => !["completed", "paid"].includes(j.status)).length;
+  
+  // Calculate global overdue jobs total from ALL jobs
+  const overdueJobs = allJobs.filter(j => {
     if (["completed", "paid"].includes(j.status)) return false;
     if (!j.dueDate) return false;
     const dueDate = j.dueDate?.toDate ? j.dueDate.toDate() : new Date(j.dueDate);
@@ -355,7 +386,8 @@ function renderContractsList() {
   // Render builders
   for (const builder of filteredData.builders) {
     const isSelected = selectedBuilderId === builder.id;
-    const builderJobsCount = jobs.filter(j => j.builderId === builder.id).length;
+    // Use pre-calculated job count from builderJobCounts map
+    const builderJobsCount = builderJobCounts[builder.id] || 0;
     
     html += `
       <div class="contracts-list-item contracts-list-builder ${isSelected ? "contracts-list-item-selected" : ""}" 
@@ -602,10 +634,23 @@ async function selectBuilder(builderId) {
   }
   
   selectedBuilderId = builderId;
-  jobs = [];
-  await loadAllData(); // Load data first (this will also call renderJobsSection)
-  renderContractsList(); // Then render with fresh data
-  renderJobsSection(); // Ensure jobs section is rendered
+  // Filter jobs from allJobs for selected builder (no need to reload from DB)
+  jobs = builderId 
+    ? allJobs.filter(j => j.builderId === builderId).sort((a, b) => {
+        const aDate = a.dueDate?.toDate ? a.dueDate.toDate() : (a.dueDate ? new Date(a.dueDate) : null);
+        const bDate = b.dueDate?.toDate ? b.dueDate.toDate() : (b.dueDate ? new Date(b.dueDate) : null);
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate - bDate;
+      })
+    : [];
+  
+  // Update UI without reloading all data
+  updateSummaryCards(); // Still uses allJobs for global totals
+  applyFiltersAndSearch();
+  renderContractsList();
+  renderJobsSection();
 }
 
 // ========== CRUD: BUILDERS ==========
@@ -661,6 +706,9 @@ async function saveBuilder(e) {
       await loadAllData();
       // Auto-select the newly created builder
       selectedBuilderId = newRef.id;
+      jobs = []; // New builder has no jobs yet
+      updateSummaryCards();
+      applyFiltersAndSearch();
       renderContractsList();
       renderJobsSection();
       setTimeout(() => {
@@ -672,7 +720,7 @@ async function saveBuilder(e) {
       await updateDoc(builderRef, builderData);
       showBuilderMsg("Builder updated successfully!", false);
       showToast("Builder updated successfully!");
-      await loadAllData();
+      await loadAllData(); // Reload to refresh builder data
       setTimeout(() => hideBuilderModal(), 1000);
     }
   } catch (err) {
@@ -685,8 +733,8 @@ async function saveBuilder(e) {
 }
 
 async function deleteBuilder(builderId) {
-  // Check if builder has jobs
-  const builderJobs = jobs.filter(j => j.builderId === builderId);
+  // Check if builder has jobs using allJobs
+  const builderJobs = allJobs.filter(j => j.builderId === builderId);
   if (builderJobs.length > 0) {
     if (!confirm(`Delete this builder? This builder has ${builderJobs.length} job${builderJobs.length !== 1 ? "s" : ""} that will also be deleted. This cannot be undone.`)) {
       return;
@@ -722,7 +770,12 @@ async function deleteBuilder(builderId) {
     // Delete builder
     await deleteDoc(doc(db, "users", currentUid, "builders", builderId));
     
-    selectedBuilderId = null;
+    // Clear selection if deleted builder was selected
+    if (selectedBuilderId === builderId) {
+      selectedBuilderId = null;
+      jobs = [];
+    }
+    
     await loadAllData();
     showToast("Builder deleted successfully.");
   } catch (err) {
@@ -794,12 +847,14 @@ async function saveJob(e) {
       const jobsCol = collection(db, "users", currentUid, "builders", builderId, "jobs");
       const newRef = await addDoc(jobsCol, jobData);
       showJobMsg("Job created successfully!", false);
+      // Reload all data to update counts and totals
       await loadAllData();
       setTimeout(() => hideJobModal(), 1000);
     } else {
       const jobRef = doc(db, "users", currentUid, "builders", builderId, "jobs", jobId);
       await updateDoc(jobRef, jobData);
       showJobMsg("Job updated successfully!", false);
+      // Reload all data to update counts and totals
       await loadAllData();
       setTimeout(() => hideJobModal(), 1000);
     }
@@ -812,7 +867,8 @@ async function saveJob(e) {
 }
 
 async function deleteJobConfirm(jobId) {
-  const job = jobs.find(j => j.id === jobId);
+  // Search in allJobs first, fallback to jobs
+  const job = allJobs.find(j => j.id === jobId) || jobs.find(j => j.id === jobId);
   if (!job) return;
   
   if (!confirm(`Delete job "${job.jobName}"? This cannot be undone.`)) {
@@ -836,6 +892,7 @@ async function deleteJobConfirm(jobId) {
       }
     }
     
+    // Reload all data to update counts and totals
     await loadAllData();
     showToast("Job deleted successfully.");
   } catch (err) {

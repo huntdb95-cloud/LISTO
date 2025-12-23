@@ -101,7 +101,6 @@ function setBusy(isBusy) {
 
 // ---------- Items UI ----------
 function addItemRow(item = { description: "", qty: 1, unitPrice: 0 }) {
-  console.log("Add Item clicked"); // Debug log
   state.items.push({ ...item });
   renderItems();
   recalcTotals(); // Ensure totals are updated when adding a row
@@ -1028,17 +1027,35 @@ onAuthStateChanged(auth, async (user) => {
     state.uid = null;
     setStatus("Sign in required", "warn");
     newInvoice(); // still usable locally (PDF download), but no saving/sending
-    el("selectBuilder").innerHTML = '<option value="">— Select a builder —</option>';
-    el("selectJob").innerHTML = '<option value="">— Select a job (optional) —</option>';
-    el("selectJob").style.display = "none";
+    
+    // Add null checks for DOM elements
+    const selectBuilder = el("selectBuilder");
+    if (selectBuilder) {
+      selectBuilder.innerHTML = '<option value="">— Select a builder —</option>';
+    }
+    
+    const selectJob = el("selectJob");
+    if (selectJob) {
+      selectJob.innerHTML = '<option value="">— Select a job (optional) —</option>';
+      selectJob.style.display = "none";
+    }
+    
     return;
   }
 
   state.uid = user.uid;
   setStatus("Not saved", "");
 
-  el("invoiceDate").value = el("invoiceDate").value || todayISO();
-  if (!el("invoiceNumber").value) el("invoiceNumber").value = makeInvoiceNumber();
+  // Add null checks for DOM elements
+  const invoiceDate = el("invoiceDate");
+  if (invoiceDate) {
+    invoiceDate.value = invoiceDate.value || todayISO();
+  }
+  
+  const invoiceNumber = el("invoiceNumber");
+  if (invoiceNumber && !invoiceNumber.value) {
+    invoiceNumber.value = makeInvoiceNumber();
+  }
 
   await refreshSavedInvoices();
   await refreshBuilderSelect();
