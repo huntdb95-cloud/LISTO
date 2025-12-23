@@ -326,6 +326,8 @@ service cloud.firestore {
         && request.resource.data.displayName.size() >= 1
         && request.resource.data.displayName.size() <= 200
         && request.resource.data.laborerType in ['Worker', 'Subcontractor'];
+      // Note: OCR fields (w9OcrStatus, w9OcrUpdatedAt, w9SourceFilePath, w9OcrError, w9Info) 
+      // are updated by Cloud Functions and allowed for flexibility
       
       allow delete: if isOwner(userId);
     }

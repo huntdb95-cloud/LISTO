@@ -245,16 +245,16 @@ function renderLaborerDetail(laborer) {
   const coiSection = $("coiDocumentSection");
   if (laborer.laborerType === "Subcontractor") {
     coiSection.style.display = "block";
-    renderDocumentStatus("coi", laborer.documents?.coi);
+    renderDocumentStatus("coi", laborer.documents?.coi, laborer);
   } else {
     coiSection.style.display = "none";
   }
 
   // Render document statuses (read-only)
-  renderDocumentStatus("w9", laborer.documents?.w9);
+  renderDocumentStatus("w9", laborer.documents?.w9, laborer);
 }
 
-function renderDocumentStatus(docType, docData) {
+function renderDocumentStatus(docType, docData, laborer = null) {
   const statusEl = $(`${docType}Status`);
   const infoEl = $(`${docType}Info`);
   
@@ -265,6 +265,12 @@ function renderDocumentStatus(docType, docData) {
       statusEl.className = "bookkeeping-document-status bookkeeping-document-status-missing";
     }
     if (infoEl) infoEl.style.display = "none";
+    
+    // Hide OCR status if no document
+    if (docType === "w9") {
+      const ocrStatusEl = $("w9OcrStatus");
+      if (ocrStatusEl) ocrStatusEl.style.display = "none";
+    }
   } else {
     // Uploaded
     if (statusEl) {
@@ -280,7 +286,100 @@ function renderDocumentStatus(docType, docData) {
       `;
       infoEl.style.display = "block";
     }
+    
+    // Show OCR status for W-9 documents
+    if (docType === "w9" && laborer) {
+      renderW9OcrStatus(laborer);
+    }
   }
+}
+
+function renderW9OcrStatus(laborer) {
+  const ocrStatusEl = $("w9OcrStatus");
+  if (!ocrStatusEl) return;
+  
+  const ocrStatus = laborer.w9OcrStatus;
+  const w9Info = laborer.w9Info;
+  
+  if (!ocrStatus) {
+    ocrStatusEl.style.display = "none";
+    return;
+  }
+  
+  ocrStatusEl.style.display = "block";
+  
+  if (ocrStatus === "processing") {
+    ocrStatusEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; color: #059669;">
+        <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #059669; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+        <span>Scanning W-9...</span>
+      </div>
+    `;
+    ocrStatusEl.style.background = "#f0fdf4";
+    ocrStatusEl.style.border = "1px solid #86efac";
+    ocrStatusEl.style.color = "#059669";
+  } else if (ocrStatus === "complete" || ocrStatus === "needs_review") {
+    const confidence = w9Info?.ocrConfidence || "medium";
+    const confidenceLabel = confidence === "high" ? "High" : confidence === "medium" ? "Medium" : "Low";
+    const confidenceColor = confidence === "high" ? "#059669" : confidence === "medium" ? "#f59e0b" : "#dc2626";
+    
+    let infoHtml = `<div style="font-weight: 600; margin-bottom: 6px; color: ${confidenceColor};">✓ W-9 scanned (${confidenceLabel} confidence)</div>`;
+    
+    if (w9Info) {
+      const extractedFields = [];
+      if (w9Info.legalName) extractedFields.push(`Name: ${escapeHtml(w9Info.legalName)}`);
+      if (w9Info.businessName) extractedFields.push(`Business: ${escapeHtml(w9Info.businessName)}`);
+      if (w9Info.addressLine1) {
+        let addr = escapeHtml(w9Info.addressLine1);
+        if (w9Info.city && w9Info.state && w9Info.zip) {
+          addr += `, ${escapeHtml(w9Info.city)}, ${escapeHtml(w9Info.state)} ${escapeHtml(w9Info.zip)}`;
+        }
+        extractedFields.push(`Address: ${addr}`);
+      }
+      if (w9Info.tinLast4) {
+        const tinType = w9Info.tinType === "EIN" ? "EIN" : "SSN";
+        extractedFields.push(`${tinType} Last 4: ${escapeHtml(w9Info.tinLast4)}`);
+      }
+      
+      if (extractedFields.length > 0) {
+        infoHtml += `<div style="font-size: 0.8rem; color: #374151; margin-top: 4px;">${extractedFields.join(" • ")}</div>`;
+      }
+    }
+    
+    if (ocrStatus === "needs_review" || confidence === "low") {
+      infoHtml += `<div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-style: italic;">Please review extracted information</div>`;
+    }
+    
+    ocrStatusEl.innerHTML = infoHtml;
+    ocrStatusEl.style.background = confidence === "high" ? "#f0fdf4" : "#fef3c7";
+    ocrStatusEl.style.border = `1px solid ${confidence === "high" ? "#86efac" : "#fcd34d"}`;
+    ocrStatusEl.style.color = confidence === "high" ? "#059669" : "#92400e";
+  } else if (ocrStatus === "failed") {
+    const errorMsg = laborer.w9OcrError || "Couldn't scan W-9. Please enter details manually.";
+    ocrStatusEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; color: #dc2626;">
+        <span>⚠</span>
+        <span>${escapeHtml(errorMsg)}</span>
+      </div>
+    `;
+    ocrStatusEl.style.background = "#fef2f2";
+    ocrStatusEl.style.border = "1px solid #fecaca";
+    ocrStatusEl.style.color = "#dc2626";
+  } else {
+    ocrStatusEl.style.display = "none";
+  }
+}
+
+// Add CSS animation for spinner
+if (!document.getElementById("ocrSpinnerStyle")) {
+  const style = document.createElement("style");
+  style.id = "ocrSpinnerStyle";
+  style.textContent = `
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 /* -----------------------------
