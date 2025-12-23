@@ -2220,12 +2220,16 @@ input:focus, select:focus, textarea:focus{
 /* Sidebar Navigation */
 .sidebar-nav {
   padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .sidebar-menu {
   list-style: none;
   margin: 0;
   padding: 0;
+  flex: 1;
 }
 
 .sidebar-menu-item {
@@ -2378,6 +2382,29 @@ input:focus, select:focus, textarea:focus{
 .sidebar-submenu-link:focus {
   outline: 2px solid var(--brand);
   outline-offset: -2px;
+}
+
+/* Sidebar Footer (for logout button) */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.sidebar-logout-btn:hover {
+  color: var(--danger, #E44D4D);
+  background: rgba(228, 77, 77, 0.08);
+}
+
+.sidebar-logout-btn .sidebar-icon {
+  color: inherit;
 }
 
 /* Legacy sidebar support (backward compatibility) */
@@ -2549,6 +2576,49 @@ input:focus, select:focus, textarea:focus{
   /* Add padding to body on mobile for landing page bottom nav */
   body[data-page="landing"] {
     padding-bottom: 70px;
+  }
+  
+  /* Add padding to main content on mobile for bottom nav */
+  body[data-page="1099"] main {
+    padding-bottom: 80px;
+  }
+  
+  /* Payer Info Collapsible Styles */
+  .payer-info-form {
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+    overflow: hidden;
+    max-height: 2000px; /* Large enough for form content */
+  }
+  
+  .payer-info-form.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .payer-info-summary {
+    display: block !important;
+  }
+  
+  .mobile-only {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-only {
+    display: none !important;
+  }
+  
+  .payer-info-form {
+    display: block !important;
+    max-height: none !important;
+    opacity: 1 !important;
+  }
+  
+  .payer-info-summary {
+    display: none !important;
   }
 }
 
