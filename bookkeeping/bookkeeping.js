@@ -190,26 +190,21 @@ function renderLaborerDetail(laborer) {
 
   $("detailLaborerName").textContent = laborer.displayName || "Laborer Details";
   
-  // Store laborer ID for navigation
-  const laborerIdEl = document.getElementById("laborerId");
+  // Store laborer ID for navigation (use robust DOM manipulation)
+  let laborerIdEl = document.getElementById("laborerId");
   if (!laborerIdEl) {
     const hiddenInput = document.createElement("input");
     hiddenInput.type = "hidden";
     hiddenInput.id = "laborerId";
     hiddenInput.value = laborer.id || "";
-    $("laborerDetailPanel").insertBefore(hiddenInput, $("laborerDetailPanel").firstChild);
+    // Append to detail panel (safer than insertBefore with firstChild)
+    const detailPanel = $("laborerDetailPanel");
+    if (detailPanel) {
+      detailPanel.appendChild(hiddenInput);
+    }
   } else {
     laborerIdEl.value = laborer.id || "";
   }
-
-  // Render read-only summary
-  $("summaryDisplayName").textContent = laborer.displayName || "—";
-  $("summaryType").textContent = laborer.laborerType || "—";
-  $("summaryTinLast4").textContent = laborer.tinLast4 || "—";
-  $("summaryPhone").textContent = laborer.phone || "—";
-  $("summaryEmail").textContent = laborer.email || "—";
-  $("summaryAddress").textContent = laborer.address || "—";
-  $("summaryNotes").textContent = laborer.notes || "—";
 
   // Show/hide COI section based on type
   const coiSection = $("coiDocumentSection");

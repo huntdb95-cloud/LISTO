@@ -13,6 +13,7 @@ import {
   doc,
   query,
   orderBy,
+  where,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import {
@@ -230,6 +231,27 @@ function showForm(employee = null) {
   $("coiStatus").textContent = employee?.coiUrl ? "Current file uploaded" : "";
   $("workersCompStatus").textContent = employee?.workersCompUrl ? "Current file uploaded" : "";
   
+  // Show/hide laborer details section
+  const laborerDetailsSection = $("laborerDetailsSection");
+  if (employee?._isLaborer && employee._laborerData) {
+    // Show laborer details section
+    if (laborerDetailsSection) {
+      laborerDetailsSection.style.display = "block";
+      // Populate read-only fields
+      $("detailLaborerType").textContent = employee._laborerData.laborerType || "—";
+      $("detailLaborerTinLast4").textContent = employee._laborerData.tinLast4 || "—";
+      $("detailLaborerPhone").textContent = employee._laborerData.phone || "—";
+      $("detailLaborerEmail").textContent = employee._laborerData.email || "—";
+      $("detailLaborerAddress").textContent = employee._laborerData.address || "—";
+      $("detailLaborerNotes").textContent = employee._laborerData.notes || "—";
+    }
+  } else {
+    // Hide laborer details section
+    if (laborerDetailsSection) {
+      laborerDetailsSection.style.display = "none";
+    }
+  }
+  
   // Populate W9 info if available (for laborers)
   if (employee?._isLaborer && employee._laborerData?.w9Info) {
     const w9Info = employee._laborerData.w9Info;
@@ -337,11 +359,69 @@ async function saveEmployee(e) {
       const employeesCol = collection(db, "users", currentUid, "employees");
       const newRef = await addDoc(employeesCol, employeeData);
       employeeId = newRef.id;
+      
+      // Also create a corresponding laborer in laborers collection for Bookkeeping
+      const laborerType = type === "subcontractor" ? "Subcontractor" : "Worker";
+      const laborersCol = collection(db, "users", currentUid, "laborers");
+      const laborerRef = await addDoc(laborersCol, {
+        displayName: name,
+        laborerType: laborerType,
+        email: email || null,
+        phone: phone || null,
+        address: null,
+        tinLast4: null,
+        notes: null,
+        isArchived: false,
+        documents: {},
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      // Store laborerId in employee record for future sync
+      await updateDoc(doc(db, "users", currentUid, "employees", employeeId), {
+        laborerId: laborerRef.id
+      });
     } else {
       // Keep existing file URLs if not uploading new ones
       if (existing?.w9Url && !$("empW9").files[0]) employeeData.w9Url = existing.w9Url;
       if (existing?.coiUrl && !$("empCoi").files[0]) employeeData.coiUrl = existing.coiUrl;
       if (existing?.workersCompUrl && !$("empWorkersComp").files[0]) employeeData.workersCompUrl = existing.workersCompUrl;
+      
+      // Also update corresponding laborer if it exists
+      try {
+        // First, try to use stored laborerId from employee record (most reliable)
+        let laborerIdToUpdate = existing?.laborerId;
+        
+        // If no stored laborerId, try to find by name (for legacy data)
+        // Only update if exactly one match to avoid corrupting wrong laborer
+        if (!laborerIdToUpdate) {
+          const laborersCol = collection(db, "users", currentUid, "laborers");
+          const laborersSnap = await getDocs(query(laborersCol, where("displayName", "==", name)));
+          if (laborersSnap.docs.length === 1) {
+            // Only update if exactly one match (safe)
+            laborerIdToUpdate = laborersSnap.docs[0].id;
+            // Store the laborerId in employee record for future use
+            employeeData.laborerId = laborerIdToUpdate;
+          } else if (laborersSnap.docs.length > 1) {
+            // Multiple matches - don't update to avoid data corruption
+            console.warn(`Multiple laborers found with name "${name}". Skipping laborer sync to avoid data corruption.`);
+          }
+        }
+        
+        if (laborerIdToUpdate) {
+          const laborerType = type === "subcontractor" ? "Subcontractor" : "Worker";
+          await updateDoc(doc(db, "users", currentUid, "laborers", laborerIdToUpdate), {
+            displayName: name,
+            laborerType: laborerType,
+            email: email || null,
+            phone: phone || null,
+            updatedAt: serverTimestamp()
+          });
+        }
+      } catch (err) {
+        console.warn("Could not sync to laborers collection:", err);
+        // Non-blocking - continue with employee save
+      }
     }
     
     // Handle file uploads (now we have employeeId)

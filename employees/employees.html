@@ -49,6 +49,39 @@
 <h2 class="h2" id="formTitle" data-i18n="employees.addEmployee">Add Employee</h2>
 <div class="divider"></div>
 
+<!-- Laborer Details (Read-Only, shown when editing a laborer) -->
+<div id="laborerDetailsSection" style="display: none; margin-bottom: 24px; padding: 16px; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border);">
+  <h3 class="h3" style="margin: 0 0 16px 0; font-size: 1rem;">Laborer Details</h3>
+  <div class="form-grid">
+    <div class="form-group">
+      <label class="label">Type</label>
+      <div class="input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="detailLaborerType">—</div>
+    </div>
+    <div class="form-group">
+      <label class="label">TIN Last 4</label>
+      <div class="input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="detailLaborerTinLast4">—</div>
+    </div>
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label class="label">Phone</label>
+      <div class="input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="detailLaborerPhone">—</div>
+    </div>
+    <div class="form-group">
+      <label class="label">Email</label>
+      <div class="input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08);" id="detailLaborerEmail">—</div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="label">Address</label>
+    <div class="input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08); min-height: 60px; padding: 10px 12px;" id="detailLaborerAddress">—</div>
+  </div>
+  <div class="form-group">
+    <label class="label">Notes</label>
+    <div class="input" style="background: rgba(0,0,0,.02); border-color: rgba(0,0,0,.08); min-height: 60px; padding: 10px 12px;" id="detailLaborerNotes">—</div>
+  </div>
+</div>
+
 <form id="employeeForm">
 <input type="hidden" id="employeeId" />
 
