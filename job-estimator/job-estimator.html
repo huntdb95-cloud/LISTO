@@ -301,7 +301,13 @@
               </div>
             </div>
             <div id="emptyState" class="empty-state" style="display: none; margin-top: 20px;">
-              <p>No builders or jobs found. <a href="../contracts/contracts.html">Go to Contracts</a> to create a builder and job first.</p>
+              <p>No builders or jobs found.</p>
+              <p style="margin-top: 12px;">
+                <a href="../contracts/contracts.html" class="btn primary">Create a Job</a>
+              </p>
+            </div>
+            <div id="goToJobContainer" style="display: none; margin-top: 16px;">
+              <a href="#" id="goToJobBtn" class="btn ghost" target="_blank">Go to Job →</a>
             </div>
           </div>
 
@@ -498,6 +504,7 @@
               <button type="button" class="btn primary" id="saveBtn">Save Estimate</button>
               <button type="button" class="btn secondary" id="saveAsCopyBtn">Save as Copy</button>
               <button type="button" class="btn ghost" id="newEstimateBtn">New Estimate</button>
+              <a href="#" id="goToJobBtnFromActions" class="btn ghost" style="display: none;" target="_blank">Go to Job →</a>
             </div>
             <div id="saveMsg" style="margin-top: 12px;"></div>
           </div>
@@ -531,6 +538,32 @@
       </footer>
     </main>
   </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+    <div class="mobile-bottom-nav-items">
+      <a href="../dashboard.html" class="mobile-bottom-nav-item" data-nav="home">
+        <div class="mobile-bottom-nav-icon">🏠</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.dashboard">Home</div>
+      </a>
+      <a href="../contracts/contracts.html" class="mobile-bottom-nav-item" data-nav="contracts">
+        <div class="mobile-bottom-nav-icon">📄</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.contracts">Contracts</div>
+      </a>
+      <a href="../bookkeeping/bookkeeping.html" class="mobile-bottom-nav-item" data-nav="bookkeeping">
+        <div class="mobile-bottom-nav-icon">📊</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.bookkeeping">Bookkeeping</div>
+      </a>
+      <a href="../tools/tools.html" class="mobile-bottom-nav-item active" data-nav="tools">
+        <div class="mobile-bottom-nav-icon">🔧</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.tools">Tools</div>
+      </a>
+      <a href="../settings/settings.html" class="mobile-bottom-nav-item" data-nav="settings">
+        <div class="mobile-bottom-nav-icon">⚙️</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.settings">Settings</div>
+      </a>
+    </div>
+  </nav>
 
   <script src="../sidebar.js"></script>
   <script src="../scripts.js" type="module"></script>
