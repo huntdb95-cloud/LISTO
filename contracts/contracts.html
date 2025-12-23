@@ -42,18 +42,11 @@
 <button type="button" class="btn primary" id="newBuilderBtn">
 <span>New Builder</span>
 </button>
-<button type="button" class="btn ghost" id="newContractBtn" style="display: none;">
-<span>New Contract</span>
-</button>
 </div>
 </div>
 
 <!-- Summary Stat Cards -->
 <div class="contracts-stat-cards">
-<div class="contracts-stat-card">
-<div class="contracts-stat-card-label">Active Contracts</div>
-<div class="contracts-stat-card-value" id="statActiveContracts">0</div>
-</div>
 <div class="contracts-stat-card">
 <div class="contracts-stat-card-label">Open Jobs</div>
 <div class="contracts-stat-card-value" id="statOpenJobs">0</div>
@@ -63,15 +56,15 @@
 <div class="contracts-stat-card-value contracts-stat-card-value-warning" id="statOverdueJobs">0</div>
 </div>
 <div class="contracts-stat-card">
-<div class="contracts-stat-card-label">Total Contract Value</div>
-<div class="contracts-stat-card-value" id="statTotalValue">$0</div>
+<div class="contracts-stat-card-label">Total Builders</div>
+<div class="contracts-stat-card-value" id="statTotalBuilders">0</div>
 </div>
 </div>
 
 <!-- Search and Filters Bar -->
 <div class="contracts-toolbar">
 <div class="contracts-search">
-<input type="text" id="contractsSearch" placeholder="Search builders, contracts, jobs..." class="contracts-search-input" />
+<input type="text" id="contractsSearch" placeholder="Search builders, jobs..." class="contracts-search-input" />
 </div>
 <div class="contracts-filters">
 <select id="filterStatus" class="contracts-filter-select">
@@ -84,19 +77,16 @@
 <select id="filterBuilder" class="contracts-filter-select">
 <option value="">All Builders</option>
 </select>
-<select id="sortBy" class="contracts-filter-select">
+<select id="sortBy" class="contracts-filter-select" style="display: none;">
 <option value="updated">Last Updated</option>
-<option value="name">Name</option>
-<option value="dueDate">Due Date</option>
-<option value="value">Contract Value</option>
 </select>
 </div>
 </div>
 
-<!-- Builders & Contracts Box (Full Width) -->
+<!-- Builders Box (Full Width) -->
 <div class="contracts-page-builders-box">
 <div class="contracts-list-header">
-<h2 class="contracts-list-title">Builders & Contracts</h2>
+<h2 class="contracts-list-title">Builders</h2>
 </div>
 <div class="contracts-list-container">
 <div id="contractsList" class="contracts-list">
@@ -118,7 +108,6 @@
 <thead>
 <tr>
 <th>Job Name</th>
-<th>Contract</th>
 <th>Address</th>
 <th>Status</th>
 <th>Start Date</th>
@@ -130,7 +119,7 @@
 </thead>
 <tbody id="jobsSectionTableBody">
 <tr>
-<td colspan="9" class="contracts-empty-state" id="jobsSectionEmpty">Select a builder to view jobs.</td>
+<td colspan="8" class="contracts-empty-state" id="jobsSectionEmpty">Select a builder to view jobs.</td>
 </tr>
 </tbody>
 </table>
@@ -139,101 +128,6 @@
 </div>
 </div>
 
-<!-- Contract Details Panel (Optional - for viewing contract details) -->
-<div class="contracts-detail-panel" id="contractsDetailPanelWrapper" style="display: none;">
-<div id="contractDetailView" class="contracts-detail-view">
-<!-- Contract Header -->
-<div class="contracts-detail-header">
-<div class="contracts-detail-header-content">
-<h2 class="contracts-detail-title" id="detailContractTitle">—</h2>
-<div class="contracts-detail-meta">
-<span class="contracts-status-badge" id="detailContractStatus">—</span>
-<span class="contracts-detail-builder" id="detailContractBuilder">—</span>
-</div>
-</div>
-<div class="contracts-detail-header-actions">
-<button type="button" class="btn small" id="editContractBtn">Edit</button>
-<button type="button" class="btn small ghost" id="duplicateContractBtn">Duplicate</button>
-<button type="button" class="btn small ghost" id="deleteContractBtn">Delete</button>
-</div>
-</div>
-
-<!-- Contract Info Tabs -->
-<div class="contracts-detail-tabs">
-<button type="button" class="contracts-tab contracts-tab-active" data-tab="overview">Overview</button>
-<button type="button" class="contracts-tab" data-tab="notes">Notes</button>
-</div>
-
-<!-- Overview Tab -->
-<div class="contracts-tab-content contracts-tab-content-active" id="tabOverview">
-<div class="contracts-detail-section">
-<h3 class="contracts-detail-section-title">Contract Information</h3>
-<div class="contracts-detail-grid">
-<div class="contracts-detail-field">
-<label>Contract Number</label>
-<div class="contracts-detail-value" id="detailContractNumber">—</div>
-</div>
-<div class="contracts-detail-field">
-<label>Start Date</label>
-<div class="contracts-detail-value" id="detailStartDate">—</div>
-</div>
-<div class="contracts-detail-field">
-<label>End Date</label>
-<div class="contracts-detail-value" id="detailEndDate">—</div>
-</div>
-<div class="contracts-detail-field">
-<label>Payment Terms</label>
-<div class="contracts-detail-value" id="detailPaymentTerms">—</div>
-</div>
-</div>
-</div>
-
-<div class="contracts-detail-section">
-<h3 class="contracts-detail-section-title">Financial Summary</h3>
-<div class="contracts-financial-grid">
-<div class="contracts-financial-item">
-<label>Total Contract Value</label>
-<div class="contracts-financial-value" id="detailTotalValue">$0.00</div>
-</div>
-<div class="contracts-financial-item">
-<label>Deposit</label>
-<div class="contracts-financial-value" id="detailDeposit">$0.00</div>
-</div>
-<div class="contracts-financial-item">
-<label>Retainage %</label>
-<div class="contracts-financial-value" id="detailRetainage">0%</div>
-</div>
-<div class="contracts-financial-item">
-<label>Remaining Balance</label>
-<div class="contracts-financial-value" id="detailRemaining">$0.00</div>
-</div>
-</div>
-</div>
-
-<div class="contracts-detail-section">
-<h3 class="contracts-detail-section-title">Scope of Work</h3>
-<div class="contracts-detail-value" id="detailScope">—</div>
-</div>
-</div>
-
-<!-- Notes Tab -->
-<div class="contracts-tab-content" id="tabNotes">
-<div class="contracts-detail-section">
-<h3 class="contracts-detail-section-title">Notes</h3>
-<div class="contracts-detail-value" id="detailNotes">—</div>
-</div>
-</div>
-</div>
-
-<!-- Empty State -->
-<div id="contractEmptyState" class="contracts-empty-view">
-<div class="contracts-empty-content">
-<h2>No Contract Selected</h2>
-<p>Select a contract from the list to view details, or create a new builder and contract to get started.</p>
-</div>
-</div>
-</div>
-</div>
 </div>
   </main>
 </div>
@@ -280,84 +174,6 @@
 </div>
 </div>
 
-<!-- Contract Modal -->
-<div id="contractModal" class="modal-overlay" style="display: none;">
-<div class="modal-content modal-large">
-<div class="modal-header">
-<h2 class="h2" id="contractModalTitle">New Contract</h2>
-<button type="button" class="modal-close" onclick="hideContractModal()" aria-label="Close">&times;</button>
-</div>
-<div class="modal-body">
-<form id="contractForm">
-<input type="hidden" id="contractId" />
-<input type="hidden" id="contractBuilderId" />
-<div class="form-group">
-<label for="contractTitle">Contract Title *</label>
-<input type="text" id="contractTitle" required placeholder="Main Contract" />
-</div>
-<div class="form-grid">
-<div class="form-group">
-<label for="contractNumber">Contract Number</label>
-<input type="text" id="contractNumber" placeholder="CON-2024-001" />
-</div>
-<div class="form-group">
-<label for="contractStatus">Status *</label>
-<select id="contractStatus" required>
-<option value="draft">Draft</option>
-<option value="active" selected>Active</option>
-<option value="on-hold">On Hold</option>
-<option value="closed">Closed</option>
-</select>
-</div>
-</div>
-<div class="form-grid">
-<div class="form-group">
-<label for="contractStartDate">Start Date</label>
-<input type="date" id="contractStartDate" />
-</div>
-<div class="form-group">
-<label for="contractEndDate">End Date</label>
-<input type="date" id="contractEndDate" />
-</div>
-</div>
-<div class="form-grid">
-<div class="form-group">
-<label for="contractTotalValue">Total Contract Value</label>
-<input type="number" id="contractTotalValue" step="0.01" min="0" placeholder="0.00" />
-</div>
-<div class="form-group">
-<label for="contractDeposit">Deposit</label>
-<input type="number" id="contractDeposit" step="0.01" min="0" placeholder="0.00" />
-</div>
-</div>
-<div class="form-grid">
-<div class="form-group">
-<label for="contractRetainagePct">Retainage %</label>
-<input type="number" id="contractRetainagePct" step="0.1" min="0" max="100" placeholder="0" />
-</div>
-<div class="form-group">
-<label for="contractPaymentTerms">Payment Terms</label>
-<input type="text" id="contractPaymentTerms" placeholder="Net 30" />
-</div>
-</div>
-<div class="form-group">
-<label for="contractScope">Scope of Work</label>
-<textarea id="contractScope" rows="4" placeholder="Describe the scope of work..."></textarea>
-</div>
-<div class="form-group">
-<label for="contractNotes">Notes</label>
-<textarea id="contractNotes" rows="4" placeholder="Additional contract notes..."></textarea>
-</div>
-<div id="contractFormMsg" class="form-msg"></div>
-<div id="contractFormError" class="form-error"></div>
-<div class="btn-row" style="margin-top: 20px;">
-<button type="submit" class="btn primary" id="saveContractBtn">Save Contract</button>
-<button type="button" class="btn ghost" onclick="hideContractModal()">Cancel</button>
-</div>
-</form>
-</div>
-</div>
-</div>
 
 <!-- Job Modal -->
 <div id="jobModal" class="modal-overlay" style="display: none;">
@@ -369,7 +185,6 @@
 <div class="modal-body">
 <form id="jobForm">
 <input type="hidden" id="jobId" />
-<input type="hidden" id="jobContractId" />
 <input type="hidden" id="jobBuilderId" />
 <div class="form-group">
 <label for="jobName">Job Name *</label>

@@ -161,52 +161,86 @@ function updateSummaryCards() {
 }
 
 // Display profile picture or initials
-async function displayProfilePicture() {
+async function displayProfilePicture(logoUrlOverride = null) {
   const avatarImage = $("avatarImage");
   const avatarInitials = $("avatarInitials");
   const removeBtn = $("removeLogoBtn");
   
-  // Get logo URL from profile or auth user photoURL
-  let logoUrl = currentProfile?.logoUrl || currentUser.photoURL;
+  if (!avatarImage || !avatarInitials) {
+    console.warn("Avatar elements not found");
+    return;
+  }
+  
+  // Get logo URL from override, profile, or auth user photoURL
+  let logoUrl = logoUrlOverride || currentProfile?.logoUrl || currentUser?.photoURL;
   
   if (logoUrl) {
-    avatarImage.src = logoUrl;
+    // Add cache-busting query parameter to ensure fresh load
+    const cacheBuster = logoUrl.includes('?') ? '&' : '?';
+    const urlWithCache = logoUrl + cacheBuster + '_t=' + Date.now();
+    
+    // Set up image load handlers
+    avatarImage.onload = () => {
+      avatarImage.style.display = "block";
+      avatarInitials.style.display = "none";
+      if (removeBtn) removeBtn.style.display = "block";
+    };
+    
+    avatarImage.onerror = () => {
+      console.warn("Failed to load logo image, falling back to initials");
+      avatarImage.style.display = "none";
+      avatarInitials.style.display = "flex";
+      if (removeBtn) removeBtn.style.display = "none";
+      // Try to show initials
+      showInitials(avatarInitials);
+    };
+    
+    // Set the source (this will trigger onload or onerror)
+    avatarImage.src = urlWithCache;
+    
+    // Optimistically show the image (in case onload doesn't fire immediately)
     avatarImage.style.display = "block";
     avatarInitials.style.display = "none";
-    removeBtn.style.display = "block";
+    if (removeBtn) removeBtn.style.display = "block";
   } else {
     avatarImage.style.display = "none";
     avatarInitials.style.display = "flex";
-    
-    // Generate initials from profile name, displayName, or email
-    const profileName = currentProfile?.name || "";
-    const displayName = currentUser.displayName || "";
-    const email = currentUser.email || "";
-    
-    let initials = "";
-    const nameToUse = profileName || displayName;
-    if (nameToUse) {
-      // Use name initials
-      const parts = nameToUse.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-      } else if (parts[0]) {
-        initials = parts[0].substring(0, 2).toUpperCase();
-      }
-    }
-    
-    if (!initials && email) {
-      // Use email initials (first letter before @)
-      initials = email.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, "");
-    }
-    
-    if (!initials) {
-      initials = "??";
-    }
-    
-    avatarInitials.textContent = initials;
-    removeBtn.style.display = "none";
+    if (removeBtn) removeBtn.style.display = "none";
+    showInitials(avatarInitials);
   }
+}
+
+// Helper function to show initials
+function showInitials(avatarInitials) {
+  if (!avatarInitials) return;
+  
+  // Generate initials from profile name, displayName, or email
+  const profileName = currentProfile?.name || "";
+  const displayName = currentUser?.displayName || "";
+  const email = currentUser?.email || "";
+  
+  let initials = "";
+  const nameToUse = profileName || displayName;
+  if (nameToUse) {
+    // Use name initials
+    const parts = nameToUse.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else if (parts[0]) {
+      initials = parts[0].substring(0, 2).toUpperCase();
+    }
+  }
+  
+  if (!initials && email) {
+    // Use email initials (first letter before @)
+    initials = email.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, "");
+  }
+  
+  if (!initials) {
+    initials = "??";
+  }
+  
+  avatarInitials.textContent = initials;
 }
 
 // Get user initials helper
@@ -282,6 +316,16 @@ async function handleLogoUpload(e) {
   const btn = $("logoUploadBtn");
   const oldDisabled = btn.disabled;
   
+  // Create preview URL for immediate display (before upload completes)
+  let previewUrl = null;
+  try {
+    previewUrl = URL.createObjectURL(file);
+    // Show preview immediately
+    await displayProfilePicture(previewUrl);
+  } catch (previewErr) {
+    console.warn("Could not create preview:", previewErr);
+  }
+  
   try {
     btn.disabled = true;
     clearMessages("logo");
@@ -319,12 +363,25 @@ async function handleLogoUpload(e) {
       updatedAt: serverTimestamp()
     }, { merge: true });
     
+    // Update current profile object immediately
+    if (!currentProfile) currentProfile = {};
+    currentProfile.logoUrl = downloadURL;
+    currentProfile.logoPath = filePath;
+    
     // Update auth profile photoURL
     await updateProfile(currentUser, {
       photoURL: downloadURL
     });
     
-    // Reload profile
+    // Revoke preview URL to free memory
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    // Display the uploaded logo immediately (don't wait for full reload)
+    await displayProfilePicture(downloadURL);
+    
+    // Reload profile to ensure consistency
     await loadProfile();
     
     // Refresh header avatar if available
@@ -341,6 +398,14 @@ async function handleLogoUpload(e) {
   } catch (err) {
     console.error("Logo upload error:", err);
     showError("logoError", getFriendlyError(err));
+    
+    // Revoke preview URL on error
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    // Restore previous logo display
+    await displayProfilePicture();
   } finally {
     btn.disabled = oldDisabled;
   }
