@@ -82,6 +82,12 @@ function createSidebarHTML(basePath = '') {
             </a>
           </li>
         </ul>
+        <div class="sidebar-footer">
+          <button id="sidebarLogoutBtn" class="sidebar-link sidebar-logout-btn" type="button" data-nav="logout" hidden>
+            <span class="sidebar-icon"><i class="bx bx-log-out"></i></span>
+            <span class="sidebar-label" data-i18n="auth.logout">Log out</span>
+          </button>
+        </div>
       </nav>
     </aside>
   `;
