@@ -200,6 +200,28 @@ service cloud.firestore {
       
       allow delete: if isOwner(userId);
       
+      // Jobs subcollection: /users/{uid}/builders/{builderId}/jobs/{jobId}
+      // This is the primary location for jobs (directly under builder)
+      match /jobs/{jobId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasAll(['jobName', 'status', 'createdAt'])
+          && request.resource.data.jobName is string
+          && request.resource.data.jobName.size() >= 1
+          && request.resource.data.jobName.size() <= 200
+          && request.resource.data.status in ['not-started', 'in-progress', 'waiting', 'completed', 'invoiced', 'paid']
+          && request.resource.data.createdAt is timestamp;
+        
+        allow update: if isOwner(userId)
+          && request.resource.data.jobName is string
+          && request.resource.data.jobName.size() >= 1
+          && request.resource.data.jobName.size() <= 200
+          && (!('status' in request.resource.data) || request.resource.data.status in ['not-started', 'in-progress', 'waiting', 'completed', 'invoiced', 'paid']);
+        
+        allow delete: if isOwner(userId);
+      }
+      
       // Contracts subcollection: /users/{uid}/builders/{builderId}/contracts/{contractId}
       match /contracts/{contractId} {
         allow read: if isOwner(userId);
@@ -221,6 +243,7 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
         
         // Jobs subcollection: /users/{uid}/builders/{builderId}/contracts/{contractId}/jobs/{jobId}
+        // Legacy location (for backward compatibility during migration)
         match /jobs/{jobId} {
           allow read: if isOwner(userId);
           
