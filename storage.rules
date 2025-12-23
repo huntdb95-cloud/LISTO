@@ -14,12 +14,15 @@ service firebase.storage {
     // ========== Profile Images ==========
     
     // Profile logo: users/{uid}/profile/logo_*
-    match /users/{userId}/profile/logo_{timestamp}_{fileName} {
-      allow read: if isOwnerPath(userId);
+    match /users/{userId}/profile/{fileName} {
+      allow read: if isOwnerPath(userId) 
+        && fileName.matches('logo_.*');
       allow write: if isOwnerPath(userId)
         && request.resource.size < 5 * 1024 * 1024  // 5MB max
-        && request.resource.contentType.matches('image/.*');
-      allow delete: if isOwnerPath(userId);
+        && request.resource.contentType.matches('image/.*')
+        && fileName.matches('logo_.*');
+      allow delete: if isOwnerPath(userId)
+        && fileName.matches('logo_.*');
     }
 
     // ========== COI Documents ==========
