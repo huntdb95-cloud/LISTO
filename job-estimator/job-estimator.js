@@ -53,11 +53,21 @@ async function loadBuilders() {
     builderSelect.innerHTML = '<option value="">-- Select Builder --</option>';
     
     if (builders.length === 0) {
-      $("emptyState").style.display = "block";
+      const emptyState = $("emptyState");
+      if (emptyState) {
+        emptyState.style.display = "block";
+        emptyState.innerHTML = `
+          <p>No builders found.</p>
+          <p style="margin-top: 12px;">
+            <a href="../contracts/contracts.html" class="btn primary">Create a Builder & Job</a>
+          </p>
+        `;
+      }
       return;
     }
     
-    $("emptyState").style.display = "none";
+    const emptyState = $("emptyState");
+    if (emptyState) emptyState.style.display = "none";
     
     builders.forEach(builder => {
       const option = document.createElement("option");
@@ -80,32 +90,35 @@ async function loadJobs(builderId) {
     const builder = builders.find(b => b.id === builderId);
     if (!builder) return;
     
-    // Get all contracts for this builder
-    const contractsCol = collection(db, "users", currentUid, "builders", builderId, "contracts");
-    const contractsSnap = await getDocs(query(contractsCol, orderBy("title")));
+    // Load jobs directly under builder (new structure)
+    const jobsCol = collection(db, "users", currentUid, "builders", builderId, "jobs");
+    const jobsSnap = await getDocs(query(jobsCol, orderBy("jobName")));
     
-    // Get all jobs from all contracts
-    for (const contractDoc of contractsSnap.docs) {
-      const jobsCol = collection(db, "users", currentUid, "builders", builderId, "contracts", contractDoc.id, "jobs");
-      const jobsSnap = await getDocs(query(jobsCol, orderBy("jobName")));
-      
-      jobsSnap.docs.forEach(jobDoc => {
-        jobs.push({
-          id: jobDoc.id,
-          contractId: contractDoc.id,
-          builderId: builderId,
-          ...jobDoc.data()
-        });
+    jobsSnap.docs.forEach(jobDoc => {
+      jobs.push({
+        id: jobDoc.id,
+        builderId: builderId,
+        ...jobDoc.data()
       });
-    }
+    });
     
     const jobSelect = $("jobSelect");
+    const emptyState = $("emptyState");
     if (!jobSelect) return;
     
     jobSelect.innerHTML = '<option value="">-- Select Job --</option>';
     jobSelect.disabled = false;
     
     if (jobs.length === 0) {
+      if (emptyState) {
+        emptyState.style.display = "block";
+        emptyState.innerHTML = `
+          <p>No jobs found for this builder.</p>
+          <p style="margin-top: 12px;">
+            <a href="../contracts/contracts.html" class="btn primary">Create a Job</a>
+          </p>
+        `;
+      }
       const option = document.createElement("option");
       option.value = "";
       option.textContent = "No jobs found";
@@ -113,6 +126,8 @@ async function loadJobs(builderId) {
       jobSelect.appendChild(option);
       return;
     }
+    
+    if (emptyState) emptyState.style.display = "none";
     
     jobs.forEach(job => {
       const option = document.createElement("option");
@@ -146,11 +161,15 @@ function setupEventListeners() {
         await loadJobs(builderId);
         $("estimateCard").style.display = "none";
         $("estimatesListCard").style.display = "none";
+        $("goToJobContainer").style.display = "none";
+        $("goToJobBtnFromActions").style.display = "none";
       } else {
         jobSelect.innerHTML = '<option value="">-- Select Builder First --</option>';
         jobSelect.disabled = true;
         $("estimateCard").style.display = "none";
         $("estimatesListCard").style.display = "none";
+        $("goToJobContainer").style.display = "none";
+        $("goToJobBtnFromActions").style.display = "none";
       }
     });
   }
@@ -170,11 +189,40 @@ function setupEventListeners() {
           $("estimateName").value = `Estimate – ${job.jobName} – ${dateStr}`;
           
           $("estimateCard").style.display = "block";
+          
+          // Update "Go to Job" button
+          updateGoToJobButton(jobId);
+          
           await loadEstimatesForJob(jobId);
+          
+          // Try to load the most recent estimate for this job
+          await loadLatestEstimateForJob(jobId);
         }
       } else {
         $("estimateCard").style.display = "none";
         $("estimatesListCard").style.display = "none";
+        $("goToJobContainer").style.display = "none";
+        $("goToJobBtnFromActions").style.display = "none";
+      }
+    });
+  }
+  
+  // Setup "Go to Job" button
+  const goToJobBtn = $("goToJobBtn");
+  const goToJobBtnFromActions = $("goToJobBtnFromActions");
+  if (goToJobBtn) {
+    goToJobBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentBuilderId && currentJobId) {
+        window.open(`../contracts/contracts.html?builder=${currentBuilderId}&job=${currentJobId}`, "_blank");
+      }
+    });
+  }
+  if (goToJobBtnFromActions) {
+    goToJobBtnFromActions.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentBuilderId && currentJobId) {
+        window.open(`../contracts/contracts.html?builder=${currentBuilderId}&job=${currentJobId}`, "_blank");
       }
     });
   }
@@ -477,7 +525,8 @@ async function saveEstimate(isCopy = false) {
   }
   
   try {
-    const estimatesCol = collection(db, "users", currentUid, "estimates");
+    // Store estimate under job: users/{uid}/builders/{builderId}/jobs/{jobId}/estimates/{estimateId}
+    const estimatesCol = collection(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates");
     
     if (isCopy || !currentEstimateId) {
       // Create new estimate
@@ -489,7 +538,7 @@ async function saveEstimate(isCopy = false) {
       await loadEstimatesForJob(currentJobId);
     } else {
       // Update existing estimate
-      const estimateRef = doc(db, "users", currentUid, "estimates", currentEstimateId);
+      const estimateRef = doc(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates", currentEstimateId);
       estimateData.updatedAt = serverTimestamp();
       await updateDoc(estimateRef, estimateData);
       showMessage("Estimate updated successfully!", false);
@@ -503,30 +552,28 @@ async function saveEstimate(isCopy = false) {
 
 // Load estimates for job
 async function loadEstimatesForJob(jobId) {
-  if (!currentUid || !jobId) return;
+  if (!currentUid || !jobId || !currentBuilderId) return;
   
   try {
-    const estimatesCol = collection(db, "users", currentUid, "estimates");
-    // Use where clause only (no orderBy to avoid index requirement)
-    const q = query(
-      estimatesCol,
-      where("jobId", "==", jobId)
-    );
-    const snap = await getDocs(q);
+    // Load estimates from job subcollection
+    const estimatesCol = collection(db, "users", currentUid, "builders", currentBuilderId, "jobs", jobId, "estimates");
+    const snap = await getDocs(query(estimatesCol, orderBy("updatedAt", "desc")));
     
     let estimates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     
-    // Sort by updatedAt in memory (most recent first)
-    estimates.sort((a, b) => {
-      const getTime = (est) => {
-        if (!est.updatedAt) return 0;
-        if (est.updatedAt.toDate) return est.updatedAt.toDate().getTime();
-        if (est.updatedAt.seconds) return est.updatedAt.seconds * 1000;
-        if (est.updatedAt instanceof Date) return est.updatedAt.getTime();
-        return new Date(est.updatedAt).getTime() || 0;
-      };
-      return getTime(b) - getTime(a); // Descending
-    });
+    // Fallback sort by updatedAt in memory if orderBy fails
+    if (estimates.length > 0 && !estimates[0].updatedAt) {
+      estimates.sort((a, b) => {
+        const getTime = (est) => {
+          if (!est.updatedAt) return 0;
+          if (est.updatedAt.toDate) return est.updatedAt.toDate().getTime();
+          if (est.updatedAt.seconds) return est.updatedAt.seconds * 1000;
+          if (est.updatedAt instanceof Date) return est.updatedAt.getTime();
+          return new Date(est.updatedAt).getTime() || 0;
+        };
+        return getTime(b) - getTime(a); // Descending
+      });
+    }
     
     const listContainer = $("estimatesList");
     if (!listContainer) return;
@@ -573,16 +620,158 @@ async function loadEstimatesForJob(jobId) {
     }).join("");
   } catch (err) {
     console.error("Error loading estimates:", err);
-    showMessage("Error loading estimates.", true);
+    // If orderBy fails (no index), try without it
+    if (err.code === 'failed-precondition') {
+      try {
+        const estimatesCol = collection(db, "users", currentUid, "builders", currentBuilderId, "jobs", jobId, "estimates");
+        const snap = await getDocs(estimatesCol);
+        let estimates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        estimates.sort((a, b) => {
+          const getTime = (est) => {
+            if (!est.updatedAt) return 0;
+            if (est.updatedAt.toDate) return est.updatedAt.toDate().getTime();
+            if (est.updatedAt.seconds) return est.updatedAt.seconds * 1000;
+            if (est.updatedAt instanceof Date) return est.updatedAt.getTime();
+            return new Date(est.updatedAt).getTime() || 0;
+          };
+          return getTime(b) - getTime(a);
+        });
+        
+        const listContainer = $("estimatesList");
+        if (!listContainer) return;
+        
+        if (estimates.length === 0) {
+          listContainer.innerHTML = '<div class="muted">No saved estimates for this job.</div>';
+          $("estimatesListCard").style.display = "none";
+          return;
+        }
+        
+        $("estimatesListCard").style.display = "block";
+        renderEstimatesList(estimates, listContainer);
+      } catch (err2) {
+        console.error("Error loading estimates (fallback):", err2);
+        showMessage("Error loading estimates.", true);
+      }
+    } else {
+      showMessage("Error loading estimates.", true);
+    }
   }
+}
+
+// Render estimates list
+function renderEstimatesList(estimates, container) {
+  container.innerHTML = estimates.map(est => {
+    let updatedAt;
+    if (est.updatedAt) {
+      if (est.updatedAt.toDate) {
+        updatedAt = est.updatedAt.toDate();
+      } else if (est.updatedAt instanceof Date) {
+        updatedAt = est.updatedAt;
+      } else {
+        updatedAt = new Date(est.updatedAt);
+      }
+    } else {
+      updatedAt = new Date();
+    }
+    
+    const dateStr = updatedAt.toLocaleDateString();
+    const timeStr = updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const grandTotal = est.totals?.grandTotal || 0;
+    const safeName = (est.estimateName || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+    
+    return `
+      <div class="estimate-item" onclick="loadEstimate('${est.id}')">
+        <div class="estimate-item-info">
+          <div class="estimate-item-name">${safeName || "Untitled Estimate"}</div>
+          <div class="estimate-item-meta">Updated: ${dateStr} ${timeStr} • Total: ${formatCurrency(grandTotal)}</div>
+        </div>
+        <div class="estimate-item-actions">
+          <button type="button" class="btn small ghost" onclick="event.stopPropagation(); loadEstimate('${est.id}')">Load</button>
+          <button type="button" class="btn small ghost btn-danger" onclick="event.stopPropagation(); deleteEstimate('${est.id}', '${safeName}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// Load latest estimate for job (auto-load on job selection)
+async function loadLatestEstimateForJob(jobId) {
+  if (!currentUid || !jobId || !currentBuilderId) return;
+  
+  try {
+    const estimatesCol = collection(db, "users", currentUid, "builders", currentBuilderId, "jobs", jobId, "estimates");
+    const snap = await getDocs(query(estimatesCol, orderBy("updatedAt", "desc")));
+    
+    if (!snap.empty) {
+      const latestEstimate = snap.docs[0];
+      await loadEstimateData(latestEstimate.id, latestEstimate.data());
+      currentEstimateId = latestEstimate.id;
+    }
+  } catch (err) {
+    // If orderBy fails, try without it
+    if (err.code === 'failed-precondition') {
+      try {
+        const estimatesCol = collection(db, "users", currentUid, "builders", currentBuilderId, "jobs", jobId, "estimates");
+        const snap = await getDocs(estimatesCol);
+        if (!snap.empty) {
+          let estimates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          estimates.sort((a, b) => {
+            const getTime = (est) => {
+              if (!est.updatedAt) return 0;
+              if (est.updatedAt.toDate) return est.updatedAt.toDate().getTime();
+              if (est.updatedAt.seconds) return est.updatedAt.seconds * 1000;
+              if (est.updatedAt instanceof Date) return est.updatedAt.getTime();
+              return new Date(est.updatedAt).getTime() || 0;
+            };
+            return getTime(b) - getTime(a);
+          });
+          if (estimates.length > 0) {
+            const latestEstimate = snap.docs.find(d => d.id === estimates[0].id);
+            if (latestEstimate) {
+              await loadEstimateData(latestEstimate.id, latestEstimate.data());
+              currentEstimateId = latestEstimate.id;
+            }
+          }
+        }
+      } catch (err2) {
+        // Silently fail - user can manually load estimates
+        console.log("Could not auto-load latest estimate:", err2);
+      }
+    }
+  }
+}
+
+// Load estimate data into form
+async function loadEstimateData(estimateId, estimate) {
+  if (!estimate) return;
+  
+  currentEstimateId = estimateId;
+  
+  // Set basic fields
+  $("estimateName").value = estimate.estimateName || "";
+  $("estimateNotes").value = estimate.notes || "";
+  $("overheadPct").value = estimate.overheadPct || 10;
+  $("profitPct").value = estimate.profitPct || 15;
+  $("taxPct").value = estimate.taxPct || 0;
+  $("taxEnabled").checked = (estimate.taxPct || 0) > 0;
+  $("taxPct").disabled = !$("taxEnabled").checked;
+  $("taxLine").style.display = $("taxEnabled").checked ? "block" : "none";
+  
+  // Load categories
+  loadCategory("labor", estimate.categories?.labor || []);
+  loadCategory("materials", estimate.categories?.materials || []);
+  loadCategory("subcontractors", estimate.categories?.subcontractors || []);
+  loadCategory("other", estimate.categories?.other || []);
+  
+  calculateTotals();
 }
 
 // Load estimate
 window.loadEstimate = async function(estimateId) {
-  if (!currentUid) return;
+  if (!currentUid || !currentBuilderId || !currentJobId) return;
   
   try {
-    const estimateRef = doc(db, "users", currentUid, "estimates", estimateId);
+    const estimateRef = doc(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates", estimateId);
     const snap = await getDoc(estimateRef);
     
     if (!snap.exists()) {
@@ -591,25 +780,7 @@ window.loadEstimate = async function(estimateId) {
     }
   
     const estimate = snap.data();
-    currentEstimateId = estimateId;
-    
-    // Set basic fields
-    $("estimateName").value = estimate.estimateName || "";
-    $("estimateNotes").value = estimate.notes || "";
-    $("overheadPct").value = estimate.overheadPct || 10;
-    $("profitPct").value = estimate.profitPct || 15;
-    $("taxPct").value = estimate.taxPct || 0;
-    $("taxEnabled").checked = (estimate.taxPct || 0) > 0;
-    $("taxPct").disabled = !$("taxEnabled").checked;
-    $("taxLine").style.display = $("taxEnabled").checked ? "block" : "none";
-    
-    // Load categories
-    loadCategory("labor", estimate.categories?.labor || []);
-    loadCategory("materials", estimate.categories?.materials || []);
-    loadCategory("subcontractors", estimate.categories?.subcontractors || []);
-    loadCategory("other", estimate.categories?.other || []);
-    
-    calculateTotals();
+    await loadEstimateData(estimateId, estimate);
     showMessage("Estimate loaded.", false);
   } catch (err) {
     console.error("Error loading estimate:", err);
@@ -668,10 +839,10 @@ window.deleteEstimate = async function(estimateId, estimateName) {
     return;
   }
   
-  if (!currentUid) return;
+  if (!currentUid || !currentBuilderId || !currentJobId) return;
   
   try {
-    const estimateRef = doc(db, "users", currentUid, "estimates", estimateId);
+    const estimateRef = doc(db, "users", currentUid, "builders", currentBuilderId, "jobs", currentJobId, "estimates", estimateId);
     await deleteDoc(estimateRef);
     showMessage("Estimate deleted.", false);
     await loadEstimatesForJob(currentJobId);
@@ -732,6 +903,26 @@ function showMessage(text, isError = false) {
       msgEl.textContent = "";
       msgEl.style.display = "none";
     }, 3000);
+  }
+}
+
+// Update "Go to Job" button
+function updateGoToJobButton(jobId) {
+  if (!currentBuilderId || !jobId) return;
+  
+  const goToJobContainer = $("goToJobContainer");
+  const goToJobBtn = $("goToJobBtn");
+  const goToJobBtnFromActions = $("goToJobBtnFromActions");
+  
+  if (goToJobContainer) goToJobContainer.style.display = "block";
+  if (goToJobBtnFromActions) goToJobBtnFromActions.style.display = "inline-flex";
+  
+  // The href is set via event listener, but we can also set it here for accessibility
+  if (goToJobBtn) {
+    goToJobBtn.href = `../contracts/contracts.html?builder=${currentBuilderId}&job=${jobId}`;
+  }
+  if (goToJobBtnFromActions) {
+    goToJobBtnFromActions.href = `../contracts/contracts.html?builder=${currentBuilderId}&job=${jobId}`;
   }
 }
 

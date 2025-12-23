@@ -2579,7 +2579,8 @@ input:focus, select:focus, textarea:focus{
   }
   
   /* Add padding to main content on mobile for bottom nav */
-  body[data-page="1099"] main {
+  body[data-page="1099"] main,
+  body[data-page="job-estimator"] main {
     padding-bottom: 80px;
   }
   
