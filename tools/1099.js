@@ -22,6 +22,7 @@ import {
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 import { db, auth, storage } from "../config.js";
+import { loadUserProfile, saveUserProfile, formatAddress } from "../profile-utils.js";
 
 /* -----------------------------
    Helpers
@@ -91,30 +92,51 @@ async function loadPayments() {
 async function loadPayerInfo() {
   if (!currentUid) return;
   try {
-    const docSnap = await getDoc(taxProfileDoc());
-    if (docSnap.exists()) {
-      payerInfo = docSnap.data();
-      populatePayerForm();
-      $("payerInfoCard").style.display = "block";
+    // First, try to load from standardized user profile
+    const userProfile = await loadUserProfile(currentUid);
+    
+    // Also check legacy taxProfile doc for backward compatibility
+    const taxProfileSnap = await getDoc(taxProfileDoc());
+    const legacyPayerInfo = taxProfileSnap.exists() ? taxProfileSnap.data() : null;
+    
+    // Prefer user profile if it exists, otherwise use legacy taxProfile
+    if (userProfile && (userProfile.companyName || userProfile.email)) {
+      // Convert user profile to payer info format
+      payerInfo = {
+        businessName: userProfile.companyName || legacyPayerInfo?.businessName || "",
+        phone: userProfile.phoneNumber || legacyPayerInfo?.phone || "",
+        address: userProfile.address?.street || legacyPayerInfo?.address || "",
+        city: userProfile.address?.city || legacyPayerInfo?.city || "",
+        state: userProfile.address?.state || legacyPayerInfo?.state || "",
+        zip: userProfile.address?.zip || legacyPayerInfo?.zip || "",
+        // TIN: only include if it exists and is non-empty (per requirements)
+        tin: (userProfile.taxpayerId && userProfile.taxpayerId.trim() !== "") 
+          ? userProfile.taxpayerId 
+          : (legacyPayerInfo?.tin && legacyPayerInfo.tin.trim() !== "" ? legacyPayerInfo.tin : "")
+      };
       
-      // On mobile, collapse payer info if it exists
-      if (isMobile() && payerInfo.businessName) {
-        collapsePayerInfo();
-      } else {
-        // On desktop or if no payer info, ensure form is visible
-        const form = $("payerInfoForm");
-        if (form) form.classList.remove("collapsed");
-        const summary = $("payerInfoSummary");
-        if (summary && !isMobile()) summary.style.display = "none";
-      }
+      // If we have profile data but no legacy taxProfile, we can optionally save it to taxProfile for backward compatibility
+      // But we'll use profile as source of truth going forward
+    } else if (legacyPayerInfo) {
+      // Fall back to legacy taxProfile
+      payerInfo = legacyPayerInfo;
     } else {
-      // Show form for first-time setup
-      $("payerInfoCard").style.display = "block";
-      // Hide summary if no payer info exists
-      const summary = $("payerInfoSummary");
-      if (summary) summary.style.display = "none";
+      payerInfo = null;
+    }
+    
+    // Populate form with payer info (even if some fields are empty)
+    populatePayerForm();
+    $("payerInfoCard").style.display = "block";
+    
+    // On mobile, collapse payer info if it exists
+    if (isMobile() && payerInfo && payerInfo.businessName) {
+      collapsePayerInfo();
+    } else {
+      // On desktop or if no payer info, ensure form is visible
       const form = $("payerInfoForm");
       if (form) form.classList.remove("collapsed");
+      const summary = $("payerInfoSummary");
+      if (summary && !isMobile()) summary.style.display = "none";
     }
   } catch (err) {
     console.error("Error loading payer info:", err);
@@ -382,10 +404,14 @@ function renderFormsHistory() {
 }
 
 function populatePayerForm() {
-  if (!payerInfo) return;
+  // Always populate form fields, even if payerInfo is null (will be empty strings)
+  if (!payerInfo) {
+    payerInfo = {};
+  }
   
   $("payerBusinessName").value = payerInfo.businessName || "";
-  $("payerTIN").value = payerInfo.tin || "";
+  // TIN: Only prefill if it exists and is non-empty (per requirements)
+  $("payerTIN").value = (payerInfo.tin && payerInfo.tin.trim() !== "") ? payerInfo.tin : "";
   $("payerAddress").value = payerInfo.address || "";
   $("payerCity").value = payerInfo.city || "";
   $("payerState").value = payerInfo.state || "";
@@ -488,15 +514,16 @@ async function savePayerInfo() {
   }
   
   const businessName = $("payerBusinessName").value.trim();
-  const tin = $("payerTIN").value.trim();
+  const tin = $("payerTIN").value.trim(); // Optional - can be empty
   const address = $("payerAddress").value.trim();
   const city = $("payerCity").value.trim();
   const state = $("payerState").value.trim();
   const zip = $("payerZip").value.trim();
   const phone = $("payerPhone").value.trim();
   
-  if (!businessName || !tin || !address || !city || !state || !zip) {
-    showMessage("Please fill in all required fields", true);
+  // TIN is optional, but other fields are required
+  if (!businessName || !address || !city || !state || !zip) {
+    showMessage("Please fill in all required fields (TIN is optional)", true);
     return;
   }
   
@@ -504,9 +531,28 @@ async function savePayerInfo() {
     const btn = $("savePayerInfoBtn");
     if (btn) btn.disabled = true;
     
+    // Load existing profile to merge
+    const existingProfile = await loadUserProfile(currentUid) || {};
+    
+    // Update standardized user profile
+    await saveUserProfile(currentUid, {
+      ...existingProfile,
+      companyName: businessName,
+      phoneNumber: phone || existingProfile.phoneNumber,
+      address: {
+        street: address,
+        city,
+        state,
+        zip
+      },
+      // Only update taxpayerId if TIN is provided
+      taxpayerId: tin || existingProfile.taxpayerId || null
+    });
+    
+    // Also update legacy taxProfile doc for backward compatibility
     const data = {
       businessName,
-      tin,
+      tin: tin || null, // Save null if empty
       address,
       city,
       state,

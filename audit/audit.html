@@ -34,6 +34,49 @@
     input, select, textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.14); }
     textarea { min-height: 90px; }
     .small { font-size: 12px; }
+    
+    /* Collapsible sections */
+    .audit-section-header { user-select: none; }
+    .audit-section-toggle { font-size: 12px; transition: transform 0.2s; }
+    .audit-section.collapsed .audit-section-toggle { transform: rotate(-90deg); }
+    .audit-section.collapsed .audit-section-content { display: none; }
+    .audit-section.collapsed .audit-section-header { margin-bottom: 0; }
+    
+    /* States checkbox grid */
+    .states-checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(0,0,0,0.14);
+      border-radius: 10px;
+      background: #fff;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .states-checkbox-grid label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .states-checkbox-grid label:hover {
+      background: rgba(0,0,0,0.04);
+    }
+    .states-checkbox-grid input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      .states-checkbox-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        max-height: 250px;
+      }
+    }
   </style>
 </head>
 
@@ -119,140 +162,178 @@
         supporting documents, and a short questionnaire.
       </p>
 
-      <!-- Business Information (Combined: Audit Period + Business Info) -->
-      <div class="card" style="margin-top: 20px;">
-        <h2 style="margin-top:0;" data-i18n="audit.businessTitle">1) Business information</h2>
-        <div class="grid">
-          <div class="col-6">
-            <label data-i18n="audit.businessName">Business Name</label>
-            <input id="businessName" type="text" placeholder="ABC Construction LLC" />
+      <!-- Business Information (Collapsible) -->
+      <div class="card audit-section" style="margin-top: 20px;" id="businessInfoSection">
+        <div class="audit-section-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 16px;">
+          <div>
+            <h2 style="margin:0;" data-i18n="audit.businessTitle">1) Business information</h2>
+            <div id="businessInfoSummary" class="small muted" style="display: none; margin-top: 4px;"></div>
           </div>
-          <div class="col-6">
-            <label data-i18n="audit.auditorEmail">Auditor Email</label>
-            <input id="auditorEmail" type="email" placeholder="agent@agency.com" />
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button id="businessInfoEditBtn" class="btn btn-secondary" type="button" style="display: none;">Edit</button>
+            <span class="audit-section-toggle" id="businessInfoToggle">▼</span>
           </div>
-          <div class="col-4">
-            <label data-i18n="audit.policyStart">Policy Start Date</label>
-            <input id="policyStart" type="date" />
-          </div>
-          <div class="col-4">
-            <label data-i18n="audit.policyEnd">Policy End Date</label>
-            <input id="policyEnd" type="date" />
-          </div>
-          <div class="col-4">
-            <label data-i18n="audit.policyNumber">Policy Number</label>
-            <input id="policyNumber" type="text" placeholder="POL-123456" />
-          </div>
-          <div class="col-6">
-            <label data-i18n="audit.taxId">Tax ID (EIN or SSN)</label>
-            <input id="taxId" type="text" placeholder="12-3456789" />
-          </div>
-          <div class="col-6">
-            <label data-i18n="audit.phone">Phone</label>
-            <input id="phone" type="text" placeholder="(555) 555-5555" />
-          </div>
-          <div class="col-6">
-            <label class="muted" data-i18n="audit.quickActions">Quick actions</label>
-            <div class="btn-row">
-              <button id="btnClear" class="btn btn-secondary" type="button" data-i18n="audit.clear">Clear</button>
+        </div>
+        
+        <div class="audit-section-content" id="businessInfoContent">
+          <div class="grid">
+            <!-- Autofilled fields (read-only display) -->
+            <div class="col-6">
+              <label>Business Name</label>
+              <input id="businessName" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-6">
+              <label>Email</label>
+              <input id="businessEmail" type="email" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-6">
+              <label>Phone</label>
+              <input id="phone" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-6">
+              <label>Tax ID (TIN/EIN/SSN)</label>
+              <input id="taxId" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-6">
+              <label>Street Address</label>
+              <input id="businessAddress" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-4">
+              <label>City</label>
+              <input id="businessCity" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-2">
+              <label>State</label>
+              <input id="businessState" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            <div class="col-4">
+              <label>ZIP Code</label>
+              <input id="businessZip" type="text" readonly style="background: #f5f5f5;" />
+            </div>
+            
+            <!-- Editable policy fields -->
+            <div class="col-12" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.1);">
+              <h3 style="margin:0 0 12px 0; font-size: 1.1rem;">Policy Information</h3>
+            </div>
+            <div class="col-4">
+              <label data-i18n="audit.policyStart">Policy Start Date *</label>
+              <input id="policyStart" type="date" required />
+            </div>
+            <div class="col-4">
+              <label data-i18n="audit.policyEnd">Policy End Date *</label>
+              <input id="policyEnd" type="date" required />
+            </div>
+            <div class="col-4">
+              <label data-i18n="audit.policyNumber">Policy Number *</label>
+              <input id="policyNumber" type="text" placeholder="POL-123456" required />
+            </div>
+            <div class="col-6">
+              <label data-i18n="audit.auditorEmail">Auditor Email</label>
+              <input id="auditorEmail" type="email" placeholder="agent@agency.com" />
             </div>
           </div>
-        </div>
-        <div id="periodMsg" class="small muted" style="margin-top:10px;"></div>
-      </div>
-
-      <!-- Questionnaire -->
-      <div class="card" style="margin-top: 20px;">
-      <h2 style="margin-top:0;" data-i18n="audit.questionnaireTitle">2) Audit questionnaire</h2>
-      <p class="muted" style="margin-bottom: 12px;" data-i18n="audit.questionnaireDesc">Answer these questions to help complete your audit package.</p>
-      <div class="grid">
-        <div class="col-6">
-          <label data-i18n="audit.qCash">Were any payments made in cash?</label>
-          <select id="qCash">
-            <option value="">Select</option>
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <label data-i18n="audit.qCashExplain">If yes, explain</label>
-          <textarea id="qCashExplain" placeholder="Example: Occasional weekend labor, approx $300-$600/month"></textarea>
-        </div>
-
-        <div class="col-6">
-          <label data-i18n="audit.qSubs">Did you pay any subcontractors (1099)?</label>
-          <select id="qSubs">
-            <option value="">Select</option>
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <label data-i18n="audit.qCOI">Did you collect COIs from subcontractors?</label>
-          <select id="qCOI">
-            <option value="">Select</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-            <option value="some">Some</option>
-          </select>
-        </div>
-
-        <div class="col-6">
-          <label data-i18n="audit.qOwnerLabor">Did you perform any owner labor?</label>
-          <select id="qOwnerLabor">
-            <option value="">Select</option>
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <label data-i18n="audit.qChanges">Any changes to your business during the period?</label>
-          <textarea id="qChanges" placeholder="Example: Added painting services; hired 2 new workers"></textarea>
-        </div>
-
-        <div class="col-12">
-          <label data-i18n="audit.qNotes">Additional notes for auditor (optional)</label>
-          <textarea id="qNotes" placeholder="Anything you'd like to clarify for the audit"></textarea>
+          
+          <div class="btn-row" style="margin-top: 16px;">
+            <button id="btnSaveBusinessInfo" class="btn btn-primary" type="button">Save Business Information</button>
+            <span id="businessInfoMsg" class="small muted"></span>
+          </div>
+          <div id="businessInfoError" class="small danger" style="margin-top: 8px;"></div>
         </div>
       </div>
 
-      <div class="btn-row" style="margin-top: 10px;">
-        <button id="btnSaveQuestionnaire" class="btn btn-secondary" type="button" data-i18n="audit.saveQuestionnaire">Save questionnaire</button>
-        <span id="qMsg" class="small muted"></span>
-      </div>
-      </div>
-
-      <!-- Payroll Summary -->
-      <div class="card" style="margin-top: 20px;">
-      <div class="row-between" style="margin-bottom: 12px;">
-        <div>
-          <h2 style="margin-top:0;" data-i18n="audit.payrollTitle">3) Payroll summary</h2>
-          <p class="muted" data-i18n="audit.payrollDesc">Summary of payroll entries for the audit period</p>
+      <!-- Questionnaire (Collapsible) -->
+      <div class="card audit-section" style="margin-top: 20px;" id="questionnaireSection">
+        <div class="audit-section-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 16px;">
+          <div>
+            <h2 style="margin:0;" data-i18n="audit.questionnaireTitle">2) Audit questionnaire</h2>
+            <div id="questionnaireSummary" class="small muted" style="display: none; margin-top: 4px;"></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button id="questionnaireEditBtn" class="btn btn-secondary" type="button" style="display: none;">Edit</button>
+            <span class="audit-section-toggle" id="questionnaireToggle">▼</span>
+          </div>
         </div>
-        <button id="btnLoadPayroll" class="btn btn-secondary" type="button" data-i18n="audit.loadPayroll">Load payroll summary</button>
-      </div>
-      <div id="payrollStatus" class="small muted"></div>
+        
+        <div class="audit-section-content" id="questionnaireContent">
+          <p class="muted" style="margin-bottom: 12px;" data-i18n="audit.questionnaireDesc">Answer these questions to help complete your audit package.</p>
+          
+          <div class="grid">
+            <div class="col-12">
+              <label>Type of work performed during the policy period *</label>
+              <textarea id="qWorkType" required placeholder="Describe the types of work you performed (e.g., construction, remodeling, painting, etc.)"></textarea>
+            </div>
 
-      <div style="overflow:auto; margin-top: 10px;">
-        <table id="payrollTable" aria-label="Payroll summary table">
-          <thead>
-            <tr>
-              <th data-i18n="audit.tableWorker">Worker</th>
-              <th data-i18n="audit.tablePaymentType">Payment Type</th>
-              <th data-i18n="audit.tableTotalPaid">Total Paid</th>
-              <th data-i18n="audit.tablePayments"># Payments</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2"><b data-i18n="audit.tableGrandTotal">Grand Total</b></td>
-              <td id="grandTotal"><b>$0.00</b></td>
-              <td id="grandCount"><b>0</b></td>
-            </tr>
-          </tfoot>
-        </table>
+            <div class="col-12">
+              <label>Did you use subcontractors with their own insurance during the policy period? *</label>
+              <select id="qSubcontractors" required>
+                <option value="">Select</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+
+            <!-- Conditional COI upload (shown when Yes) -->
+            <div class="col-12" id="coiUploadSection" style="display: none;">
+              <label>Subcontractors' Certificates of Insurance (COI)</label>
+              <input id="coiFiles" type="file" multiple accept=".pdf,.png,.jpg,.jpeg" />
+              <div class="small muted" style="margin-top: 4px;">You can upload multiple COI files</div>
+              <div id="coiUploadedList" style="margin-top: 12px;"></div>
+            </div>
+
+            <div class="col-12">
+              <label>Which states did you work in during the policy period? *</label>
+              <div id="statesCheckboxGrid" class="states-checkbox-grid" style="margin-top: 8px;">
+                <!-- Will be populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row" style="margin-top: 16px;">
+            <button id="btnSaveQuestionnaire" class="btn btn-primary" type="button" data-i18n="audit.saveQuestionnaire">Save Questionnaire</button>
+            <span id="qMsg" class="small muted"></span>
+          </div>
+          <div id="questionnaireError" class="small danger" style="margin-top: 8px;"></div>
+        </div>
       </div>
+
+      <!-- Payroll Summary (Collapsible) -->
+      <div class="card audit-section" style="margin-top: 20px;" id="payrollSection">
+        <div class="audit-section-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 12px;">
+          <div>
+            <h2 style="margin:0;" data-i18n="audit.payrollTitle">3) Payroll summary</h2>
+            <div id="payrollSummary" class="small muted" style="display: none; margin-top: 4px;"></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button id="btnLoadPayroll" class="btn btn-secondary" type="button" data-i18n="audit.loadPayroll">Load payroll summary</button>
+            <span class="audit-section-toggle" id="payrollToggle">▼</span>
+          </div>
+        </div>
+        
+        <div class="audit-section-content" id="payrollContent">
+          <p class="muted" style="margin-bottom: 12px;" data-i18n="audit.payrollDesc">Summary of payroll entries for the audit period</p>
+          <div id="payrollStatus" class="small muted" style="margin-bottom: 10px;"></div>
+
+          <div style="overflow:auto; margin-top: 10px;">
+            <table id="payrollTable" aria-label="Payroll summary table">
+              <thead>
+                <tr>
+                  <th data-i18n="audit.tableWorker">Worker</th>
+                  <th data-i18n="audit.tablePaymentType">Payment Type</th>
+                  <th data-i18n="audit.tableTotalPaid">Total Paid</th>
+                  <th data-i18n="audit.tablePayments"># Payments</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2"><b data-i18n="audit.tableGrandTotal">Grand Total</b></td>
+                  <td id="grandTotal"><b>$0.00</b></td>
+                  <td id="grandCount"><b>0</b></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Document Uploads -->

@@ -28,6 +28,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js";
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { loadUserProfile, formatAddress, getUSStates } from "../profile-utils.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -39,6 +40,7 @@ let currentUser = null; // Firebase Auth user object
 let payrollData = []; // Filtered payroll entries
 let uploadedFiles = []; // { type, fileName, filePath, downloadURL }
 let auditData = null; // Saved audit data
+let coiFiles = []; // Subcontractor COI files: { name, url, uploadedAt }
 
 // Helpers
 function money(n) {
@@ -53,28 +55,172 @@ function setMsg(elId, text, isError = false) {
   el.className = isError ? "small danger" : "small muted";
 }
 
+// Get audit document reference
+function getAuditDocRef(uid) {
+  return doc(db, "audits", uid);
+}
+
+// Collapsible section helpers
+function toggleSection(sectionId) {
+  const section = $(sectionId);
+  if (!section) return;
+  
+  const isCollapsed = section.classList.contains("collapsed");
+  if (isCollapsed) {
+    section.classList.remove("collapsed");
+  } else {
+    section.classList.add("collapsed");
+  }
+}
+
+function collapseSection(sectionId) {
+  const section = $(sectionId);
+  if (section) {
+    section.classList.add("collapsed");
+  }
+}
+
+function expandSection(sectionId) {
+  const section = $(sectionId);
+  if (section) {
+    section.classList.remove("collapsed");
+  }
+}
+
+// Autofill business info from user profile
+async function autofillBusinessInfo() {
+  if (!currentUid) return;
+  
+  try {
+    const profile = await loadUserProfile(currentUid);
+    if (!profile) return;
+    
+    // Fill read-only fields
+    if ($("businessName")) $("businessName").value = profile.companyName || "";
+    if ($("businessEmail")) $("businessEmail").value = profile.email || "";
+    if ($("phone")) $("phone").value = profile.phoneNumber || "";
+    if ($("taxId")) $("taxId").value = profile.taxpayerId || "";
+    
+    // Fill address fields
+    if (profile.address) {
+      if ($("businessAddress")) $("businessAddress").value = profile.address.street || "";
+      if ($("businessCity")) $("businessCity").value = profile.address.city || "";
+      if ($("businessState")) $("businessState").value = profile.address.state || "";
+      if ($("businessZip")) $("businessZip").value = profile.address.zip || "";
+    }
+  } catch (err) {
+    console.error("Error autofilling business info:", err);
+  }
+}
+
+// Save business information
+async function saveBusinessInfo() {
+  if (!currentUid) {
+    setMsg("businessInfoError", "Please sign in first.", true);
+    return;
+  }
+  
+  const policyNumber = ($("policyNumber")?.value || "").trim();
+  const policyStart = $("policyStart")?.value || "";
+  const policyEnd = $("policyEnd")?.value || "";
+  const auditorEmail = ($("auditorEmail")?.value || "").trim();
+  
+  // Validation
+  if (!policyNumber || !policyStart || !policyEnd) {
+    setMsg("businessInfoError", "Please fill in all required policy fields (Policy Number, Start Date, End Date).", true);
+    return;
+  }
+  
+  if (new Date(policyStart) > new Date(policyEnd)) {
+    setMsg("businessInfoError", "End date must be on or after start date.", true);
+    return;
+  }
+  
+  const btn = $("btnSaveBusinessInfo");
+  const oldDisabled = btn?.disabled;
+  
+  try {
+    if (btn) btn.disabled = true;
+    setMsg("businessInfoMsg", "Saving...");
+    setMsg("businessInfoError", "");
+    
+    // Get current profile data for snapshot
+    const profile = await loadUserProfile(currentUid) || {};
+    
+    // Save to audits/{uid}
+    const auditRef = getAuditDocRef(currentUid);
+    await setDoc(auditRef, {
+      businessSnapshot: {
+        companyName: profile.companyName || "",
+        email: profile.email || "",
+        phoneNumber: profile.phoneNumber || "",
+        address: profile.address || {},
+        taxpayerId: profile.taxpayerId || ""
+      },
+      policy: {
+        policyNumber,
+        startDate: policyStart,
+        endDate: policyEnd
+      },
+      auditorEmail: auditorEmail || null,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    
+    // Update summary and collapse
+    updateBusinessInfoSummary();
+    collapseSection("businessInfoSection");
+    if ($("businessInfoEditBtn")) $("businessInfoEditBtn").style.display = "inline-block";
+    
+    setMsg("businessInfoMsg", "Business information saved successfully!");
+    setTimeout(() => setMsg("businessInfoMsg", ""), 3000);
+  } catch (err) {
+    console.error("Error saving business info:", err);
+    setMsg("businessInfoError", "Failed to save. Please try again.", true);
+  } finally {
+    if (btn) btn.disabled = oldDisabled;
+  }
+}
+
+// Update business info summary
+function updateBusinessInfoSummary() {
+  const summary = $("businessInfoSummary");
+  if (!summary) return;
+  
+  const policyNumber = $("policyNumber")?.value || "";
+  const policyStart = $("policyStart")?.value || "";
+  const policyEnd = $("policyEnd")?.value || "";
+  const companyName = $("businessName")?.value || "";
+  
+  if (policyNumber && policyStart && policyEnd) {
+    const startDate = new Date(policyStart).toLocaleDateString();
+    const endDate = new Date(policyEnd).toLocaleDateString();
+    summary.textContent = `${companyName} • Policy: ${policyNumber} • ${startDate} - ${endDate}`;
+    summary.style.display = "block";
+  }
+}
+
 // Audit period validation
 function validatePeriod() {
   const start = $("policyStart").value;
   const end = $("policyEnd").value;
   
   if (!start || !end) {
-    setMsg("periodMsg", "Please enter both start and end dates.");
     return false;
   }
   
   if (new Date(start) > new Date(end)) {
-    setMsg("periodMsg", "Start date must be before end date.");
     return false;
   }
   
-  setMsg("periodMsg", "");
   return true;
 }
 
 // Load payroll summary
 async function loadPayrollSummary() {
-  if (!validatePeriod()) return;
+  if (!validatePeriod()) {
+    setMsg("payrollStatus", "Please set policy start and end dates first.", true);
+    return;
+  }
   
   const start = $("policyStart").value;
   const end = $("policyEnd").value;
@@ -154,6 +300,12 @@ async function loadPayrollSummary() {
     $("grandCount").innerHTML = `<b>${grandCount}</b>`;
     
     setMsg("payrollStatus", `Loaded ${entries.length} entries, ${payrollData.length} unique worker/method combinations.`);
+    
+    // Update summary and expand section if has data
+    updatePayrollSummary();
+    if (payrollData.length > 0) {
+      expandSection("payrollSection");
+    }
   } catch (err) {
     console.error(err);
     setMsg("payrollStatus", "Error loading payroll data. Please check your dates and try again.", true);
@@ -270,34 +422,225 @@ window.removeFile = function(filePath) {
   renderUploadedList();
 };
 
-// Save questionnaire
-async function saveQuestionnaire() {
-  if (!currentUid) {
-    setMsg("qMsg", "Please sign in first.", true);
+// Initialize states checkbox grid
+function initStatesCheckboxGrid() {
+  const container = $("statesCheckboxGrid");
+  if (!container) return;
+  
+  const states = getUSStates();
+  container.innerHTML = states.map(state => `
+    <label>
+      <input type="checkbox" value="${state.code}" class="state-checkbox" />
+      <span>${state.name}</span>
+    </label>
+  `).join("");
+}
+
+// Get selected states
+function getSelectedStates() {
+  const checkboxes = document.querySelectorAll(".state-checkbox:checked");
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Set selected states
+function setSelectedStates(states) {
+  if (!Array.isArray(states)) return;
+  const checkboxes = document.querySelectorAll(".state-checkbox");
+  checkboxes.forEach(cb => {
+    cb.checked = states.includes(cb.value);
+  });
+}
+
+// Handle subcontractors Yes/No change
+function handleSubcontractorsChange() {
+  const value = $("qSubcontractors")?.value;
+  const coiSection = $("coiUploadSection");
+  if (coiSection) {
+    coiSection.style.display = value === "yes" ? "block" : "none";
+  }
+}
+
+// Upload COI files
+async function uploadCOIFiles() {
+  if (!currentUid) return;
+  
+  const fileInput = $("coiFiles");
+  const files = Array.from(fileInput?.files || []);
+  if (files.length === 0) return;
+  
+  const listContainer = $("coiUploadedList");
+  if (listContainer) {
+    listContainer.innerHTML = "<div class='small muted'>Uploading...</div>";
+  }
+  
+  try {
+    const uploadPromises = files.map(async (file) => {
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const timestamp = Date.now();
+      const path = `audits/${currentUid}/coi/${timestamp}_${safeName}`;
+      const storageRef = ref(storage, path);
+      
+      await uploadBytes(storageRef, file, {
+        contentType: file.type || "application/pdf"
+      });
+      
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      return {
+        name: file.name,
+        url: downloadURL,
+        uploadedAt: timestamp,
+        path: path
+      };
+    });
+    
+    const uploaded = await Promise.all(uploadPromises);
+    coiFiles.push(...uploaded);
+    
+    renderCOIUploadedList();
+    
+    // Clear file input
+    if (fileInput) fileInput.value = "";
+  } catch (err) {
+    console.error("Error uploading COI files:", err);
+    if (listContainer) {
+      listContainer.innerHTML = "<div class='small danger'>Upload failed. Please try again.</div>";
+    }
+  }
+}
+
+// Render uploaded COI files list
+function renderCOIUploadedList() {
+  const container = $("coiUploadedList");
+  if (!container) return;
+  
+  if (coiFiles.length === 0) {
+    container.innerHTML = "";
     return;
   }
   
-  const questionnaire = {
-    qCash: $("qCash").value || "",
-    qCashExplain: $("qCashExplain").value || "",
-    qSubs: $("qSubs").value || "",
-    qCOI: $("qCOI").value || "",
-    qOwnerLabor: $("qOwnerLabor").value || "",
-    qChanges: $("qChanges").value || "",
-    qNotes: $("qNotes").value || ""
-  };
+  container.innerHTML = coiFiles.map((file, idx) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f5f5f5; border-radius: 6px; margin-bottom: 6px;">
+      <div>
+        <a href="${file.url}" target="_blank" style="color: #111; text-decoration: underline;">${file.name}</a>
+      </div>
+      <button onclick="removeCOIFile(${idx})" style="padding: 4px 8px; font-size: 11px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer;">Remove</button>
+    </div>
+  `).join("");
+}
+
+// Make removeCOIFile available globally
+window.removeCOIFile = function(idx) {
+  coiFiles.splice(idx, 1);
+  renderCOIUploadedList();
+};
+
+// Save questionnaire
+async function saveQuestionnaire() {
+  if (!currentUid) {
+    setMsg("questionnaireError", "Please sign in first.", true);
+    return;
+  }
+  
+  const workType = ($("qWorkType")?.value || "").trim();
+  const usedSubcontractors = $("qSubcontractors")?.value || "";
+  const workedStates = getSelectedStates();
+  
+  // Validation
+  if (!workType) {
+    setMsg("questionnaireError", "Please describe the type of work performed.", true);
+    return;
+  }
+  
+  if (!usedSubcontractors) {
+    setMsg("questionnaireError", "Please answer whether you used subcontractors with insurance.", true);
+    return;
+  }
+  
+  if (usedSubcontractors === "yes" && coiFiles.length === 0) {
+    setMsg("questionnaireError", "Please upload at least one COI file when subcontractors are used.", true);
+    return;
+  }
+  
+  if (workedStates.length === 0) {
+    setMsg("questionnaireError", "Please select at least one state where you worked.", true);
+    return;
+  }
+  
+  const btn = $("btnSaveQuestionnaire");
+  const oldDisabled = btn?.disabled;
   
   try {
-    const auditRef = doc(db, "users", currentUid, "audit", "current");
+    if (btn) btn.disabled = true;
+    setMsg("qMsg", "Saving...");
+    setMsg("questionnaireError", "");
+    
+    const questionnaire = {
+      workTypeDescription: workType,
+      usedInsuredSubcontractors: usedSubcontractors === "yes",
+      workedStates: workedStates,
+      coiFiles: coiFiles.map(f => ({
+        name: f.name,
+        url: f.url,
+        uploadedAt: f.uploadedAt
+      }))
+    };
+    
+    const auditRef = getAuditDocRef(currentUid);
     await setDoc(auditRef, {
       questionnaire,
       updatedAt: serverTimestamp()
     }, { merge: true });
     
-    setMsg("qMsg", "Questionnaire saved.");
+    // Update summary and collapse
+    updateQuestionnaireSummary();
+    collapseSection("questionnaireSection");
+    if ($("questionnaireEditBtn")) $("questionnaireEditBtn").style.display = "inline-block";
+    
+    setMsg("qMsg", "Questionnaire saved successfully!");
+    setTimeout(() => setMsg("qMsg", ""), 3000);
   } catch (err) {
     console.error(err);
-    setMsg("qMsg", "Failed to save questionnaire.", true);
+    setMsg("questionnaireError", "Failed to save questionnaire. Please try again.", true);
+  } finally {
+    if (btn) btn.disabled = oldDisabled;
+  }
+}
+
+// Update questionnaire summary
+function updateQuestionnaireSummary() {
+  const summary = $("questionnaireSummary");
+  if (!summary) return;
+  
+  const workType = ($("qWorkType")?.value || "").trim();
+  const usedSubcontractors = $("qSubcontractors")?.value || "";
+  const workedStates = getSelectedStates();
+  
+  if (workType && usedSubcontractors && workedStates.length > 0) {
+    const workTypePreview = workType.length > 40 ? workType.substring(0, 40) + "..." : workType;
+    const subcontractorsText = usedSubcontractors === "yes" ? "Yes" : "No";
+    const statesText = workedStates.map(code => {
+      const state = getUSStates().find(s => s.code === code);
+      return state ? state.name : code;
+    }).join(", ");
+    
+    summary.textContent = `Work: ${workTypePreview} • Subcontractors: ${subcontractorsText} • States: ${statesText}`;
+    summary.style.display = "block";
+  }
+}
+
+// Update payroll summary display
+function updatePayrollSummary() {
+  const summary = $("payrollSummary");
+  if (!summary) return;
+  
+  if (payrollData.length > 0) {
+    const grandTotal = payrollData.reduce((sum, row) => sum + row.total, 0);
+    summary.textContent = `Total Payroll: ${money(grandTotal)}`;
+    summary.style.display = "block";
+  } else {
+    summary.textContent = "No payroll data loaded";
+    summary.style.display = "block";
   }
 }
 
@@ -306,31 +649,52 @@ async function loadAuditData() {
   if (!currentUid) return;
   
   try {
-    const auditRef = doc(db, "users", currentUid, "audit", "current");
+    const auditRef = getAuditDocRef(currentUid);
     const snap = await getDoc(auditRef);
     
     if (snap.exists()) {
       auditData = snap.data();
       
-      // Populate form fields if they exist
-      if (auditData.questionnaire) {
-        const q = auditData.questionnaire;
-        if (q.qCash) $("qCash").value = q.qCash;
-        if (q.qCashExplain) $("qCashExplain").value = q.qCashExplain;
-        if (q.qSubs) $("qSubs").value = q.qSubs;
-        if (q.qCOI) $("qCOI").value = q.qCOI;
-        if (q.qOwnerLabor) $("qOwnerLabor").value = q.qOwnerLabor;
-        if (q.qChanges) $("qChanges").value = q.qChanges;
-        if (q.qNotes) $("qNotes").value = q.qNotes;
+      // Load policy data
+      if (auditData.policy) {
+        if ($("policyStart")) $("policyStart").value = auditData.policy.startDate || "";
+        if ($("policyEnd")) $("policyEnd").value = auditData.policy.endDate || "";
+        if ($("policyNumber")) $("policyNumber").value = auditData.policy.policyNumber || "";
       }
       
-      if (auditData.policyStart) $("policyStart").value = auditData.policyStart;
-      if (auditData.policyEnd) $("policyEnd").value = auditData.policyEnd;
-      if (auditData.businessName) $("businessName").value = auditData.businessName;
-      if (auditData.auditorEmail) $("auditorEmail").value = auditData.auditorEmail;
-      if (auditData.phone) $("phone").value = auditData.phone;
-      if (auditData.policyNumber) $("policyNumber").value = auditData.policyNumber;
-      if (auditData.taxId) $("taxId").value = auditData.taxId;
+      if (auditData.auditorEmail && $("auditorEmail")) {
+        $("auditorEmail").value = auditData.auditorEmail;
+      }
+      
+      // Load questionnaire data
+      if (auditData.questionnaire) {
+        const q = auditData.questionnaire;
+        if ($("qWorkType")) $("qWorkType").value = q.workTypeDescription || "";
+        if ($("qSubcontractors")) {
+          $("qSubcontractors").value = q.usedInsuredSubcontractors ? "yes" : "no";
+          handleSubcontractorsChange();
+        }
+        if (q.workedStates && Array.isArray(q.workedStates)) {
+          setSelectedStates(q.workedStates);
+        }
+        if (q.coiFiles && Array.isArray(q.coiFiles)) {
+          coiFiles = q.coiFiles;
+          renderCOIUploadedList();
+        }
+      }
+      
+      // Update summaries and collapse sections if data exists
+      if (auditData.policy && auditData.policy.policyNumber) {
+        updateBusinessInfoSummary();
+        collapseSection("businessInfoSection");
+        if ($("businessInfoEditBtn")) $("businessInfoEditBtn").style.display = "inline-block";
+      }
+      
+      if (auditData.questionnaire && auditData.questionnaire.workTypeDescription) {
+        updateQuestionnaireSummary();
+        collapseSection("questionnaireSection");
+        if ($("questionnaireEditBtn")) $("questionnaireEditBtn").style.display = "inline-block";
+      }
       
       if (auditData.uploadedFiles && Array.isArray(auditData.uploadedFiles)) {
         uploadedFiles = auditData.uploadedFiles;
@@ -363,14 +727,21 @@ function generatePDF() {
   // Business Info
   const businessName = $("businessName").value || "Business Name";
   const phone = $("phone").value || "";
-  const copyEmail = currentUser?.email || "";
+  const copyEmail = $("businessEmail").value || currentUser?.email || "";
   const policyNumber = $("policyNumber").value || "";
   const taxId = $("taxId").value || "";
+  const businessAddress = $("businessAddress").value || "";
+  const businessCity = $("businessCity").value || "";
+  const businessState = $("businessState").value || "";
+  const businessZip = $("businessZip").value || "";
   
   docPdf.setFontSize(12);
   docPdf.text(businessName, left, y);
   y += 6;
   docPdf.setFontSize(10);
+  if (businessAddress) { docPdf.text(businessAddress, left, y); y += 5; }
+  const cityStateZip = [businessCity, businessState, businessZip].filter(Boolean).join(", ");
+  if (cityStateZip) { docPdf.text(cityStateZip, left, y); y += 5; }
   if (phone) { docPdf.text(`Phone: ${phone}`, left, y); y += 5; }
   if (copyEmail) { docPdf.text(`Email: ${copyEmail}`, left, y); y += 5; }
   if (policyNumber) { docPdf.text(`Policy Number: ${policyNumber}`, left, y); y += 5; }
@@ -425,15 +796,27 @@ function generatePDF() {
   y += 8;
   docPdf.setFontSize(10);
   
+  const workType = $("qWorkType")?.value || "N/A";
+  const usedSubcontractors = $("qSubcontractors")?.value || "N/A";
+  const workedStates = getSelectedStates();
+  const statesText = workedStates.length > 0 
+    ? workedStates.map(code => {
+        const state = getUSStates().find(s => s.code === code);
+        return state ? state.name : code;
+      }).join(", ")
+    : "N/A";
+  
   const questions = [
-    ["Did you pay any workers in cash?", $("qCash").value || "N/A"],
-    ["Cash payment details:", $("qCashExplain").value || "N/A"],
-    ["Did you use subcontractors (1099)?", $("qSubs").value || "N/A"],
-    ["Were subcontractors insured / COIs collected?", $("qCOI").value || "N/A"],
-    ["Did the owner perform hands-on labor?", $("qOwnerLabor").value || "N/A"],
-    ["Changes in business operations:", $("qChanges").value || "N/A"],
-    ["Additional notes:", $("qNotes").value || "N/A"]
+    ["Type of work performed during the policy period:", workType],
+    ["Did you use subcontractors with their own insurance?", usedSubcontractors === "yes" ? "Yes" : usedSubcontractors === "no" ? "No" : "N/A"],
+    ["Which states did you work in during the policy period?", statesText]
   ];
+  
+  // Add COI files info if applicable
+  if (usedSubcontractors === "yes" && coiFiles.length > 0) {
+    const coiFileNames = coiFiles.map(f => f.name).join(", ");
+    questions.push(["Subcontractors' Certificates of Insurance uploaded:", `${coiFiles.length} file(s): ${coiFileNames}`]);
+  }
   
   questions.forEach(([label, value]) => {
     docPdf.setFont(undefined, "bold");
@@ -477,6 +860,39 @@ async function emailAuditPackage() {
   // Save all data first
   await saveQuestionnaire();
   
+  // Collect questionnaire data
+  const questionnaire = {
+    workTypeDescription: ($("qWorkType")?.value || "").trim(),
+    usedInsuredSubcontractors: $("qSubcontractors")?.value === "yes",
+    workedStates: getSelectedStates(),
+    coiFiles: coiFiles.map(f => ({
+      name: f.name,
+      url: f.url,
+      uploadedAt: f.uploadedAt
+    }))
+  };
+  
+  // Save to Firestore (update existing audit doc)
+  const auditRef = getAuditDocRef(currentUid);
+  await setDoc(auditRef, {
+    policy: {
+      policyNumber: $("policyNumber").value || "",
+      startDate: $("policyStart").value || "",
+      endDate: $("policyEnd").value || ""
+    },
+    auditorEmail: $("auditorEmail").value.trim() || null,
+    questionnaire,
+    payrollSummary: payrollData,
+    uploadedFiles: uploadedFiles.map(f => ({
+      type: f.type,
+      fileName: f.fileName,
+      filePath: f.filePath,
+      downloadURL: f.downloadURL
+    })),
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+  
+  // Legacy format for Cloud Function compatibility
   const auditPackage = {
     policyStart: $("policyStart").value,
     policyEnd: $("policyEnd").value,
@@ -487,15 +903,7 @@ async function emailAuditPackage() {
     policyNumber: $("policyNumber").value || "",
     taxId: $("taxId").value || "",
     payrollSummary: payrollData,
-    questionnaire: {
-      qCash: $("qCash").value || "",
-      qCashExplain: $("qCashExplain").value || "",
-      qSubs: $("qSubs").value || "",
-      qCOI: $("qCOI").value || "",
-      qOwnerLabor: $("qOwnerLabor").value || "",
-      qChanges: $("qChanges").value || "",
-      qNotes: $("qNotes").value || ""
-    },
+    questionnaire,
     uploadedFiles: uploadedFiles.map(f => ({
       type: f.type,
       fileName: f.fileName,
@@ -503,13 +911,6 @@ async function emailAuditPackage() {
       downloadURL: f.downloadURL
     }))
   };
-  
-  // Save to Firestore
-  const auditRef = doc(db, "users", currentUid, "audit", "current");
-  await setDoc(auditRef, {
-    ...auditPackage,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
   
   // Call Cloud Function (if it exists)
   try {
@@ -535,56 +936,77 @@ async function emailAuditPackage() {
   }
 }
 
-// Clear form
-function clearForm() {
-  $("policyStart").value = "";
-  $("policyEnd").value = "";
-  $("businessName").value = "";
-  $("auditorEmail").value = "";
-  $("phone").value = "";
-  $("policyNumber").value = "";
-  $("taxId").value = "";
-  $("qCash").value = "";
-  $("qCashExplain").value = "";
-  $("qSubs").value = "";
-  $("qCOI").value = "";
-  $("qOwnerLabor").value = "";
-  $("qChanges").value = "";
-  $("qNotes").value = "";
-  
-  payrollData = [];
-  uploadedFiles = [];
-  
-  const tbody = $("payrollTable").querySelector("tbody");
-  tbody.innerHTML = '<td colspan="4" class="muted">No data loaded.</td>';
-  $("grandTotal").innerHTML = "<b>$0.00</b>";
-  $("grandCount").innerHTML = "<b>0</b>";
-  
-  renderUploadedList();
-  
-  setMsg("periodMsg", "");
-  setMsg("payrollStatus", "");
-  setMsg("uploadMsg", "");
-  setMsg("qMsg", "");
-  setMsg("finalMsg", "");
-  setMsg("finalErr", "");
-}
 
 // Initialize
 function init() {
+  // Initialize states checkbox grid
+  initStatesCheckboxGrid();
+  
   // Event listeners
   $("btnLoadPayroll").addEventListener("click", loadPayrollSummary);
-  $("btnClear").addEventListener("click", clearForm);
   $("btnUploadDocs").addEventListener("click", uploadDocuments);
   $("btnSaveQuestionnaire").addEventListener("click", saveQuestionnaire);
+  $("btnSaveBusinessInfo").addEventListener("click", saveBusinessInfo);
   $("btnGeneratePdf").addEventListener("click", generatePDF);
   $("btnEmailPackage").addEventListener("click", emailAuditPackage);
+  
+  // Section toggle handlers
+  if ($("businessInfoSection")) {
+    const header = $("businessInfoSection").querySelector(".audit-section-header");
+    if (header) {
+      header.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return; // Don't toggle if clicking Edit button
+        toggleSection("businessInfoSection");
+      });
+    }
+    if ($("businessInfoEditBtn")) {
+      $("businessInfoEditBtn").addEventListener("click", () => {
+        expandSection("businessInfoSection");
+      });
+    }
+  }
+  
+  if ($("questionnaireSection")) {
+    const header = $("questionnaireSection").querySelector(".audit-section-header");
+    if (header) {
+      header.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        toggleSection("questionnaireSection");
+      });
+    }
+    if ($("questionnaireEditBtn")) {
+      $("questionnaireEditBtn").addEventListener("click", () => {
+        expandSection("questionnaireSection");
+      });
+    }
+  }
+  
+  if ($("payrollSection")) {
+    const header = $("payrollSection").querySelector(".audit-section-header");
+    if (header) {
+      header.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return; // Don't toggle if clicking Load button
+        toggleSection("payrollSection");
+      });
+    }
+  }
+  
+  // Subcontractors change handler
+  if ($("qSubcontractors")) {
+    $("qSubcontractors").addEventListener("change", handleSubcontractorsChange);
+  }
+  
+  // COI file upload handler
+  if ($("coiFiles")) {
+    $("coiFiles").addEventListener("change", uploadCOIFiles);
+  }
   
   // Auth state listener
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUid = user.uid;
       currentUser = user;
+      await autofillBusinessInfo();
       await loadAuditData();
     } else {
       currentUid = null;

@@ -29,9 +29,19 @@ import {
 const $ = (id) => document.getElementById(id);
 
 import { storage } from "../config.js";
+import { 
+  loadUserProfile, 
+  saveUserProfile, 
+  validatePhone, 
+  validateZip, 
+  validateState, 
+  validateTIN,
+  getUSStates 
+} from "../profile-utils.js";
 
 let currentUser = null;
 let currentProfile = null;
+let userProfileData = null; // Stores standardized profile from users/{uid}
 
 // Initialize page
 onAuthStateChanged(auth, async (user) => {
@@ -64,10 +74,12 @@ async function loadProfile() {
   if (!currentUser) return;
 
   try {
-    // Load profile from Firestore
+    // Load standardized profile from users/{uid}
+    userProfileData = await loadUserProfile(currentUser.uid);
+    
+    // Also load legacy profile from private/profile for backward compatibility
     const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
     const profileSnap = await getDoc(profileRef);
-    
     currentProfile = profileSnap.exists() ? profileSnap.data() : {};
     
     // Display current email
@@ -75,7 +87,42 @@ async function loadProfile() {
     
     // Display current name if name field exists
     if ($("userName")) {
-      $("userName").value = currentProfile.name || currentUser.displayName || "";
+      $("userName").value = currentProfile.name || userProfileData?.companyName || currentUser.displayName || "";
+    }
+    
+    // Populate contact & address fields
+    if ($("profilePhoneNumber")) {
+      $("profilePhoneNumber").value = userProfileData?.phoneNumber || "";
+    }
+    if ($("profileAddressStreet")) {
+      $("profileAddressStreet").value = userProfileData?.address?.street || "";
+    }
+    if ($("profileAddressCity")) {
+      $("profileAddressCity").value = userProfileData?.address?.city || "";
+    }
+    if ($("profileAddressState")) {
+      // Populate state dropdown
+      const stateSelect = $("profileAddressState");
+      if (stateSelect && stateSelect.options.length <= 1) {
+        const states = getUSStates();
+        states.forEach(state => {
+          const option = document.createElement("option");
+          option.value = state.code;
+          option.textContent = state.name;
+          stateSelect.appendChild(option);
+        });
+      }
+      if (userProfileData?.address?.state) {
+        stateSelect.value = userProfileData.address.state;
+      }
+    }
+    if ($("profileAddressZip")) {
+      $("profileAddressZip").value = userProfileData?.address?.zip || "";
+    }
+    
+    // Populate TIN field
+    if ($("profileTaxpayerId")) {
+      $("profileTaxpayerId").value = userProfileData?.taxpayerId || "";
     }
     
     // Display current language preference
@@ -279,6 +326,16 @@ function setupEventListeners() {
   
   // Password update form
   $("passwordForm").addEventListener("submit", handlePasswordUpdate);
+  
+  // Contact & Address form
+  if ($("contactForm")) {
+    $("contactForm").addEventListener("submit", handleContactUpdate);
+  }
+  
+  // Tax Information form
+  if ($("taxForm")) {
+    $("taxForm").addEventListener("submit", handleTaxUpdate);
+  }
   
   // Language preference buttons
   if ($("langEnBtn")) {
@@ -704,6 +761,138 @@ async function handleLanguageChange(lang) {
   }
 }
 
+// Handle contact & address update
+async function handleContactUpdate(e) {
+  e.preventDefault();
+  
+  const phoneNumber = ($("profilePhoneNumber")?.value || "").trim();
+  const addressStreet = ($("profileAddressStreet")?.value || "").trim();
+  const addressCity = ($("profileAddressCity")?.value || "").trim();
+  const addressState = ($("profileAddressState")?.value || "").trim().toUpperCase();
+  const addressZip = ($("profileAddressZip")?.value || "").trim();
+  
+  // Validation
+  if (!phoneNumber) {
+    showError("contactError", "Please enter your phone number.");
+    return;
+  }
+  if (!validatePhone(phoneNumber)) {
+    showError("contactError", "Please enter a valid phone number (at least 10 digits).");
+    return;
+  }
+  if (!addressStreet) {
+    showError("contactError", "Please enter your street address.");
+    return;
+  }
+  if (!addressCity) {
+    showError("contactError", "Please enter your city.");
+    return;
+  }
+  if (!addressState) {
+    showError("contactError", "Please select your state.");
+    return;
+  }
+  if (!validateState(addressState)) {
+    showError("contactError", "Please select a valid state.");
+    return;
+  }
+  if (!addressZip) {
+    showError("contactError", "Please enter your ZIP code.");
+    return;
+  }
+  if (!validateZip(addressZip)) {
+    showError("contactError", "Please enter a valid ZIP code (5 digits or 5+4 format).");
+    return;
+  }
+  
+  const btn = $("contactUpdateBtn");
+  if (!btn) {
+    showError("contactError", "Form button not found. Please refresh the page.");
+    return;
+  }
+  
+  const oldDisabled = btn.disabled;
+  
+  try {
+    btn.disabled = true;
+    clearMessages("contact");
+    showMsg("contactMsg", "Saving contact & address...");
+    
+    // Load existing profile data to merge
+    const existingProfile = userProfileData || {};
+    
+    // Update profile
+    await saveUserProfile(currentUser.uid, {
+      ...existingProfile,
+      phoneNumber,
+      address: {
+        street: addressStreet,
+        city: addressCity,
+        state: addressState,
+        zip: addressZip
+      }
+    });
+    
+    // Reload profile
+    await loadProfile();
+    
+    showMsg("contactMsg", "Contact & address updated successfully!", false);
+    
+  } catch (err) {
+    console.error("Contact update error:", err);
+    showError("contactError", getFriendlyError(err));
+  } finally {
+    if (btn) btn.disabled = oldDisabled;
+  }
+}
+
+// Handle tax information update
+async function handleTaxUpdate(e) {
+  e.preventDefault();
+  
+  const taxpayerId = ($("profileTaxpayerId")?.value || "").trim();
+  
+  // Validation (TIN is optional, but if provided must be valid)
+  if (taxpayerId && !validateTIN(taxpayerId)) {
+    showError("taxError", "Please enter a valid TIN (9 digits when dashes are removed).");
+    return;
+  }
+  
+  const btn = $("taxUpdateBtn");
+  if (!btn) {
+    showError("taxError", "Form button not found. Please refresh the page.");
+    return;
+  }
+  
+  const oldDisabled = btn.disabled;
+  
+  try {
+    btn.disabled = true;
+    clearMessages("tax");
+    showMsg("taxMsg", "Saving tax information...");
+    
+    // Load existing profile data to merge
+    const existingProfile = userProfileData || {};
+    
+    // Update profile (only taxpayerId field)
+    await saveUserProfile(currentUser.uid, {
+      ...existingProfile,
+      taxpayerId: taxpayerId || null // Save null if empty to clear it
+    });
+    
+    // Reload profile
+    await loadProfile();
+    
+    showMsg("taxMsg", "Tax information updated successfully!", false);
+    
+  } catch (err) {
+    console.error("Tax update error:", err);
+    showError("taxError", getFriendlyError(err));
+  } finally {
+    if (btn) btn.disabled = oldDisabled;
+  }
+}
+
 function getFriendlyError(err) {
   const code = err?.code || "";
   const message = err?.message || "An error occurred.";
@@ -722,6 +911,9 @@ function getFriendlyError(err) {
   }
   if (code === "auth/requires-recent-login") {
     return "Please log out and log back in before changing sensitive information.";
+  }
+  if (code === "permission-denied") {
+    return "Permission denied. Please check your account permissions.";
   }
   
   return message;

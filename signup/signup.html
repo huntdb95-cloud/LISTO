@@ -83,6 +83,67 @@
           </div>
 
           <div class="field">
+            <label class="field-label" for="phoneNumber">Phone Number *</label>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              required
+              autocomplete="tel"
+              placeholder="(555) 555-5555"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="addressStreet">Street Address *</label>
+            <input
+              id="addressStreet"
+              name="addressStreet"
+              type="text"
+              required
+              autocomplete="street-address"
+              placeholder="123 Main Street"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="addressCity">City *</label>
+            <input
+              id="addressCity"
+              name="addressCity"
+              type="text"
+              required
+              autocomplete="address-level2"
+              placeholder="City"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="addressState">State *</label>
+            <select
+              id="addressState"
+              name="addressState"
+              required
+              autocomplete="address-level1"
+            >
+              <option value="">Select State</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="addressZip">ZIP Code *</label>
+            <input
+              id="addressZip"
+              name="addressZip"
+              type="text"
+              required
+              autocomplete="postal-code"
+              placeholder="12345"
+              maxlength="10"
+            />
+          </div>
+
+          <div class="field">
             <label class="checkbox-label">
               <input
                 id="acceptTerms"
