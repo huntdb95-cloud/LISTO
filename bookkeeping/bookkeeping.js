@@ -12,7 +12,8 @@ import {
   doc,
   deleteDoc,
   updateDoc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -96,15 +97,49 @@ function paymentsCol() {
 /* -----------------------------
    Load Data
 ------------------------------ */
+let laborersUnsubscribe = null; // Store unsubscribe function for real-time listener
+
 async function loadLaborers() {
   if (!currentUid) return;
+  
+  // Unsubscribe from previous listener if it exists
+  if (laborersUnsubscribe) {
+    laborersUnsubscribe();
+    laborersUnsubscribe = null;
+  }
+  
   try {
     const q = query(laborersCol(), orderBy("displayName"));
-    const snap = await getDocs(q);
-    laborers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderLaborersList();
+    
+    // Set up real-time listener for immediate updates
+    laborersUnsubscribe = onSnapshot(q, (snap) => {
+      const previousLaborerIds = new Set(laborers.map(l => l.id));
+      laborers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const currentLaborerIds = new Set(laborers.map(l => l.id));
+      
+      // Check if selected laborer was deleted
+      if (selectedLaborerId && !currentLaborerIds.has(selectedLaborerId)) {
+        // Selected laborer was deleted
+        selectedLaborerId = null;
+        $("laborerDetailPanel").style.display = "none";
+        showMessage("The selected laborer was removed.", false);
+      }
+      
+      renderLaborersList();
+      
+      // If a laborer was selected and still exists, refresh the detail view
+      if (selectedLaborerId && currentLaborerIds.has(selectedLaborerId)) {
+        const laborer = laborers.find(l => l.id === selectedLaborerId);
+        if (laborer) {
+          renderLaborerDetail(laborer);
+        }
+      }
+    }, (err) => {
+      console.error("Error in laborers listener:", err);
+      showMessage("Error loading laborers", true);
+    });
   } catch (err) {
-    console.error("Error loading laborers:", err);
+    console.error("Error setting up laborers listener:", err);
     showMessage("Error loading laborers", true);
   }
 }
@@ -693,6 +728,12 @@ function init() {
   onAuthStateChanged(auth, async (user) => {
     try {
       if (!user) {
+        // Unsubscribe from listeners when user logs out
+        if (laborersUnsubscribe) {
+          laborersUnsubscribe();
+          laborersUnsubscribe = null;
+        }
+        
         currentUid = null;
         laborers = [];
         payments = [];
