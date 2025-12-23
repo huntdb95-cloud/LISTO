@@ -2694,6 +2694,11 @@ input:focus, select:focus, textarea:focus{
   background: #f7faf8;
   color: var(--text);
   overflow: hidden;
+  /* Desktop: Use flexbox for vertical centering */
+  min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height where supported */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Masonry pattern background with BELISTO image */
@@ -2887,21 +2892,23 @@ input:focus, select:focus, textarea:focus{
 }
 
 .auth-center{
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px 16px;
+  flex: 1;
+  display: flex;
+  align-items: flex-start; /* Mobile: top-align by default */
+  justify-content: center;
+  padding: 24px;
   overflow-y: auto;
-  align-content: center;
 }
 
 /* Create a "stack" so logo area + card feels like one unit */
 .auth-stack{
-  width: min(560px, 94vw);
+  width: 100%;
   max-width: 100%;
   display: grid;
   gap: 8px;
   align-items: center;
+  /* Desktop: constrain width */
+  max-width: 420px;
 }
 
 /* Logo area */
@@ -2932,11 +2939,32 @@ input:focus, select:focus, textarea:focus{
   filter:
     drop-shadow(0 10px 18px rgba(21,31,28,0.10))
     drop-shadow(0 0 26px rgba(77,167,99,0.18));
+  /* Desktop: constrain logo size */
+  max-width: 220px;
+}
+
+/* Desktop: Center content vertically */
+@media (min-width: 768px) {
+  .auth-center {
+    align-items: center;
+  }
+  
+  .auth-stack {
+    max-width: 420px;
+  }
+  
+  .auth-logo {
+    max-width: 220px;
+  }
+  
+  .auth-hero {
+    margin-bottom: 8px;
+  }
 }
 
 /* Make logo container horizontal rectangle on mobile (shorter vertically) */
 /* Match auth logo size to header logo size on mobile */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .auth-hero {
     padding: 2px 6px 1px; /* Reduced from 6px 8px 2px */
     margin-bottom: 2px; /* Reduced from 4px */
@@ -2954,9 +2982,13 @@ input:focus, select:focus, textarea:focus{
     /* Logo size increased by 50%: 84px * 1.5 = 126px */
     height: 126px;
     width: auto;
-    max-width: min(320px, 75vw); /* Prevent logo from exceeding container width */
+    max-width: min(320px, 75vw); /* Prevent logo from exceeding container width, override desktop max-width */
     object-fit: contain; /* Maintain aspect ratio */
     object-position: center; /* Center the logo */
+  }
+  
+  .auth-stack {
+    max-width: 100%;
   }
 }
 
@@ -2970,7 +3002,9 @@ input:focus, select:focus, textarea:focus{
   box-shadow: 0 18px 50px rgba(21,31,28,0.12);
   backdrop-filter: blur(10px);
   overflow: visible;
-  max-height: calc(100vh - 120px);
+  /* Desktop: constrain height to fit viewport */
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px); /* Use dynamic viewport height where supported */
   overflow-y: auto;
 }
 
