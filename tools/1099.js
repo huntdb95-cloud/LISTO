@@ -319,8 +319,13 @@ function renderFormsHistory() {
   if (!container) return;
   
   if (generatedForms.length === 0) {
-    container.innerHTML = '<div class="muted" style="padding: 20px; text-align: center;">No forms generated yet for this tax year.</div>';
+    container.innerHTML = '<div class="muted" style="padding: 20px; text-align: center;" data-i18n="1099.noForms">No forms generated yet for this tax year.</div>';
     $("historyCard").style.display = "none";
+    // Apply translations to newly added element
+    if (typeof window.applyTranslations === 'function') {
+      const lang = document.documentElement.lang || 'en';
+      window.applyTranslations(lang);
+    }
     return;
   }
   
@@ -346,11 +351,17 @@ function renderFormsHistory() {
           <div class="muted small">Amount: ${escapeHtml(formatCurrency(form.totalAmount || 0))}</div>
         </div>
         <div>
-          <a href="${form.pdfDownloadURL}" target="_blank" class="btn small primary" download>Download PDF</a>
+          <a href="${form.pdfDownloadURL}" target="_blank" class="btn small primary" download data-i18n="1099.download">Download PDF</a>
         </div>
       </div>
     `;
   }).join("");
+  
+  // Apply translations to newly added elements
+  if (typeof window.applyTranslations === 'function') {
+    const lang = document.documentElement.lang || 'en';
+    window.applyTranslations(lang);
+  }
 }
 
 function populatePayerForm() {
@@ -798,8 +809,24 @@ function showMessage(message, isError = false) {
 
 // Initialize when DOM is ready
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+    // Apply translations after scripts.js loads
+    setTimeout(() => {
+      if (typeof window.applyTranslations === 'function') {
+        const lang = document.documentElement.lang || 'en';
+        window.applyTranslations(lang);
+      }
+    }, 200);
+  });
 } else {
   init();
+  // Apply translations after scripts.js loads
+  setTimeout(() => {
+    if (typeof window.applyTranslations === 'function') {
+      const lang = document.documentElement.lang || 'en';
+      window.applyTranslations(lang);
+    }
+  }, 200);
 }
 

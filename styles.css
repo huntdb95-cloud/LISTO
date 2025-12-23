@@ -1149,6 +1149,20 @@ input:focus, select:focus, textarea:focus{
   min-width: 0;
 }
 
+/* Mobile: Center Edit button in Account Info card */
+@media (max-width: 768px) {
+  .account-info-card > div:last-of-type {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .account-info-card a.btn {
+    margin: 0 auto;
+    display: block;
+    width: fit-content;
+  }
+}
+
 .facebook-feed-card {
   min-width: 0;
 }
@@ -1179,6 +1193,28 @@ input:focus, select:focus, textarea:focus{
   max-width: 100% !important;
   min-width: 100% !important;
   display: block;
+}
+
+/* Facebook timeline mobile fix - ensure iframe renders */
+@media (max-width: 768px) {
+  .facebook-feed-container {
+    min-height: 500px;
+    height: 600px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .facebook-feed-container .fb-page,
+  .facebook-feed-container .fb-page > span,
+  .facebook-feed-container .fb-page iframe,
+  .facebook-feed-container iframe {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    height: 600px !important;
+    min-height: 500px !important;
+  }
 }
 
 @media (max-width: 900px) {
@@ -2172,6 +2208,19 @@ input:focus, select:focus, textarea:focus{
 
 .sidebar-link.is-active .sidebar-icon {
   color: white;
+}
+
+/* Tools dropdown icon - brand green */
+.sidebar-submenu-toggle .sidebar-icon {
+  color: var(--brand);
+}
+
+.sidebar-submenu-toggle:hover .sidebar-icon {
+  color: var(--brand-dark);
+}
+
+.sidebar-menu-item-submenu.is-open .sidebar-submenu-toggle .sidebar-icon {
+  color: var(--brand-dark);
 }
 
 .sidebar-label {
