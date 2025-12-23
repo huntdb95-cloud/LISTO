@@ -101,8 +101,11 @@ function setBusy(isBusy) {
 
 // ---------- Items UI ----------
 function addItemRow(item = { description: "", qty: 1, unitPrice: 0 }) {
+  console.log("Add Item clicked"); // Debug log
   state.items.push({ ...item });
   renderItems();
+  recalcTotals(); // Ensure totals are updated when adding a row
+  setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
 }
 
 function removeItem(index) {
@@ -880,50 +883,126 @@ function newInvoice() {
 
 // ---------- Wire up ----------
 function addListeners() {
-  el("btnAddItem").addEventListener("click", () => addItemRow());
-  el("btnSave").addEventListener("click", async () => {
-    setSendResult("");
-    await saveInvoice();
-  });
-  el("btnPdf").addEventListener("click", downloadPdf);
-  el("btnSendEmail").addEventListener("click", sendInvoiceEmail);
-  el("btnNew").addEventListener("click", () => {
-    newInvoice();
-    el("selectBuilder").value = "";
-    el("selectJob").value = "";
-    el("selectJob").style.display = "none";
-  });
-  el("btnLoad").addEventListener("click", loadInvoice);
-  el("btnDelete").addEventListener("click", deleteInvoice);
+  // Use event delegation for Add Item button (more robust)
+  // Attach to document or a stable container to handle dynamic content
+  const addItemBtn = el("btnAddItem");
+  if (!addItemBtn) {
+    console.error("Add Item button not found: #btnAddItem");
+    // Fallback: use event delegation on document
+    document.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "btnAddItem") {
+        e.preventDefault();
+        e.stopPropagation();
+        addItemRow();
+      }
+    });
+  } else {
+    addItemBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      addItemRow();
+    });
+  }
+
+  const btnSave = el("btnSave");
+  if (btnSave) {
+    btnSave.addEventListener("click", async () => {
+      setSendResult("");
+      await saveInvoice();
+    });
+  } else {
+    console.error("Save button not found: #btnSave");
+  }
+
+  const btnPdf = el("btnPdf");
+  if (btnPdf) {
+    btnPdf.addEventListener("click", downloadPdf);
+  } else {
+    console.error("PDF button not found: #btnPdf");
+  }
+
+  const btnSendEmail = el("btnSendEmail");
+  if (btnSendEmail) {
+    btnSendEmail.addEventListener("click", sendInvoiceEmail);
+  } else {
+    console.error("Send Email button not found: #btnSendEmail");
+  }
+
+  const btnNew = el("btnNew");
+  if (btnNew) {
+    btnNew.addEventListener("click", () => {
+      newInvoice();
+      const selectBuilder = el("selectBuilder");
+      const selectJob = el("selectJob");
+      if (selectBuilder) selectBuilder.value = "";
+      if (selectJob) {
+        selectJob.value = "";
+        selectJob.style.display = "none";
+      }
+    });
+  } else {
+    console.error("New button not found: #btnNew");
+  }
+
+  const btnLoad = el("btnLoad");
+  if (btnLoad) {
+    btnLoad.addEventListener("click", loadInvoice);
+  } else {
+    console.error("Load button not found: #btnLoad");
+  }
+
+  const btnDelete = el("btnDelete");
+  if (btnDelete) {
+    btnDelete.addEventListener("click", deleteInvoice);
+  } else {
+    console.error("Delete button not found: #btnDelete");
+  }
   
   // Builder/Job selection handlers
-  el("selectBuilder").addEventListener("change", async (e) => {
-    const contractId = e.target.value;
-    await refreshJobSelect(contractId);
-    await fillCustomerFromBuilder(contractId);
-  });
+  const selectBuilder = el("selectBuilder");
+  if (selectBuilder) {
+    selectBuilder.addEventListener("change", async (e) => {
+      const contractId = e.target.value;
+      await refreshJobSelect(contractId);
+      await fillCustomerFromBuilder(contractId);
+    });
+  } else {
+    console.error("Builder select not found: #selectBuilder");
+  }
   
-  el("selectJob").addEventListener("change", async (e) => {
-    const contractId = el("selectBuilder").value;
-    const jobId = e.target.value;
-    await fillCustomerFromBuilder(contractId, jobId);
-    
-    // Also fill project name and address from job
-    if (jobId && e.target.selectedOptions[0]) {
-      const opt = e.target.selectedOptions[0];
-      const address = opt.dataset.address || "";
+  const selectJob = el("selectJob");
+  if (selectJob) {
+    selectJob.addEventListener("change", async (e) => {
+      const contractId = el("selectBuilder")?.value || "";
+      const jobId = e.target.value;
+      await fillCustomerFromBuilder(contractId, jobId);
       
-      if (address) el("toAddress").value = address;
-      if (opt.textContent) el("projectName").value = opt.textContent;
-    }
-  });
+      // Also fill project name and address from job
+      if (jobId && e.target.selectedOptions[0]) {
+        const opt = e.target.selectedOptions[0];
+        const address = opt.dataset.address || "";
+        
+        const toAddress = el("toAddress");
+        const projectName = el("projectName");
+        if (address && toAddress) toAddress.value = address;
+        if (opt.textContent && projectName) projectName.value = opt.textContent;
+      }
+    });
+  } else {
+    console.error("Job select not found: #selectJob");
+  }
 
   ["taxRate", "discount", "deposit"].forEach((id) => {
-    el(id).addEventListener("input", () => {
-      setSendResult("");
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
-      recalcTotals();
-    });
+    const elem = el(id);
+    if (elem) {
+      elem.addEventListener("input", () => {
+        setSendResult("");
+        setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
+        recalcTotals();
+      });
+    } else {
+      console.warn(`Element not found: #${id}`);
+    }
   });
 
   [
@@ -932,10 +1011,15 @@ function addListeners() {
     "invoiceNumber","invoiceDate","dueDate","projectName",
     "notes","paymentInstructions"
   ].forEach((id) => {
-    el(id).addEventListener("input", () => {
-      setSendResult("");
-      setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
-    });
+    const elem = el(id);
+    if (elem) {
+      elem.addEventListener("input", () => {
+        setSendResult("");
+        setStatus(state.currentInvoiceId ? "Edited (not saved)" : "Not saved", "warn");
+      });
+    } else {
+      console.warn(`Element not found: #${id}`);
+    }
   });
 }
 
@@ -960,6 +1044,34 @@ onAuthStateChanged(auth, async (user) => {
   await refreshBuilderSelect();
 });
 
-// Boot
-addListeners();
-newInvoice();
+// Boot - Ensure DOM is ready before initializing
+function initInvoice() {
+  // Check if critical elements exist
+  const btnAddItem = el("btnAddItem");
+  const itemsBody = el("itemsBody");
+  const itemsCards = el("itemsCards");
+  
+  if (!btnAddItem) {
+    console.error("Critical element missing: #btnAddItem - Retrying in 100ms...");
+    setTimeout(initInvoice, 100);
+    return;
+  }
+  
+  if (!itemsBody || !itemsCards) {
+    console.error("Critical containers missing: #itemsBody or #itemsCards - Retrying in 100ms...");
+    setTimeout(initInvoice, 100);
+    return;
+  }
+  
+  console.log("Invoice builder initialized successfully");
+  addListeners();
+  newInvoice();
+}
+
+// Wait for DOM to be ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initInvoice);
+} else {
+  // DOM is already ready
+  initInvoice();
+}
