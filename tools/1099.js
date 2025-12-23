@@ -96,9 +96,25 @@ async function loadPayerInfo() {
       payerInfo = docSnap.data();
       populatePayerForm();
       $("payerInfoCard").style.display = "block";
+      
+      // On mobile, collapse payer info if it exists
+      if (isMobile() && payerInfo.businessName) {
+        collapsePayerInfo();
+      } else {
+        // On desktop or if no payer info, ensure form is visible
+        const form = $("payerInfoForm");
+        if (form) form.classList.remove("collapsed");
+        const summary = $("payerInfoSummary");
+        if (summary && !isMobile()) summary.style.display = "none";
+      }
     } else {
       // Show form for first-time setup
       $("payerInfoCard").style.display = "block";
+      // Hide summary if no payer info exists
+      const summary = $("payerInfoSummary");
+      if (summary) summary.style.display = "none";
+      const form = $("payerInfoForm");
+      if (form) form.classList.remove("collapsed");
     }
   } catch (err) {
     console.error("Error loading payer info:", err);
@@ -375,6 +391,91 @@ function populatePayerForm() {
   $("payerState").value = payerInfo.state || "";
   $("payerZip").value = payerInfo.zip || "";
   $("payerPhone").value = payerInfo.phone || "";
+  
+  // Update summary display
+  updatePayerSummary();
+}
+
+function updatePayerSummary() {
+  const summaryName = $("payerSummaryName");
+  const summaryDetails = $("payerSummaryDetails");
+  
+  if (!summaryName || !summaryDetails) return;
+  
+  if (payerInfo && payerInfo.businessName) {
+    summaryName.textContent = payerInfo.businessName;
+    
+    // Build details: EIN/SSN last 4 + city, state
+    const tin = payerInfo.tin || "";
+    const tinLast4 = tin.length >= 4 ? tin.slice(-4) : "";
+    const location = [payerInfo.city, payerInfo.state].filter(Boolean).join(", ");
+    
+    const details = [];
+    if (tinLast4) {
+      details.push(`TIN: ••••${tinLast4}`);
+    }
+    if (location) {
+      details.push(location);
+    }
+    
+    summaryDetails.textContent = details.length > 0 ? details.join(" • ") : "—";
+  } else {
+    summaryName.textContent = "—";
+    summaryDetails.textContent = "—";
+  }
+}
+
+function isMobile() {
+  return window.innerWidth <= 1023;
+}
+
+function expandPayerInfo() {
+  const form = $("payerInfoForm");
+  const summary = $("payerInfoSummary");
+  const toggleBtn = $("togglePayerInfoBtn");
+  const toggleText = $("togglePayerInfoText");
+  const collapseBtn = $("collapsePayerInfoBtn");
+  
+  if (!form) return;
+  
+  form.classList.remove("collapsed");
+  if (summary && isMobile()) summary.style.display = "none";
+  if (toggleBtn && isMobile()) toggleBtn.style.display = "none";
+  if (collapseBtn && isMobile()) collapseBtn.style.display = "inline-flex";
+}
+
+function collapsePayerInfo() {
+  const form = $("payerInfoForm");
+  const summary = $("payerInfoSummary");
+  const toggleBtn = $("togglePayerInfoBtn");
+  const toggleText = $("togglePayerInfoText");
+  const collapseBtn = $("collapsePayerInfoBtn");
+  
+  if (!form) return;
+  
+  // Only collapse on mobile
+  if (!isMobile()) return;
+  
+  form.classList.add("collapsed");
+  if (summary && payerInfo && payerInfo.businessName) {
+    summary.style.display = "block";
+  }
+  if (toggleBtn) {
+    toggleBtn.style.display = "inline-flex";
+    if (toggleText) toggleText.textContent = "Edit";
+  }
+  if (collapseBtn) collapseBtn.style.display = "none";
+}
+
+function togglePayerInfo() {
+  const form = $("payerInfoForm");
+  if (!form) return;
+  
+  if (form.classList.contains("collapsed")) {
+    expandPayerInfo();
+  } else {
+    collapsePayerInfo();
+  }
 }
 
 /* -----------------------------
@@ -425,7 +526,15 @@ async function savePayerInfo() {
     }
     
     payerInfo = data;
+    updatePayerSummary();
     showMessage("Payer information saved successfully!", false);
+    
+    // On mobile, collapse payer info after saving
+    if (isMobile()) {
+      setTimeout(() => {
+        collapsePayerInfo();
+      }, 500); // Small delay to show success message
+    }
     
     if (btn) btn.disabled = false;
   } catch (err) {
@@ -736,6 +845,55 @@ function init() {
   if (savePayerBtn) {
     savePayerBtn.addEventListener("click", savePayerInfo);
   }
+  
+  // Toggle payer info (mobile)
+  const togglePayerBtn = $("togglePayerInfoBtn");
+  if (togglePayerBtn) {
+    togglePayerBtn.addEventListener("click", togglePayerInfo);
+  }
+  
+  const collapsePayerBtn = $("collapsePayerInfoBtn");
+  if (collapsePayerBtn) {
+    collapsePayerBtn.addEventListener("click", collapsePayerInfo);
+  }
+  
+  // Make summary clickable to expand
+  const payerSummary = $("payerInfoSummary");
+  if (payerSummary) {
+    payerSummary.addEventListener("click", () => {
+      if (isMobile() && payerSummary.style.display !== "none") {
+        expandPayerInfo();
+      }
+    });
+    payerSummary.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && isMobile() && payerSummary.style.display !== "none") {
+        e.preventDefault();
+        expandPayerInfo();
+      }
+    });
+  }
+  
+  // Handle window resize to show/hide mobile controls
+  let resizeTimeout;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (!isMobile()) {
+        // On desktop, ensure form is always visible
+        const form = $("payerInfoForm");
+        if (form) form.classList.remove("collapsed");
+        const summary = $("payerInfoSummary");
+        if (summary) summary.style.display = "none";
+        const toggleBtn = $("togglePayerInfoBtn");
+        if (toggleBtn) toggleBtn.style.display = "none";
+        const collapseBtn = $("collapsePayerInfoBtn");
+        if (collapseBtn) collapseBtn.style.display = "none";
+      } else if (payerInfo && payerInfo.businessName) {
+        // On mobile, collapse if payer info exists
+        collapsePayerInfo();
+      }
+    }, 100);
+  });
   
   // Generate 1099
   const generateBtn = $("generate1099Btn");

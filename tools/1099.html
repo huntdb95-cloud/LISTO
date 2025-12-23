@@ -50,45 +50,66 @@
 
           <!-- Payer Information Setup -->
           <div class="card pad" id="payerInfoCard" style="margin-bottom: 24px; display: none;">
-            <h2 class="h2" style="margin-bottom: 16px;" data-i18n="1099.payerInfo">Payer Information</h2>
-            <p class="muted small" style="margin-bottom: 16px;" data-i18n="1099.payerInfoDesc">
-              Your business information will appear on the 1099-NEC form as the payer. This information is stored securely and can be updated anytime.
-            </p>
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="payerBusinessName" class="label" data-i18n="1099.businessName">Business Name *</label>
-                <input type="text" id="payerBusinessName" class="input" placeholder="ABC Construction LLC" required />
-              </div>
-              <div class="form-group">
-                <label for="payerTIN" class="label" data-i18n="1099.tin">Taxpayer Identification Number (EIN/SSN) *</label>
-                <input type="text" id="payerTIN" class="input" placeholder="12-3456789" maxlength="11" required />
-                <div class="small muted" style="margin-top: 4px;" data-i18n="1099.tinFormat">Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)</div>
+            <!-- Payer Info Header (always visible) -->
+            <div class="payer-info-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h2 class="h2" style="margin: 0;" data-i18n="1099.payerInfo">Payer Information</h2>
+              <button type="button" class="btn ghost small mobile-only" id="togglePayerInfoBtn" style="display: none;" aria-label="Toggle payer information">
+                <span id="togglePayerInfoText">Edit</span>
+              </button>
+            </div>
+            
+            <!-- Payer Info Summary (mobile collapsed view) -->
+            <div class="payer-info-summary mobile-only" id="payerInfoSummary" style="display: none; padding: 12px; background: var(--bg); border-radius: var(--radius); margin-bottom: 16px; cursor: pointer;" role="button" tabindex="0" aria-label="Click to edit payer information">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; margin-bottom: 4px;" id="payerSummaryName">—</div>
+                  <div class="muted small" id="payerSummaryDetails">—</div>
+                </div>
               </div>
             </div>
-            <div class="form-group">
-              <label for="payerAddress" class="label" data-i18n="1099.streetAddress">Street Address *</label>
-              <input type="text" id="payerAddress" class="input" placeholder="123 Main St" required />
-            </div>
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="payerCity" class="label" data-i18n="1099.city">City *</label>
-                <input type="text" id="payerCity" class="input" placeholder="City" required />
+            
+            <!-- Payer Info Form (collapsible on mobile) -->
+            <div class="payer-info-form" id="payerInfoForm">
+              <p class="muted small" style="margin-bottom: 16px;" data-i18n="1099.payerInfoDesc">
+                Your business information will appear on the 1099-NEC form as the payer. This information is stored securely and can be updated anytime.
+              </p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="payerBusinessName" class="label" data-i18n="1099.businessName">Business Name *</label>
+                  <input type="text" id="payerBusinessName" class="input" placeholder="ABC Construction LLC" required />
+                </div>
+                <div class="form-group">
+                  <label for="payerTIN" class="label" data-i18n="1099.tin">Taxpayer Identification Number (EIN/SSN) *</label>
+                  <input type="text" id="payerTIN" class="input" placeholder="12-3456789" maxlength="11" required />
+                  <div class="small muted" style="margin-top: 4px;" data-i18n="1099.tinFormat">Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)</div>
+                </div>
               </div>
               <div class="form-group">
-                <label for="payerState" class="label" data-i18n="1099.state">State *</label>
-                <input type="text" id="payerState" class="input" placeholder="CA" maxlength="2" required />
+                <label for="payerAddress" class="label" data-i18n="1099.streetAddress">Street Address *</label>
+                <input type="text" id="payerAddress" class="input" placeholder="123 Main St" required />
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="payerCity" class="label" data-i18n="1099.city">City *</label>
+                  <input type="text" id="payerCity" class="input" placeholder="City" required />
+                </div>
+                <div class="form-group">
+                  <label for="payerState" class="label" data-i18n="1099.state">State *</label>
+                  <input type="text" id="payerState" class="input" placeholder="CA" maxlength="2" required />
+                </div>
+                <div class="form-group">
+                  <label for="payerZip" class="label" data-i18n="1099.zip">ZIP Code *</label>
+                  <input type="text" id="payerZip" class="input" placeholder="12345" maxlength="10" required />
+                </div>
               </div>
               <div class="form-group">
-                <label for="payerZip" class="label" data-i18n="1099.zip">ZIP Code *</label>
-                <input type="text" id="payerZip" class="input" placeholder="12345" maxlength="10" required />
+                <label for="payerPhone" class="label" data-i18n="1099.phone">Phone (Optional)</label>
+                <input type="tel" id="payerPhone" class="input" placeholder="(555) 555-5555" />
               </div>
-            </div>
-            <div class="form-group">
-              <label for="payerPhone" class="label" data-i18n="1099.phone">Phone (Optional)</label>
-              <input type="tel" id="payerPhone" class="input" placeholder="(555) 555-5555" />
-            </div>
-            <div class="btn-row" style="margin-top: 16px;">
-              <button type="button" class="btn primary" id="savePayerInfoBtn" data-i18n="1099.savePayerInfo">Save Payer Information</button>
+              <div class="btn-row" style="margin-top: 16px;">
+                <button type="button" class="btn primary" id="savePayerInfoBtn" data-i18n="1099.savePayerInfo">Save Payer Information</button>
+                <button type="button" class="btn ghost mobile-only" id="collapsePayerInfoBtn" style="display: none;" data-i18n="1099.collapse">Collapse</button>
+              </div>
             </div>
           </div>
 
@@ -178,6 +199,32 @@
       </section>
     </main>
   </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+    <div class="mobile-bottom-nav-items">
+      <a href="../dashboard.html" class="mobile-bottom-nav-item" data-nav="home">
+        <div class="mobile-bottom-nav-icon">🏠</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.dashboard">Home</div>
+      </a>
+      <a href="../contracts/contracts.html" class="mobile-bottom-nav-item" data-nav="contracts">
+        <div class="mobile-bottom-nav-icon">📄</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.contracts">Contracts</div>
+      </a>
+      <a href="../bookkeeping/bookkeeping.html" class="mobile-bottom-nav-item" data-nav="bookkeeping">
+        <div class="mobile-bottom-nav-icon">📊</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.bookkeeping">Bookkeeping</div>
+      </a>
+      <a href="../tools/tools.html" class="mobile-bottom-nav-item active" data-nav="tools">
+        <div class="mobile-bottom-nav-icon">🔧</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.tools">Tools</div>
+      </a>
+      <a href="../settings/settings.html" class="mobile-bottom-nav-item" data-nav="settings">
+        <div class="mobile-bottom-nav-icon">⚙️</div>
+        <div class="mobile-bottom-nav-label" data-i18n="nav.settings">Settings</div>
+      </a>
+    </div>
+  </nav>
 
   <script src="../sidebar.js"></script>
   <script src="../scripts.js" type="module"></script>
