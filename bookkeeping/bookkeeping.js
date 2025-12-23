@@ -723,6 +723,21 @@ function init() {
       showMessage("Firebase error. Check config.js and Firestore rules.", true);
     }
   });
+  
+  // Reload laborers when page becomes visible (e.g., returning from Employee Management)
+  document.addEventListener("visibilitychange", async () => {
+    if (!document.hidden && currentUid) {
+      // Page became visible, reload laborers to sync with Employee Management changes
+      await loadLaborers();
+    }
+  });
+  
+  // Also reload on focus (for better mobile support)
+  window.addEventListener("focus", async () => {
+    if (currentUid) {
+      await loadLaborers();
+    }
+  });
 }
 
 // Start initialization

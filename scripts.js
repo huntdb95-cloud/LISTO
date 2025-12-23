@@ -42,6 +42,7 @@ const I18N = {
     "nav.contractScanner": "Contract Scanner",
     "nav.invoiceBuilder": "Invoice Builder",
     "nav.jobEstimator": "Job Cost Estimator",
+    "nav.1099": "1099-NEC Generator",
     "nav.account": "My Account",
     "nav.support": "Support",
     "nav.settings": "Settings",
@@ -464,6 +465,36 @@ const I18N = {
     "employees.save": "Save Employee",
     "employees.cancel": "Cancel",
     "employees.listTitle": "Employees & Subcontractors",
+    
+    "1099.title": "1099-NEC Generator",
+    "1099.subtitle": "Generate IRS Form 1099-NEC for your laborers and subcontractors based on payment history.",
+    "1099.taxYear": "Tax Year",
+    "1099.selectTaxYear": "Select tax year",
+    "1099.payerInfo": "Payer Information",
+    "1099.payerInfoDesc": "Your business information will appear on the 1099-NEC form as the payer. This information is stored securely and can be updated anytime.",
+    "1099.businessName": "Business Name",
+    "1099.tin": "Taxpayer Identification Number (EIN/SSN)",
+    "1099.tinFormat": "Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)",
+    "1099.streetAddress": "Street Address",
+    "1099.city": "City",
+    "1099.state": "State",
+    "1099.zip": "ZIP Code",
+    "1099.phone": "Phone (Optional)",
+    "1099.savePayerInfo": "Save Payer Information",
+    "1099.selectLaborer": "Select Laborer",
+    "1099.searchLaborers": "Search laborers by name...",
+    "1099.payeeInfo": "Payee Information (from W-9)",
+    "1099.w9Missing": "W-9 Information Missing:",
+    "1099.w9MissingDesc": "This laborer does not have complete W-9 information. Please update the W-9 information in Employee Management before generating the 1099-NEC.",
+    "1099.paymentSummary": "Payment Summary for",
+    "1099.totalCompensation": "Total Nonemployee Compensation (Box 1)",
+    "1099.paymentBreakdown": "Payment Breakdown",
+    "1099.noPayments": "No payments found for this laborer in the selected tax year.",
+    "1099.generate": "Generate 1099-NEC PDF",
+    "1099.changeLaborer": "Change Laborer",
+    "1099.history": "Generated Forms History",
+    "1099.noForms": "No forms generated yet for this tax year.",
+    "1099.download": "Download PDF",
     "employees.loading": "Loading...",
     "employees.noEmployees": "No employees added yet. Click \"Add Employee\" to get started.",
     "employees.edit": "Edit",
@@ -490,6 +521,7 @@ const I18N = {
     "bookkeeping.exportCsv": "Export CSV",
     "bookkeeping.clearFilters": "Clear Filters",
     "bookkeeping.date": "Date",
+    "bookkeeping.memo": "Memo",
     "bookkeeping.actions": "Actions",
 
     "contracts.title": "Contracts",
@@ -968,6 +1000,7 @@ const I18N = {
     "bookkeeping.exportCsv": "Exportar CSV",
     "bookkeeping.clearFilters": "Limpiar Filtros",
     "bookkeeping.date": "Fecha",
+    "bookkeeping.memo": "Nota",
     "bookkeeping.actions": "Acciones",
 
     "contracts.title": "Contratos",
@@ -2662,6 +2695,9 @@ function initMobileBottomNav() {
     } else if (navType === "tools" && (path.includes("tools") || path.includes("audit") || path.includes("invoice") || path.includes("contract-scanner"))) {
       isActive = true;
     } else if (navType === "settings" && (path.includes("settings") || path.includes("account") || path.includes("support"))) {
+      isActive = true;
+    } else if (navType === "bookkeeping" && path.includes("employees")) {
+      // Employee Management is part of bookkeeping workflow
       isActive = true;
     }
     

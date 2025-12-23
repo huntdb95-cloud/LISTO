@@ -32,8 +32,8 @@
       <section class="section">
         <div class="container">
           <div class="section-head">
-            <h1 class="page-title">1099-NEC Generator</h1>
-            <p class="muted">
+            <h1 class="page-title" data-i18n="1099.title">1099-NEC Generator</h1>
+            <p class="muted" data-i18n="1099.subtitle">
               Generate IRS Form 1099-NEC for your laborers and subcontractors based on payment history.
             </p>
           </div>
@@ -41,62 +41,62 @@
           <!-- Tax Year Selector -->
           <div class="card pad" style="margin-bottom: 24px;">
             <div class="form-group">
-              <label for="taxYear" class="label">Tax Year *</label>
+              <label for="taxYear" class="label" data-i18n="1099.taxYear">Tax Year *</label>
               <select id="taxYear" class="input" required>
-                <option value="">Select tax year</option>
+                <option value="" data-i18n="1099.selectTaxYear">Select tax year</option>
               </select>
             </div>
           </div>
 
           <!-- Payer Information Setup -->
           <div class="card pad" id="payerInfoCard" style="margin-bottom: 24px; display: none;">
-            <h2 class="h2" style="margin-bottom: 16px;">Payer Information</h2>
-            <p class="muted small" style="margin-bottom: 16px;">
+            <h2 class="h2" style="margin-bottom: 16px;" data-i18n="1099.payerInfo">Payer Information</h2>
+            <p class="muted small" style="margin-bottom: 16px;" data-i18n="1099.payerInfoDesc">
               Your business information will appear on the 1099-NEC form as the payer. This information is stored securely and can be updated anytime.
             </p>
             <div class="form-grid">
               <div class="form-group">
-                <label for="payerBusinessName" class="label">Business Name *</label>
+                <label for="payerBusinessName" class="label" data-i18n="1099.businessName">Business Name *</label>
                 <input type="text" id="payerBusinessName" class="input" placeholder="ABC Construction LLC" required />
               </div>
               <div class="form-group">
-                <label for="payerTIN" class="label">Taxpayer Identification Number (EIN/SSN) *</label>
+                <label for="payerTIN" class="label" data-i18n="1099.tin">Taxpayer Identification Number (EIN/SSN) *</label>
                 <input type="text" id="payerTIN" class="input" placeholder="12-3456789" maxlength="11" required />
-                <div class="small muted" style="margin-top: 4px;">Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)</div>
+                <div class="small muted" style="margin-top: 4px;" data-i18n="1099.tinFormat">Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)</div>
               </div>
             </div>
             <div class="form-group">
-              <label for="payerAddress" class="label">Street Address *</label>
+              <label for="payerAddress" class="label" data-i18n="1099.streetAddress">Street Address *</label>
               <input type="text" id="payerAddress" class="input" placeholder="123 Main St" required />
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label for="payerCity" class="label">City *</label>
+                <label for="payerCity" class="label" data-i18n="1099.city">City *</label>
                 <input type="text" id="payerCity" class="input" placeholder="City" required />
               </div>
               <div class="form-group">
-                <label for="payerState" class="label">State *</label>
+                <label for="payerState" class="label" data-i18n="1099.state">State *</label>
                 <input type="text" id="payerState" class="input" placeholder="CA" maxlength="2" required />
               </div>
               <div class="form-group">
-                <label for="payerZip" class="label">ZIP Code *</label>
+                <label for="payerZip" class="label" data-i18n="1099.zip">ZIP Code *</label>
                 <input type="text" id="payerZip" class="input" placeholder="12345" maxlength="10" required />
               </div>
             </div>
             <div class="form-group">
-              <label for="payerPhone" class="label">Phone (Optional)</label>
+              <label for="payerPhone" class="label" data-i18n="1099.phone">Phone (Optional)</label>
               <input type="tel" id="payerPhone" class="input" placeholder="(555) 555-5555" />
             </div>
             <div class="btn-row" style="margin-top: 16px;">
-              <button type="button" class="btn primary" id="savePayerInfoBtn">Save Payer Information</button>
+              <button type="button" class="btn primary" id="savePayerInfoBtn" data-i18n="1099.savePayerInfo">Save Payer Information</button>
             </div>
           </div>
 
           <!-- Laborer Selection -->
           <div class="card pad" id="laborerSelectionCard" style="margin-bottom: 24px; display: none;">
-            <h2 class="h2" style="margin-bottom: 16px;">Select Laborer</h2>
+            <h2 class="h2" style="margin-bottom: 16px;" data-i18n="1099.selectLaborer">Select Laborer</h2>
             <div class="form-group" style="margin-bottom: 16px;">
-              <input type="text" id="laborerSearch" class="input" placeholder="Search laborers by name..." />
+              <input type="text" id="laborerSearch" class="input" placeholder="Search laborers by name..." data-i18n-placeholder="1099.searchLaborers" />
             </div>
             <div id="laborersList" class="laborers-list">
               <!-- Laborers will be rendered here -->
@@ -110,41 +110,40 @@
                 <h2 class="h2" id="selectedLaborerName" style="margin-bottom: 8px;">Laborer Name</h2>
                 <p class="muted" id="selectedLaborerType">Type</p>
               </div>
-              <button type="button" class="btn ghost" id="changeLaborerBtn">Change Laborer</button>
+              <button type="button" class="btn ghost" id="changeLaborerBtn" data-i18n="1099.changeLaborer">Change Laborer</button>
             </div>
 
             <!-- W9 Information -->
             <div id="w9InfoSection" style="margin-bottom: 24px;">
-              <h3 class="h3" style="margin-bottom: 12px;">Payee Information (from W-9)</h3>
+              <h3 class="h3" style="margin-bottom: 12px;" data-i18n="1099.payeeInfo">Payee Information (from W-9)</h3>
               <div id="w9InfoDisplay" class="info-grid">
                 <!-- W9 info will be displayed here -->
               </div>
               <div id="w9MissingWarning" class="alert alert-warning" style="display: none; margin-top: 12px;">
-                <strong>W-9 Information Missing:</strong> This laborer does not have complete W-9 information. 
-                Please <a href="../employees/employees.html" target="_blank">update the W-9 information in Employee Management</a> before generating the 1099-NEC.
+                <strong data-i18n="1099.w9Missing">W-9 Information Missing:</strong> <span data-i18n="1099.w9MissingDesc">This laborer does not have complete W-9 information. Please update the W-9 information in Employee Management before generating the 1099-NEC.</span>
               </div>
             </div>
 
             <!-- Payment Summary -->
             <div style="margin-bottom: 24px;">
-              <h3 class="h3" style="margin-bottom: 12px;">Payment Summary for <span id="summaryTaxYear"></span></h3>
+              <h3 class="h3" style="margin-bottom: 12px;"><span data-i18n="1099.paymentSummary">Payment Summary for</span> <span id="summaryTaxYear"></span></h3>
               <div class="stat-card" style="background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: var(--radius);">
-                <div class="stat-label" style="font-size: 0.9rem; color: var(--muted); margin-bottom: 8px;">Total Nonemployee Compensation (Box 1)</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: var(--muted); margin-bottom: 8px;" data-i18n="1099.totalCompensation">Total Nonemployee Compensation (Box 1)</div>
                 <div class="stat-value" id="totalCompensation" style="font-size: 2rem; font-weight: 700; color: var(--text);">$0.00</div>
               </div>
             </div>
 
             <!-- Payment Breakdown Table -->
             <div style="margin-bottom: 24px;">
-              <h3 class="h3" style="margin-bottom: 12px;">Payment Breakdown</h3>
+              <h3 class="h3" style="margin-bottom: 12px;" data-i18n="1099.paymentBreakdown">Payment Breakdown</h3>
               <div style="overflow-x: auto;">
                 <table class="table" id="paymentsTable">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Method</th>
-                      <th>Memo</th>
+                      <th data-i18n="bookkeeping.date">Date</th>
+                      <th data-i18n="bookkeeping.amount">Amount</th>
+                      <th data-i18n="bookkeeping.method">Method</th>
+                      <th data-i18n="bookkeeping.memo">Memo</th>
                     </tr>
                   </thead>
                   <tbody id="paymentsTableBody">
@@ -152,14 +151,14 @@
                   </tbody>
                 </table>
               </div>
-              <div id="noPaymentsMessage" class="alert alert-info" style="display: none; margin-top: 12px;">
+              <div id="noPaymentsMessage" class="alert alert-info" style="display: none; margin-top: 12px;" data-i18n="1099.noPayments">
                 No payments found for this laborer in the selected tax year.
               </div>
             </div>
 
             <!-- Generate Button -->
             <div class="btn-row">
-              <button type="button" class="btn primary" id="generate1099Btn" disabled>
+              <button type="button" class="btn primary" id="generate1099Btn" disabled data-i18n="1099.generate">
                 Generate 1099-NEC PDF
               </button>
             </div>
@@ -167,7 +166,7 @@
 
           <!-- Generated Forms History -->
           <div class="card pad" id="historyCard" style="display: none;">
-            <h2 class="h2" style="margin-bottom: 16px;">Generated Forms History</h2>
+            <h2 class="h2" style="margin-bottom: 16px;" data-i18n="1099.history">Generated Forms History</h2>
             <div id="formsHistory">
               <!-- History will be rendered here -->
             </div>
