@@ -253,17 +253,58 @@ function showForm(employee = null) {
   }
   
   // Populate W9 info if available (for laborers)
-  if (employee?._isLaborer && employee._laborerData?.w9Info) {
-    const w9Info = employee._laborerData.w9Info;
-    $("w9LegalName").value = w9Info.legalName || "";
-    $("w9BusinessName").value = w9Info.businessName || "";
-    $("w9AddressLine1").value = w9Info.addressLine1 || "";
-    $("w9AddressLine2").value = w9Info.addressLine2 || "";
-    $("w9City").value = w9Info.city || "";
-    $("w9State").value = w9Info.state || "";
-    $("w9Zip").value = w9Info.zip || "";
-    $("w9TinType").value = w9Info.tinType || "SSN";
-    $("w9TinLast4").value = w9Info.tinLast4 || "";
+  // Prefer OCR-extracted data, but allow manual override
+  if (employee?._isLaborer && employee._laborerData) {
+    const laborer = employee._laborerData;
+    const w9Info = laborer.w9Info;
+    
+    // Show OCR status if available
+    const ocrStatus = laborer.w9OcrStatus;
+    const w9StatusMsg = $("w9OcrStatusMessage");
+    if (w9StatusMsg) {
+      if (ocrStatus === "processing") {
+        w9StatusMsg.textContent = "Scanning W-9...";
+        w9StatusMsg.className = "small";
+        w9StatusMsg.style.color = "#059669";
+        w9StatusMsg.style.display = "block";
+      } else if (ocrStatus === "complete" || ocrStatus === "needs_review") {
+        const confidence = w9Info?.ocrConfidence || "medium";
+        w9StatusMsg.textContent = `W-9 scanned (${confidence} confidence). Review and edit fields as needed.`;
+        w9StatusMsg.className = "small";
+        w9StatusMsg.style.color = confidence === "high" ? "#059669" : "#f59e0b";
+        w9StatusMsg.style.display = "block";
+      } else if (ocrStatus === "failed") {
+        w9StatusMsg.textContent = laborer.w9OcrError || "Couldn't scan W-9. Please enter details manually.";
+        w9StatusMsg.className = "small danger";
+        w9StatusMsg.style.display = "block";
+      } else {
+        w9StatusMsg.style.display = "none";
+      }
+    }
+    
+    // Populate fields from OCR data or existing data
+    if (w9Info) {
+      $("w9LegalName").value = w9Info.legalName || "";
+      $("w9BusinessName").value = w9Info.businessName || "";
+      $("w9AddressLine1").value = w9Info.addressLine1 || "";
+      $("w9AddressLine2").value = w9Info.addressLine2 || "";
+      $("w9City").value = w9Info.city || "";
+      $("w9State").value = w9Info.state || "";
+      $("w9Zip").value = w9Info.zip || "";
+      $("w9TinType").value = w9Info.tinType || "SSN";
+      $("w9TinLast4").value = w9Info.tinLast4 || "";
+    } else {
+      // Clear W9 info fields
+      $("w9LegalName").value = "";
+      $("w9BusinessName").value = "";
+      $("w9AddressLine1").value = "";
+      $("w9AddressLine2").value = "";
+      $("w9City").value = "";
+      $("w9State").value = "";
+      $("w9Zip").value = "";
+      $("w9TinType").value = "SSN";
+      $("w9TinLast4").value = "";
+    }
   } else {
     // Clear W9 info fields
     $("w9LegalName").value = "";
@@ -275,6 +316,9 @@ function showForm(employee = null) {
     $("w9Zip").value = "";
     $("w9TinType").value = "SSN";
     $("w9TinLast4").value = "";
+    
+    const w9StatusMsg = $("w9OcrStatusMessage");
+    if (w9StatusMsg) w9StatusMsg.style.display = "none";
   }
   
   // Show/hide subcontractor fields
