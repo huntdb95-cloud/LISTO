@@ -29,6 +29,7 @@ let englishText = "";
 let spanishText = "";
 let currentView = "document"; // "document" or "english"
 let currentMobileView = "spanish"; // "english" or "spanish" for mobile
+let lastErrorDetails = null; // Store last error for debugging
 
 // Helpers
 function setMsg(elId, text, isError = false) {
@@ -121,9 +122,16 @@ function setBusy(isBusy) {
   if (btnScan) btnScan.disabled = isBusy;
   
   if (isBusy) {
+    // Starting a new operation - clear previous errors and hide error details
+    const errorDetailsEl = $("errorDetails");
+    if (errorDetailsEl) errorDetailsEl.style.display = "none";
+    
     setMsg("statusMsg", "Processing contract... This may take a moment.");
     setMsg("errorMsg", "");
+    lastErrorDetails = null;
   }
+  // When isBusy is false, we don't hide error details - they should remain visible
+  // if they were shown by the error handler
 }
 
 function showDocument(file, fileUrl = null) {
@@ -441,17 +449,61 @@ async function scanAndTranslate() {
     
   } catch (err) {
     console.error("Scan error:", err);
-    console.error("Error details:", {
+    
+    // Extract error details from Firebase Functions error
+    let errorData = null;
+    let requestId = null;
+    let errorCode = null;
+    
+    if (err?.details) {
+      // Firebase Functions wraps the error in details
+      if (typeof err.details === "object") {
+        errorData = err.details;
+      } else {
+        // Try to parse as JSON, but handle malformed JSON gracefully
+        try {
+          errorData = JSON.parse(err.details || "{}");
+        } catch (parseError) {
+          // If JSON parsing fails, treat the details as a plain string message
+          console.warn("Failed to parse error details as JSON:", parseError);
+          errorData = { message: String(err.details) };
+        }
+      }
+      requestId = errorData?.requestId || null;
+      errorCode = errorData?.errorCode || null;
+    } else if (err?.code && err?.message) {
+      // Direct error object
+      errorData = { code: err.code, message: err.message };
+    }
+    
+    // Store error details for debugging
+    lastErrorDetails = {
+      requestId,
+      errorCode,
       message: err?.message,
-      code: err?.code,
-      details: err?.details,
-      stack: err?.stack
-    });
+      timestamp: new Date().toISOString(),
+      error: errorData,
+    };
+    
+    console.error("Error details:", lastErrorDetails);
     
     // Parse error to get user-friendly message
     const errorMessage = parseError(err);
+    
+    // Display error message
     setMsg("errorMsg", errorMessage, true);
     setMsg("statusMsg", "");
+    
+    // Show error details if we have a requestId
+    const errorDetailsEl = $("errorDetails");
+    const errorRequestIdEl = $("errorRequestId");
+    
+    if (errorDetailsEl && errorRequestIdEl && requestId) {
+      errorRequestIdEl.textContent = `Request ID: ${requestId}${errorCode ? ` • Error Code: ${errorCode}` : ""}`;
+      errorDetailsEl.style.display = "block";
+    } else if (errorDetailsEl) {
+      errorDetailsEl.style.display = "none";
+    }
   } finally {
     setBusy(false);
   }
@@ -516,6 +568,27 @@ function init() {
   // Mobile language toggle buttons
   $("btnMobileEnglish").addEventListener("click", () => switchMobileView("english"));
   $("btnMobileSpanish").addEventListener("click", () => switchMobileView("spanish"));
+  
+  // Copy error details button
+  $("btnCopyErrorDetails").addEventListener("click", () => {
+    if (!lastErrorDetails) {
+      setMsg("statusMsg", "No error details to copy.", true);
+      return;
+    }
+    
+    const debugText = `Request ID: ${lastErrorDetails.requestId || "N/A"}
+Error Code: ${lastErrorDetails.errorCode || "N/A"}
+Timestamp: ${lastErrorDetails.timestamp}
+Message: ${lastErrorDetails.message || "N/A"}`;
+    
+    navigator.clipboard.writeText(debugText).then(() => {
+      setMsg("statusMsg", "Debug details copied to clipboard!");
+      setTimeout(() => setMsg("statusMsg", ""), 3000);
+    }).catch(err => {
+      console.error("Copy failed:", err);
+      setMsg("statusMsg", "Failed to copy debug details.", true);
+    });
+  });
   
   // Handle window resize to adjust view
   let resizeTimeout;
