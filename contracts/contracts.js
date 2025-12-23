@@ -23,11 +23,9 @@ const $$ = (selector) => document.querySelectorAll(selector);
 // State
 let currentUid = null;
 let builders = [];
-let contracts = [];
 let jobs = [];
 let selectedBuilderId = null;
-let selectedContractId = null;
-let filteredData = { builders: [], contracts: [], jobs: [] };
+let filteredData = { builders: [], jobs: [] };
 let searchTerm = "";
 let filterStatus = "";
 let filterBuilder = "";
@@ -176,73 +174,99 @@ async function migrateOldContracts() {
   }
 }
 
+// ========== MIGRATION: Move jobs from contracts to builders ==========
+
+async function migrateJobsFromContracts() {
+  if (!currentUid) return;
+  
+  try {
+    // Check if migration already done
+    const migrationCheck = localStorage.getItem(`jobs_migrated_to_builders_${currentUid}`);
+    if (migrationCheck === "true") return;
+    
+    // Load all builders
+    const buildersCol = collection(db, "users", currentUid, "builders");
+    const buildersSnap = await getDocs(buildersCol);
+    
+    let migrationCount = 0;
+    
+    // For each builder, check for contracts and migrate their jobs
+    for (const builderDoc of buildersSnap.docs) {
+      const builderId = builderDoc.id;
+      const contractsCol = collection(db, "users", currentUid, "builders", builderId, "contracts");
+      const contractsSnap = await getDocs(contractsCol);
+      
+      for (const contractDoc of contractsSnap.docs) {
+        const contractId = contractDoc.id;
+        // Load jobs from old location (under contract)
+        const oldJobsCol = collection(db, "users", currentUid, "builders", builderId, "contracts", contractId, "jobs");
+        const oldJobsSnap = await getDocs(oldJobsCol);
+        
+        // Move each job to new location (directly under builder)
+        for (const jobDoc of oldJobsSnap.docs) {
+          const jobData = jobDoc.data();
+          // Remove contractId, ensure builderId is set
+          const newJobData = {
+            ...jobData,
+            builderId: builderId,
+            _migratedFromContract: contractId,
+            updatedAt: serverTimestamp()
+          };
+          delete newJobData.contractId;
+          delete newJobData.contractTitle;
+          
+          // Create job in new location
+          const newJobsCol = collection(db, "users", currentUid, "builders", builderId, "jobs");
+          await addDoc(newJobsCol, newJobData);
+          
+          // Delete old job
+          await deleteDoc(doc(db, "users", currentUid, "builders", builderId, "contracts", contractId, "jobs", jobDoc.id));
+          migrationCount++;
+        }
+      }
+    }
+    
+    if (migrationCount > 0) {
+      console.log(`Migrated ${migrationCount} jobs from contracts to builders`);
+    }
+    
+    localStorage.setItem(`jobs_migrated_to_builders_${currentUid}`, "true");
+  } catch (err) {
+    console.warn("Job migration error (non-blocking):", err);
+    // Don't block if migration fails
+  }
+}
+
 // ========== DATA LOADING ==========
 
 async function loadAllData() {
   if (!currentUid) return;
   
   try {
+    // Run migration first (one-time)
+    await migrateJobsFromContracts();
+    
     // Load builders
     const buildersCol = collection(db, "users", currentUid, "builders");
     const buildersSnap = await getDocs(query(buildersCol, orderBy("name")));
     builders = buildersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     
-    // Load contracts for each builder
-    contracts = [];
-    for (const builder of builders) {
-      const contractsCol = collection(db, "users", currentUid, "builders", builder.id, "contracts");
-      const contractsSnap = await getDocs(query(contractsCol, orderBy("updatedAt", "desc")));
-      const builderContracts = contractsSnap.docs.map(d => ({
-        id: d.id,
-        builderId: builder.id,
-        builderName: builder.name,
-        ...d.data()
-      }));
-      contracts.push(...builderContracts);
-    }
-    
-    // Load jobs for selected builder (all contracts under the builder)
+    // Load jobs for selected builder (directly under builder, no contracts)
     jobs = [];
     if (selectedBuilderId) {
-      const builderContracts = contracts.filter(c => c.builderId === selectedBuilderId);
-      for (const contract of builderContracts) {
-        const jobsCol = collection(db, "users", currentUid, "builders", contract.builderId, "contracts", contract.id, "jobs");
-        const jobsSnap = await getDocs(query(jobsCol, orderBy("dueDate", "asc")));
-        const contractJobs = jobsSnap.docs.map(d => ({
-          id: d.id,
-          contractId: contract.id,
-          contractTitle: contract.title,
-          builderId: contract.builderId,
-          ...d.data()
-        }));
-        jobs.push(...contractJobs);
-      }
-    } else if (selectedContractId) {
-      // Fallback: if only contract is selected (for backward compatibility)
-      const selectedContract = contracts.find(c => c.id === selectedContractId);
-      if (selectedContract) {
-        const jobsCol = collection(db, "users", currentUid, "builders", selectedContract.builderId, "contracts", selectedContractId, "jobs");
-        const jobsSnap = await getDocs(query(jobsCol, orderBy("dueDate", "asc")));
-        jobs = jobsSnap.docs.map(d => ({
-          id: d.id,
-          contractId: selectedContractId,
-          contractTitle: selectedContract.title,
-          builderId: selectedContract.builderId,
-          ...d.data()
-        }));
-      }
+      const jobsCol = collection(db, "users", currentUid, "builders", selectedBuilderId, "jobs");
+      const jobsSnap = await getDocs(query(jobsCol, orderBy("dueDate", "asc")));
+      jobs = jobsSnap.docs.map(d => ({
+        id: d.id,
+        builderId: selectedBuilderId,
+        ...d.data()
+      }));
     }
     
     updateSummaryCards();
     applyFiltersAndSearch();
     renderContractsList();
-    renderJobsSection(); // Render the new standalone jobs section
-    
-    // Run migration after first load
-    if (builders.length === 0 && contracts.length === 0) {
-      await migrateOldContracts();
-      await loadAllData(); // Reload after migration
-    }
+    renderJobsSection();
   } catch (err) {
     console.error("Error loading data:", err);
     showToast("Error loading data: " + getFriendlyError(err), true);
@@ -252,7 +276,6 @@ async function loadAllData() {
 // ========== SUMMARY CARDS ==========
 
 function updateSummaryCards() {
-  const activeContracts = contracts.filter(c => c.status === "active").length;
   const openJobs = jobs.filter(j => !["completed", "paid"].includes(j.status)).length;
   const overdueJobs = jobs.filter(j => {
     if (["completed", "paid"].includes(j.status)) return false;
@@ -265,24 +288,21 @@ function updateSummaryCards() {
     return dueDateOnly < todayOnly;
   }).length;
   
-  const totalValue = contracts.reduce((sum, c) => sum + (parseFloat(c.totalValue) || 0), 0);
+  const totalBuilders = builders.length;
   
-  const activeEl = $("statActiveContracts");
   const openEl = $("statOpenJobs");
   const overdueEl = $("statOverdueJobs");
-  const valueEl = $("statTotalValue");
+  const buildersEl = $("statTotalBuilders");
   
-  if (activeEl) activeEl.textContent = activeContracts;
   if (openEl) openEl.textContent = openJobs;
   if (overdueEl) overdueEl.textContent = overdueJobs;
-  if (valueEl) valueEl.textContent = formatCurrency(totalValue);
+  if (buildersEl) buildersEl.textContent = totalBuilders;
 }
 
 // ========== SEARCH & FILTERS ==========
 
 function applyFiltersAndSearch() {
   let filteredBuilders = [...builders];
-  let filteredContracts = [...contracts];
   let filteredJobs = [...jobs];
   
   // Search filter
@@ -291,66 +311,28 @@ function applyFiltersAndSearch() {
     filteredBuilders = filteredBuilders.filter(b => 
       b.name?.toLowerCase().includes(term)
     );
-    filteredContracts = filteredContracts.filter(c =>
-      c.title?.toLowerCase().includes(term) ||
-      c.contractNumber?.toLowerCase().includes(term) ||
-      c.builderName?.toLowerCase().includes(term)
-    );
     filteredJobs = filteredJobs.filter(j =>
       j.jobName?.toLowerCase().includes(term) ||
       j.jobAddress?.toLowerCase().includes(term)
     );
   }
   
-  // Status filter
+  // Status filter (for jobs)
   if (filterStatus) {
-    filteredContracts = filteredContracts.filter(c => c.status === filterStatus);
+    filteredJobs = filteredJobs.filter(j => j.status === filterStatus);
   }
   
-  // Builder filter
+  // Builder filter (for jobs)
   if (filterBuilder) {
-    filteredContracts = filteredContracts.filter(c => c.builderId === filterBuilder);
+    filteredJobs = filteredJobs.filter(j => j.builderId === filterBuilder);
   }
-  
-  // Sort
-  filteredContracts = sortContracts(filteredContracts);
   
   filteredData = {
     builders: filteredBuilders,
-    contracts: filteredContracts,
     jobs: filteredJobs
   };
 }
 
-function sortContracts(contractsList) {
-  const sorted = [...contractsList];
-  
-  switch (sortBy) {
-    case "name":
-      sorted.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-      break;
-    case "dueDate":
-      sorted.sort((a, b) => {
-        const aDate = a.endDate?.toDate ? a.endDate.toDate() : (a.endDate ? new Date(a.endDate) : new Date(0));
-        const bDate = b.endDate?.toDate ? b.endDate.toDate() : (b.endDate ? new Date(b.endDate) : new Date(0));
-        return bDate - aDate;
-      });
-      break;
-    case "value":
-      sorted.sort((a, b) => (parseFloat(b.totalValue) || 0) - (parseFloat(a.totalValue) || 0));
-      break;
-    case "updated":
-    default:
-      sorted.sort((a, b) => {
-        const aDate = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
-        const bDate = b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0);
-        return bDate - aDate;
-      });
-      break;
-  }
-  
-  return sorted;
-}
 
 // ========== RENDERING ==========
 
@@ -358,10 +340,10 @@ function renderContractsList() {
   const listEl = $("contractsList");
   if (!listEl) return;
   
-  if (filteredData.builders.length === 0 && filteredData.contracts.length === 0) {
+  if (filteredData.builders.length === 0) {
     listEl.innerHTML = `
       <div class="contracts-empty-state">
-        <p>No builders or contracts found.</p>
+        <p>No builders found.</p>
         <button type="button" class="btn primary small" onclick="showBuilderModal()">Create Your First Builder</button>
       </div>
     `;
@@ -370,19 +352,10 @@ function renderContractsList() {
   
   let html = "";
   
-  // Group contracts by builder
-  const contractsByBuilder = {};
-  for (const contract of filteredData.contracts) {
-    if (!contractsByBuilder[contract.builderId]) {
-      contractsByBuilder[contract.builderId] = [];
-    }
-    contractsByBuilder[contract.builderId].push(contract);
-  }
-  
-  // Render builders and their contracts
+  // Render builders
   for (const builder of filteredData.builders) {
-    const builderContracts = contractsByBuilder[builder.id] || [];
     const isSelected = selectedBuilderId === builder.id;
+    const builderJobsCount = jobs.filter(j => j.builderId === builder.id).length;
     
     html += `
       <div class="contracts-list-item contracts-list-builder ${isSelected ? "contracts-list-item-selected" : ""}" 
@@ -390,56 +363,11 @@ function renderContractsList() {
         <div class="contracts-list-item-header" onclick="selectBuilder('${builder.id}')">
           <div class="contracts-list-item-title">
             <strong>${escapeHtml(builder.name)}</strong>
-            <span class="contracts-list-item-count">${builderContracts.length} contract${builderContracts.length !== 1 ? "s" : ""}</span>
+            <span class="contracts-list-item-count">${builderJobsCount} job${builderJobsCount !== 1 ? "s" : ""}</span>
           </div>
           <button type="button" class="contracts-list-item-action" onclick="event.stopPropagation(); showBuilderModal('${builder.id}')">
             <span>✎</span>
           </button>
-        </div>
-        <div class="contracts-list-contracts">
-          ${builderContracts.map(contract => {
-            const isContractSelected = selectedContractId === contract.id;
-            return `
-              <div class="contracts-list-item contracts-list-contract ${isContractSelected ? "contracts-list-item-selected" : ""}"
-                   data-contract-id="${contract.id}" onclick="selectContract('${contract.id}')">
-                <div class="contracts-list-item-title">
-                  ${escapeHtml(contract.title || "Untitled Contract")}
-                  <span class="contracts-status-badge contracts-status-badge-${contract.status || "draft"}">${formatStatus(contract.status || "draft")}</span>
-                </div>
-              </div>
-            `;
-          }).join("")}
-          <button type="button" class="contracts-list-add-contract" onclick="showContractModal(null, '${builder.id}')">
-            + Add Contract
-          </button>
-        </div>
-      </div>
-    `;
-  }
-  
-  // Show contracts without builders (orphaned)
-  const contractsWithoutBuilder = filteredData.contracts.filter(c => !c.builderId);
-  if (contractsWithoutBuilder.length > 0) {
-    html += `
-      <div class="contracts-list-item contracts-list-builder">
-        <div class="contracts-list-item-header">
-          <div class="contracts-list-item-title">
-            <strong>Other Contracts</strong>
-          </div>
-        </div>
-        <div class="contracts-list-contracts">
-          ${contractsWithoutBuilder.map(contract => {
-            const isContractSelected = selectedContractId === contract.id;
-            return `
-              <div class="contracts-list-item contracts-list-contract ${isContractSelected ? "contracts-list-item-selected" : ""}"
-                   data-contract-id="${contract.id}" onclick="selectContract('${contract.id}')">
-                <div class="contracts-list-item-title">
-                  ${escapeHtml(contract.title || "Untitled Contract")}
-                  <span class="contracts-status-badge contracts-status-badge-${contract.status || "draft"}">${formatStatus(contract.status || "draft")}</span>
-                </div>
-              </div>
-            `;
-          }).join("")}
         </div>
       </div>
     `;
@@ -448,59 +376,6 @@ function renderContractsList() {
   listEl.innerHTML = html;
 }
 
-function renderContractDetail() {
-  const detailView = $("contractDetailView");
-  const emptyView = $("contractEmptyState");
-  const detailPanelWrapper = $("contractsDetailPanelWrapper");
-  
-  if (!selectedContractId) {
-    if (detailView) detailView.style.display = "none";
-    if (emptyView) emptyView.style.display = "block";
-    // Show the wrapper so the empty state message is visible
-    if (detailPanelWrapper) detailPanelWrapper.style.display = "block";
-    return;
-  }
-  
-  const contract = contracts.find(c => c.id === selectedContractId);
-  if (!contract) return;
-  
-  if (detailView) detailView.style.display = "block";
-  if (emptyView) emptyView.style.display = "none";
-  if (detailPanelWrapper) detailPanelWrapper.style.display = "block";
-  
-  // Update header
-  const titleEl = $("detailContractTitle");
-  const statusEl = $("detailContractStatus");
-  const builderEl = $("detailContractBuilder");
-  
-  if (titleEl) titleEl.textContent = contract.title || "Untitled Contract";
-  if (statusEl) {
-    statusEl.textContent = formatStatus(contract.status || "draft");
-    statusEl.className = `contracts-status-badge contracts-status-badge-${contract.status || "draft"}`;
-  }
-  if (builderEl) builderEl.textContent = contract.builderName || "—";
-  
-  // Update overview tab
-  updateDetailField("detailContractNumber", contract.contractNumber || "—");
-  updateDetailField("detailStartDate", formatDate(contract.startDate));
-  updateDetailField("detailEndDate", formatDate(contract.endDate));
-  updateDetailField("detailPaymentTerms", contract.paymentTerms || "—");
-  updateDetailField("detailTotalValue", formatCurrency(contract.totalValue || 0));
-  updateDetailField("detailDeposit", formatCurrency(contract.deposit || 0));
-  updateDetailField("detailRetainage", contract.retainagePct ? `${contract.retainagePct}%` : "0%");
-  
-  const totalValue = parseFloat(contract.totalValue) || 0;
-  const deposit = parseFloat(contract.deposit) || 0;
-  const retainage = (totalValue * (parseFloat(contract.retainagePct) || 0) / 100);
-  const remaining = totalValue - deposit - retainage;
-  updateDetailField("detailRemaining", formatCurrency(Math.max(0, remaining)));
-  
-  updateDetailField("detailScope", contract.scope || "—");
-  updateDetailField("detailNotes", contract.notes || "—");
-  
-  // Jobs are now displayed in the standalone jobs section, not here
-  // renderJobsTable(); // Removed - jobs are now in standalone section
-}
 
 function renderJobsTable() {
   const tbody = $("jobsTableBody");
@@ -628,7 +503,6 @@ function renderJobsSection() {
     return `
       <tr class="${isOverdue ? "contracts-job-overdue" : ""}">
         <td><strong>${escapeHtml(job.jobName || "—")}</strong></td>
-        <td>${escapeHtml(job.contractTitle || "—")}</td>
         <td>${escapeHtml(job.jobAddress || "—")}</td>
         <td>
           <span class="contracts-status-badge contracts-status-badge-${job.status || "not-started"}">
@@ -646,8 +520,8 @@ function renderJobsSection() {
         <td>${formatCurrency(job.budget || 0)}</td>
         <td>
           <div class="contracts-actions">
-            <button type="button" class="btn small" onclick="showJobModal('${job.contractId}', '${job.id}')">Edit</button>
-            <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.contractId}', '${job.id}')">Delete</button>
+            <button type="button" class="btn small" onclick="showJobModal('${job.id}')">Edit</button>
+            <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.id}')">Delete</button>
           </div>
         </td>
       </tr>
@@ -686,10 +560,6 @@ function renderJobsSection() {
           </div>
         </div>
         <div class="contracts-job-card-field">
-          <span class="contracts-job-card-label">Contract:</span>
-          <span class="contracts-job-card-value">${escapeHtml(job.contractTitle || "—")}</span>
-        </div>
-        <div class="contracts-job-card-field">
           <span class="contracts-job-card-label">Address:</span>
           <span class="contracts-job-card-value">${escapeHtml(job.jobAddress || "—")}</span>
         </div>
@@ -715,8 +585,8 @@ function renderJobsSection() {
           <span class="contracts-job-card-value">${formatCurrency(job.budget || 0)}</span>
         </div>
         <div class="contracts-job-card-actions">
-          <button type="button" class="btn small" onclick="showJobModal('${job.contractId}', '${job.id}')">Edit</button>
-          <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.contractId}', '${job.id}')">Delete</button>
+          <button type="button" class="btn small" onclick="showJobModal('${job.id}')">Edit</button>
+          <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.id}')">Delete</button>
         </div>
       </div>
     `;
@@ -727,23 +597,9 @@ function renderJobsSection() {
 
 async function selectBuilder(builderId) {
   selectedBuilderId = builderId;
-  selectedContractId = null;
   jobs = [];
   await loadAllData(); // Load data first (this will also call renderJobsSection)
   renderContractsList(); // Then render with fresh data
-  renderContractDetail(); // Update detail view
-  renderJobsSection(); // Ensure jobs section is rendered
-}
-
-async function selectContract(contractId) {
-  selectedContractId = contractId;
-  const contract = contracts.find(c => c.id === contractId);
-  if (contract) {
-    selectedBuilderId = contract.builderId;
-  }
-  await loadAllData(); // Load data first (this will also call renderJobsSection)
-  renderContractsList(); // Then render with fresh data
-  renderContractDetail(); // Update detail view with loaded jobs
   renderJobsSection(); // Ensure jobs section is rendered
 }
 
@@ -752,17 +608,13 @@ async function selectContract(contractId) {
 async function saveBuilder(e) {
   if (e) e.preventDefault();
   
-  console.log("saveBuilder called");
-  
   if (!currentUid) {
-    console.error("Not authenticated");
     showToast("Please sign in first.", true);
     return;
   }
   
   const btn = $("saveBuilderBtn");
   if (!btn) {
-    console.error("Save builder button not found");
     showToast("Error: Save button not found. Please refresh the page.", true);
     return;
   }
@@ -772,7 +624,6 @@ async function saveBuilder(e) {
     btn.disabled = true;
     clearBuilderMessages();
     showBuilderMsg("Saving builder...");
-    console.log("Starting builder save...");
     
     const builderId = $("builderId")?.value || null;
     const name = $("builderName")?.value.trim();
@@ -781,10 +632,7 @@ async function saveBuilder(e) {
     const address = $("builderAddress")?.value.trim() || null;
     const notes = $("builderNotes")?.value.trim() || null;
     
-    console.log("Form data:", { builderId, name, email, phone });
-    
     if (!name) {
-      console.error("Builder name is required");
       showBuilderError("Builder name is required.");
       showToast("Builder name is required.", true);
       return;
@@ -800,11 +648,9 @@ async function saveBuilder(e) {
     };
     
     if (!builderId) {
-      console.log("Creating new builder...");
       builderData.createdAt = serverTimestamp();
       const buildersCol = collection(db, "users", currentUid, "builders");
       const newRef = await addDoc(buildersCol, builderData);
-      console.log("Builder created with ID:", newRef.id);
       showBuilderMsg("Builder created successfully!", false);
       showToast("Builder created successfully!");
       await loadAllData();
@@ -817,17 +663,14 @@ async function saveBuilder(e) {
         showToast("Builder added to list!");
       }, 1000);
     } else {
-      console.log("Updating existing builder:", builderId);
       const builderRef = doc(db, "users", currentUid, "builders", builderId);
       await updateDoc(builderRef, builderData);
-      console.log("Builder updated successfully");
       showBuilderMsg("Builder updated successfully!", false);
       showToast("Builder updated successfully!");
       await loadAllData();
       setTimeout(() => hideBuilderModal(), 1000);
     }
   } catch (err) {
-    console.error("Error saving builder:", err);
     const errorMsg = getFriendlyError(err);
     showBuilderError(errorMsg);
     showToast("Error saving builder: " + errorMsg, true);
@@ -837,21 +680,35 @@ async function saveBuilder(e) {
 }
 
 async function deleteBuilder(builderId) {
-  if (!confirm("Delete this builder? All contracts and jobs under this builder will also be deleted. This cannot be undone.")) {
-    return;
+  // Check if builder has jobs
+  const builderJobs = jobs.filter(j => j.builderId === builderId);
+  if (builderJobs.length > 0) {
+    if (!confirm(`Delete this builder? This builder has ${builderJobs.length} job${builderJobs.length !== 1 ? "s" : ""} that will also be deleted. This cannot be undone.`)) {
+      return;
+    }
+  } else {
+    if (!confirm("Delete this builder? This cannot be undone.")) {
+      return;
+    }
   }
   
   if (!currentUid) return;
   
   try {
-    // Delete all contracts and jobs under this builder
+    // Delete all jobs under this builder (new structure)
+    const jobsCol = collection(db, "users", currentUid, "builders", builderId, "jobs");
+    const jobsSnap = await getDocs(jobsCol);
+    for (const jobDoc of jobsSnap.docs) {
+      await deleteDoc(doc(db, "users", currentUid, "builders", builderId, "jobs", jobDoc.id));
+    }
+    
+    // Also check for legacy jobs under contracts (migration cleanup)
     const contractsCol = collection(db, "users", currentUid, "builders", builderId, "contracts");
     const contractsSnap = await getDocs(contractsCol);
-    
     for (const contractDoc of contractsSnap.docs) {
-      const jobsCol = collection(db, "users", currentUid, "builders", builderId, "contracts", contractDoc.id, "jobs");
-      const jobsSnap = await getDocs(jobsCol);
-      for (const jobDoc of jobsSnap.docs) {
+      const legacyJobsCol = collection(db, "users", currentUid, "builders", builderId, "contracts", contractDoc.id, "jobs");
+      const legacyJobsSnap = await getDocs(legacyJobsCol);
+      for (const jobDoc of legacyJobsSnap.docs) {
         await deleteDoc(doc(db, "users", currentUid, "builders", builderId, "contracts", contractDoc.id, "jobs", jobDoc.id));
       }
       await deleteDoc(doc(db, "users", currentUid, "builders", builderId, "contracts", contractDoc.id));
@@ -861,7 +718,6 @@ async function deleteBuilder(builderId) {
     await deleteDoc(doc(db, "users", currentUid, "builders", builderId));
     
     selectedBuilderId = null;
-    selectedContractId = null;
     await loadAllData();
     showToast("Builder deleted successfully.");
   } catch (err) {
@@ -870,146 +726,6 @@ async function deleteBuilder(builderId) {
   }
 }
 
-// ========== CRUD: CONTRACTS ==========
-
-async function saveContract(e) {
-  if (e) e.preventDefault();
-  
-  if (!currentUid) {
-    showToast("Please sign in first.", true);
-    return;
-  }
-  
-  const btn = $("saveContractBtn");
-  if (!btn) return;
-  const oldDisabled = btn.disabled;
-  
-  try {
-    btn.disabled = true;
-    clearContractMessages();
-    showContractMsg("Saving contract...");
-    
-    const contractId = $("contractId")?.value || null;
-    const builderId = $("contractBuilderId")?.value || null;
-    const title = $("contractTitle")?.value.trim();
-    const contractNumber = $("contractNumber")?.value.trim() || null;
-    const status = $("contractStatus")?.value || "draft";
-    const startDate = $("contractStartDate")?.value || null;
-    const endDate = $("contractEndDate")?.value || null;
-    const totalValue = parseFloat($("contractTotalValue")?.value || 0) || 0;
-    const deposit = parseFloat($("contractDeposit")?.value || 0) || 0;
-    const retainagePct = parseFloat($("contractRetainagePct")?.value || 0) || 0;
-    const paymentTerms = $("contractPaymentTerms")?.value.trim() || null;
-    const scope = $("contractScope")?.value.trim() || null;
-    const notes = $("contractNotes")?.value.trim() || null;
-    
-    if (!title) {
-      showContractError("Contract title is required.");
-      return;
-    }
-    
-    if (!builderId) {
-      showContractError("Builder is required.");
-      return;
-    }
-    
-    const contractData = {
-      title,
-      contractNumber,
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-      status,
-      totalValue,
-      deposit,
-      retainagePct,
-      paymentTerms,
-      scope,
-      notes,
-      updatedAt: serverTimestamp()
-    };
-    
-    if (!contractId) {
-      contractData.createdAt = serverTimestamp();
-      const contractsCol = collection(db, "users", currentUid, "builders", builderId, "contracts");
-      const newRef = await addDoc(contractsCol, contractData);
-      showContractMsg("Contract created successfully!", false);
-      await loadAllData();
-      selectContract(newRef.id);
-      setTimeout(() => hideContractModal(), 1000);
-    } else {
-      const contractRef = doc(db, "users", currentUid, "builders", builderId, "contracts", contractId);
-      await updateDoc(contractRef, contractData);
-      showContractMsg("Contract updated successfully!", false);
-      await loadAllData();
-      selectContract(contractId);
-      setTimeout(() => hideContractModal(), 1000);
-    }
-  } catch (err) {
-    console.error("Error saving contract:", err);
-    showContractError(getFriendlyError(err));
-  } finally {
-    btn.disabled = oldDisabled;
-  }
-}
-
-async function duplicateContract(contractId) {
-  const contract = contracts.find(c => c.id === contractId);
-  if (!contract) return;
-  
-  if (!confirm(`Duplicate contract "${contract.title}"?`)) return;
-  
-  try {
-    const contractData = {
-      ...contract,
-      title: `${contract.title} (Copy)`,
-      status: "draft",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    };
-    delete contractData.id;
-    delete contractData.builderName;
-    
-    const contractsCol = collection(db, "users", currentUid, "builders", contract.builderId, "contracts");
-    const newRef = await addDoc(contractsCol, contractData);
-    
-    await loadAllData();
-    selectContract(newRef.id);
-    showToast("Contract duplicated successfully.");
-  } catch (err) {
-    console.error("Error duplicating contract:", err);
-    showToast("Error duplicating contract: " + getFriendlyError(err), true);
-  }
-}
-
-async function deleteContractConfirm(contractId) {
-  const contract = contracts.find(c => c.id === contractId);
-  if (!contract) return;
-  
-  if (!confirm(`Delete contract "${contract.title}"? All jobs under this contract will also be deleted. This cannot be undone.`)) {
-    return;
-  }
-  
-  if (!currentUid) return;
-  
-  try {
-    // Delete all jobs
-    const jobsCol = collection(db, "users", currentUid, "builders", contract.builderId, "contracts", contractId, "jobs");
-    const jobsSnap = await getDocs(jobsCol);
-    for (const jobDoc of jobsSnap.docs) {
-      await deleteDoc(doc(db, "users", currentUid, "builders", contract.builderId, "contracts", contractId, "jobs", jobDoc.id));
-    }
-    
-    // Delete contract
-    await deleteDoc(doc(db, "users", currentUid, "builders", contract.builderId, "contracts", contractId));
-    
-    selectedContractId = null;
-    await loadAllData();
-    showToast("Contract deleted successfully.");
-  } catch (err) {
-    console.error("Error deleting contract:", err);
-    showToast("Error deleting contract: " + getFriendlyError(err), true);
-  }
-}
 
 // ========== CRUD: JOBS ==========
 
@@ -1031,8 +747,7 @@ async function saveJob(e) {
     showJobMsg("Saving job...");
     
     const jobId = $("jobId")?.value || null;
-    const contractId = $("jobContractId")?.value;
-    const builderId = $("jobBuilderId")?.value;
+    const builderId = $("jobBuilderId")?.value || selectedBuilderId;
     const jobName = $("jobName")?.value.trim();
     const jobAddress = $("jobAddress")?.value.trim() || null;
     const status = $("jobStatus")?.value || "not-started";
@@ -1048,8 +763,8 @@ async function saveJob(e) {
       return;
     }
     
-    if (!contractId || !builderId) {
-      showJobError("Contract is required.");
+    if (!builderId) {
+      showJobError("Builder is required. Please select a builder first.");
       return;
     }
     
@@ -1065,18 +780,19 @@ async function saveJob(e) {
       progressPct: Math.max(0, Math.min(100, progressPct)),
       priority,
       notes,
+      builderId,
       updatedAt: serverTimestamp()
     };
     
     if (!jobId) {
       jobData.createdAt = serverTimestamp();
-      const jobsCol = collection(db, "users", currentUid, "builders", builderId, "contracts", contractId, "jobs");
+      const jobsCol = collection(db, "users", currentUid, "builders", builderId, "jobs");
       const newRef = await addDoc(jobsCol, jobData);
       showJobMsg("Job created successfully!", false);
       await loadAllData();
       setTimeout(() => hideJobModal(), 1000);
     } else {
-      const jobRef = doc(db, "users", currentUid, "builders", builderId, "contracts", contractId, "jobs", jobId);
+      const jobRef = doc(db, "users", currentUid, "builders", builderId, "jobs", jobId);
       await updateDoc(jobRef, jobData);
       showJobMsg("Job updated successfully!", false);
       await loadAllData();
@@ -1090,7 +806,7 @@ async function saveJob(e) {
   }
 }
 
-async function deleteJobConfirm(contractId, jobId) {
+async function deleteJobConfirm(jobId) {
   const job = jobs.find(j => j.id === jobId);
   if (!job) return;
   
@@ -1098,14 +814,22 @@ async function deleteJobConfirm(contractId, jobId) {
     return;
   }
   
-  if (!currentUid) return;
+  if (!currentUid || !job.builderId) return;
   
   try {
-    const contract = contracts.find(c => c.id === contractId);
-    if (!contract) return;
-    
-    const jobRef = doc(db, "users", currentUid, "builders", contract.builderId, "contracts", contractId, "jobs", jobId);
-    await deleteDoc(jobRef);
+    // Try new location first
+    try {
+      const jobRef = doc(db, "users", currentUid, "builders", job.builderId, "jobs", jobId);
+      await deleteDoc(jobRef);
+    } catch (err) {
+      // Fallback: try legacy location (under contract)
+      if (job.contractId) {
+        const legacyJobRef = doc(db, "users", currentUid, "builders", job.builderId, "contracts", job.contractId, "jobs", jobId);
+        await deleteDoc(legacyJobRef);
+      } else {
+        throw err;
+      }
+    }
     
     await loadAllData();
     showToast("Job deleted successfully.");
@@ -1172,64 +896,16 @@ function hideBuilderModal() {
   document.body.style.overflow = "";
 }
 
-function showContractModal(contractId = null, builderId = null) {
-  const modal = $("contractModal");
-  const title = $("contractModalTitle");
-  if (!modal) return;
-  
-  modal.style.display = "flex";
-  if (title) title.textContent = contractId ? "Edit Contract" : "New Contract";
-  
-  const form = $("contractForm");
-  if (form) form.reset();
-  
-  const idInput = $("contractId");
-  const builderInput = $("contractBuilderId");
-  if (idInput) idInput.value = contractId || "";
-  if (builderInput) builderInput.value = builderId || selectedBuilderId || "";
-  
-  if (contractId) {
-    const contract = contracts.find(c => c.id === contractId);
-    if (contract) {
-      if ($("contractTitle")) $("contractTitle").value = contract.title || "";
-      if ($("contractNumber")) $("contractNumber").value = contract.contractNumber || "";
-      if ($("contractStatus")) $("contractStatus").value = contract.status || "draft";
-      if ($("contractStartDate")) $("contractStartDate").value = formatDateInput(contract.startDate);
-      if ($("contractEndDate")) $("contractEndDate").value = formatDateInput(contract.endDate);
-      if ($("contractTotalValue")) $("contractTotalValue").value = contract.totalValue || "";
-      if ($("contractDeposit")) $("contractDeposit").value = contract.deposit || "";
-      if ($("contractRetainagePct")) $("contractRetainagePct").value = contract.retainagePct || "";
-      if ($("contractPaymentTerms")) $("contractPaymentTerms").value = contract.paymentTerms || "";
-      if ($("contractScope")) $("contractScope").value = contract.scope || "";
-      if ($("contractNotes")) $("contractNotes").value = contract.notes || "";
-      if (builderInput) builderInput.value = contract.builderId || "";
-    }
-  }
-  
-  clearContractMessages();
-  document.body.style.overflow = "hidden";
-}
 
-function hideContractModal() {
-  const modal = $("contractModal");
-  if (modal) modal.style.display = "none";
-  clearContractMessages();
-  document.body.style.overflow = "";
-}
-
-function showJobModal(contractId = null, jobId = null) {
+function showJobModal(jobId = null) {
   const modal = $("jobModal");
   const title = $("jobModalTitle");
   if (!modal) return;
   
-  if (!contractId) contractId = selectedContractId;
-  if (!contractId) {
-    showToast("Please select a contract first.", true);
+  if (!selectedBuilderId) {
+    showToast("Please select a builder first.", true);
     return;
   }
-  
-  const contract = contracts.find(c => c.id === contractId);
-  if (!contract) return;
   
   modal.style.display = "flex";
   if (title) title.textContent = jobId ? "Edit Job" : "New Job";
@@ -1238,11 +914,9 @@ function showJobModal(contractId = null, jobId = null) {
   if (form) form.reset();
   
   const idInput = $("jobId");
-  const contractInput = $("jobContractId");
   const builderInput = $("jobBuilderId");
   if (idInput) idInput.value = jobId || "";
-  if (contractInput) contractInput.value = contractId;
-  if (builderInput) builderInput.value = contract.builderId;
+  if (builderInput) builderInput.value = selectedBuilderId;
   
   if (jobId) {
     const job = jobs.find(j => j.id === jobId);
@@ -1256,6 +930,7 @@ function showJobModal(contractId = null, jobId = null) {
       if ($("jobProgressPct")) $("jobProgressPct").value = job.progressPct || "";
       if ($("jobPriority")) $("jobPriority").value = job.priority || "normal";
       if ($("jobNotes")) $("jobNotes").value = job.notes || "";
+      if (builderInput) builderInput.value = job.builderId || selectedBuilderId;
     }
   }
   
@@ -1377,29 +1052,6 @@ function clearBuilderMessages() {
   if (errEl) errEl.textContent = "";
 }
 
-function showContractMsg(msg, isError = false) {
-  const msgEl = $("contractFormMsg");
-  const errEl = $("contractFormError");
-  if (!msgEl || !errEl) return;
-  if (isError) {
-    msgEl.textContent = "";
-    errEl.textContent = msg;
-  } else {
-    errEl.textContent = "";
-    msgEl.textContent = msg;
-  }
-}
-
-function showContractError(msg) {
-  showContractMsg(msg, true);
-}
-
-function clearContractMessages() {
-  const msgEl = $("contractFormMsg");
-  const errEl = $("contractFormError");
-  if (msgEl) msgEl.textContent = "";
-  if (errEl) errEl.textContent = "";
-}
 
 function showJobMsg(msg, isError = false) {
   const msgEl = $("jobFormMsg");
@@ -1447,66 +1099,31 @@ function showToast(message, isError = false) {
 function init() {
   // Event listeners
   const newBuilderBtn = $("newBuilderBtn");
-  const newContractBtn = $("newContractBtn");
-  const newJobBtn = $("newJobBtn");
   const newJobBtnStandalone = $("newJobBtnStandalone");
-  const editContractBtn = $("editContractBtn");
-  const duplicateContractBtn = $("duplicateContractBtn");
-  const deleteContractBtn = $("deleteContractBtn");
   
   if (newBuilderBtn) {
     newBuilderBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log("New Builder button clicked");
       showBuilderModal();
     });
-  } else {
-    console.error("New Builder button not found in DOM");
   }
-  if (newContractBtn) newContractBtn.addEventListener("click", () => showContractModal());
-  if (newJobBtn) newJobBtn.addEventListener("click", () => showJobModal());
+  
   if (newJobBtnStandalone) {
     newJobBtnStandalone.addEventListener("click", () => {
-      // If a builder is selected but no contract, prompt to select a contract first
-      if (selectedBuilderId && !selectedContractId) {
-        const builderContracts = contracts.filter(c => c.builderId === selectedBuilderId);
-        if (builderContracts.length === 0) {
-          showToast("Please create a contract first before adding jobs.", true);
-          return;
-        }
-        // Auto-select first contract for convenience
-        if (builderContracts.length === 1) {
-          selectContract(builderContracts[0].id).then(() => {
-            showJobModal(builderContracts[0].id);
-          });
-        } else {
-          showToast("Please select a contract first to add a job.", true);
-        }
-      } else if (selectedContractId) {
-        showJobModal(selectedContractId);
-      } else {
+      if (!selectedBuilderId) {
         showToast("Please select a builder first.", true);
+        return;
       }
+      showJobModal();
     });
   }
-  if (editContractBtn) editContractBtn.addEventListener("click", () => {
-    if (selectedContractId) showContractModal(selectedContractId);
-  });
-  if (duplicateContractBtn) duplicateContractBtn.addEventListener("click", () => {
-    if (selectedContractId) duplicateContract(selectedContractId);
-  });
-  if (deleteContractBtn) deleteContractBtn.addEventListener("click", () => {
-    if (selectedContractId) deleteContractConfirm(selectedContractId);
-  });
   
   // Forms
   const builderForm = $("builderForm");
-  const contractForm = $("contractForm");
   const jobForm = $("jobForm");
   
   if (builderForm) builderForm.addEventListener("submit", saveBuilder);
-  if (contractForm) contractForm.addEventListener("submit", saveContract);
   if (jobForm) jobForm.addEventListener("submit", saveJob);
   
   // Search and filters
@@ -1547,13 +1164,6 @@ function init() {
     });
   }
   
-  // Tabs
-  $$(".contracts-tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      switchTab(tab.dataset.tab);
-    });
-  });
-  
   // Modal close handlers
   $$(".modal-overlay").forEach(modal => {
     modal.addEventListener("click", (e) => {
@@ -1567,7 +1177,6 @@ function init() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       hideBuilderModal();
-      hideContractModal();
       hideJobModal();
     }
   });
@@ -1595,12 +1204,9 @@ function init() {
     } else {
       currentUid = null;
       builders = [];
-      contracts = [];
       jobs = [];
       selectedBuilderId = null;
-      selectedContractId = null;
       renderContractsList();
-      renderContractDetail();
       renderJobsSection(); // Clear jobs section on logout
     }
   });
@@ -1609,15 +1215,10 @@ function init() {
 // Make functions globally available
 window.showBuilderModal = showBuilderModal;
 window.hideBuilderModal = hideBuilderModal;
-window.showContractModal = showContractModal;
-window.hideContractModal = hideContractModal;
 window.showJobModal = showJobModal;
 window.hideJobModal = hideJobModal;
 window.selectBuilder = selectBuilder;
-window.selectContract = selectContract;
-window.deleteContractConfirm = deleteContractConfirm;
 window.deleteJobConfirm = deleteJobConfirm;
-window.duplicateContract = duplicateContract;
 
 // Start when DOM is ready
 if (document.readyState === "loading") {

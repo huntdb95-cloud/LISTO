@@ -9,6 +9,7 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  setDoc,
   doc,
   query,
   where,
@@ -420,7 +421,7 @@ async function savePayerInfo() {
       await updateDoc(docRef, data);
     } else {
       data.createdAt = serverTimestamp();
-      await updateDoc(docRef, data);
+      await setDoc(docRef, data);
     }
     
     payerInfo = data;
