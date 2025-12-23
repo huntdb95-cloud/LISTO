@@ -511,8 +511,8 @@ body[data-page="landing"] .lang-switch-mobile {
   }
   
   .prequal-dashboard-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     padding: 0;
     margin-top: 16px;
   }
@@ -520,19 +520,29 @@ body[data-page="landing"] .lang-switch-mobile {
   .prequal-dashboard-item {
     width: 100%;
     max-width: 100%;
-    padding: 12px;
+    padding: 8px;
     box-sizing: border-box;
+    min-height: auto;
   }
   
   .prequal-dashboard-item .dashboard-status {
     width: 100%;
     max-width: 100%;
+    gap: 6px;
+  }
+  
+  .prequal-dashboard-item .dashboard-status .dot {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
   }
   
   .prequal-dashboard-item .dashboard-status span:not(.dot) {
+    font-size: 0.75rem;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
