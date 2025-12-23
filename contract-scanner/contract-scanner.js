@@ -28,6 +28,7 @@ let currentFileUrl = null;
 let englishText = "";
 let spanishText = "";
 let currentView = "document"; // "document" or "english"
+let currentMobileView = "spanish"; // "english" or "spanish" for mobile
 
 // Helpers
 function setMsg(elId, text, isError = false) {
@@ -35,6 +36,84 @@ function setMsg(elId, text, isError = false) {
   if (!el) return;
   el.textContent = text || "";
   el.className = isError ? "small danger" : "small muted";
+}
+
+// Parse Firebase Functions error and return user-friendly message
+function parseError(error) {
+  // If error has a message, try to extract useful info
+  const errorMessage = error?.message || String(error || "");
+  
+  // Firebase Functions returns "internal" for unhandled errors
+  if (errorMessage === "internal" || errorMessage.includes("INTERNAL")) {
+    return "An internal server error occurred. Please check that Google Cloud Vision and Translation APIs are properly configured.";
+  }
+  
+  // Check for specific error codes from Firebase Functions
+  if (error?.code) {
+    switch (error.code) {
+      case "functions/not-found":
+        return "The OCR service is not available. Please contact support.";
+      case "functions/permission-denied":
+        return "Permission denied. Please ensure you are signed in.";
+      case "functions/unauthenticated":
+        return "Please sign in to use this feature.";
+      case "functions/deadline-exceeded":
+        return "The request took too long. Please try with a smaller file.";
+      case "functions/resource-exhausted":
+        return "Service temporarily unavailable. Please try again later.";
+      default:
+        // Try to extract message from error details
+        if (error.details) {
+          const details = typeof error.details === "string" ? error.details : JSON.stringify(error.details);
+          if (details.includes("OCR") || details.includes("Vision")) {
+            return "OCR failed: " + (details.includes("credentials") || details.includes("permission") 
+              ? "Google Vision API credentials missing or invalid" 
+              : "Unable to extract text from image");
+          }
+          if (details.includes("Translation") || details.includes("Translate")) {
+            return "Translation failed: " + (details.includes("API key") || details.includes("quota")
+              ? "Translation API key missing or quota exceeded"
+              : "Unable to translate text");
+          }
+        }
+    }
+  }
+  
+  // Check error message for common patterns
+  if (errorMessage.includes("OCR") || errorMessage.includes("Vision")) {
+    if (errorMessage.includes("credentials") || errorMessage.includes("permission") || errorMessage.includes("auth")) {
+      return "OCR failed: Google Vision API credentials missing or invalid";
+    }
+    if (errorMessage.includes("quota") || errorMessage.includes("limit")) {
+      return "OCR failed: API quota exceeded. Please try again later.";
+    }
+    return "OCR failed: " + errorMessage;
+  }
+  
+  if (errorMessage.includes("Translation") || errorMessage.includes("Translate")) {
+    if (errorMessage.includes("API key") || errorMessage.includes("credentials")) {
+      return "Translation failed: Invalid API key or credentials missing";
+    }
+    if (errorMessage.includes("quota") || errorMessage.includes("limit")) {
+      return "Translation failed: API quota exceeded. Please try again later.";
+    }
+    return "Translation failed: " + errorMessage;
+  }
+  
+  if (errorMessage.includes("File too large") || errorMessage.includes("size")) {
+    return "File too large. Maximum size is 20 MB.";
+  }
+  
+  if (errorMessage.includes("Invalid file") || errorMessage.includes("file type")) {
+    return "Invalid file type. Please upload a PDF, HEIC, JPG, or PNG file.";
+  }
+  
+  // Return original message if it's meaningful, otherwise generic
+  if (errorMessage && errorMessage.length > 0 && errorMessage !== "internal") {
+    return errorMessage;
+  }
+  
+  return "Failed to process contract. Please try again or contact support if the problem persists.";
 }
 
 function setBusy(isBusy) {
@@ -105,8 +184,15 @@ function showResults(english, spanish, fileUrl = null) {
     comparisonContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
   
-  // Set initial view to document
-  switchView("document");
+  // Set initial view based on screen size
+  const isMobile = window.innerWidth <= 480;
+  if (isMobile) {
+    // Mobile: default to Spanish after translation
+    switchMobileView("spanish");
+  } else {
+    // Desktop: show document view
+    switchView("document");
+  }
 }
 
 function hideResults() {
@@ -138,6 +224,45 @@ function switchView(view) {
     if (englishView) englishView.classList.add("active");
     if (btnShowDocument) btnShowDocument.classList.remove("active");
     if (btnShowEnglish) btnShowEnglish.classList.add("active");
+  }
+}
+
+// Switch mobile view between English and Spanish
+function switchMobileView(view) {
+  currentMobileView = view;
+  
+  const englishPane = $("englishPane");
+  const spanishPane = $("spanishPane");
+  const btnMobileEnglish = $("btnMobileEnglish");
+  const btnMobileSpanish = $("btnMobileSpanish");
+  const mobileEnglishHeader = $("mobileEnglishHeader");
+  const mobileSpanishHeader = $("mobileSpanishHeader");
+  
+  const isMobile = window.innerWidth <= 480;
+  
+  if (view === "english") {
+    if (englishPane) englishPane.classList.add("active");
+    if (spanishPane) spanishPane.classList.remove("active");
+    if (btnMobileEnglish) btnMobileEnglish.classList.add("active");
+    if (btnMobileSpanish) btnMobileSpanish.classList.remove("active");
+    if (isMobile) {
+      if (mobileEnglishHeader) mobileEnglishHeader.style.display = "block";
+      if (mobileSpanishHeader) mobileSpanishHeader.style.display = "none";
+      // On mobile, show English text view directly (no document toggle)
+      const englishView = $("englishView");
+      const documentView = $("documentView");
+      if (englishView) englishView.classList.add("active");
+      if (documentView) documentView.classList.remove("active");
+    }
+  } else {
+    if (englishPane) englishPane.classList.remove("active");
+    if (spanishPane) spanishPane.classList.add("active");
+    if (btnMobileEnglish) btnMobileEnglish.classList.remove("active");
+    if (btnMobileSpanish) btnMobileSpanish.classList.add("active");
+    if (isMobile) {
+      if (mobileEnglishHeader) mobileEnglishHeader.style.display = "none";
+      if (mobileSpanishHeader) mobileSpanishHeader.style.display = "block";
+    }
   }
 }
 
@@ -211,6 +336,18 @@ async function scanAndTranslate() {
     return;
   }
   
+  // Validate file size (20 MB max)
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB in bytes
+  if (file.size > MAX_FILE_SIZE) {
+    setMsg("errorMsg", `File too large. Maximum size is 20 MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)} MB.`, true);
+    return;
+  }
+  
+  if (file.size === 0) {
+    setMsg("errorMsg", "File is empty. Please select a valid file.", true);
+    return;
+  }
+  
   setBusy(true);
   hideResults();
   
@@ -245,27 +382,74 @@ async function scanAndTranslate() {
       fileUrl: downloadURL,
       fileName: file.name,
       fileType: file.type,
-      filePath: filePath
+      filePath: filePath,
+      fileSize: file.size
     });
     
+    // Log full result for debugging (remove in production if needed)
+    console.log("Scan result:", result?.data);
+    
+    // Check for error in response
     if (result?.data?.error) {
-      throw new Error(result.data.error);
+      const errorData = result.data.error;
+      
+      // Handle structured error response
+      if (typeof errorData === "object" && errorData !== null) {
+        // If it has a code, use structured error format
+        if (errorData.code) {
+          throw { 
+            code: errorData.code, 
+            message: errorData.message || errorData.error || "An error occurred", 
+            details: errorData.details 
+          };
+        }
+        // If it's an object without code, extract message from common properties
+        const message = errorData.message || errorData.error || errorData.details || 
+                       (typeof errorData.details === "string" ? errorData.details : null) ||
+                       JSON.stringify(errorData);
+        throw new Error(message);
+      }
+      
+      // If errorData is a string or primitive, use it directly
+      throw new Error(String(errorData || "An error occurred"));
     }
     
-    const { english, spanish } = result.data || {};
+    // Check for structured error response format
+    if (result?.data?.ok === false) {
+      const errorData = result.data;
+      throw { 
+        code: errorData.code || "UNKNOWN_ERROR", 
+        message: errorData.message || "An error occurred",
+        details: errorData.details 
+      };
+    }
     
-    if (!english && !spanish) {
+    const { english, spanish, originalText, translatedText } = result.data || {};
+    
+    // Support both old format (english/spanish) and new format (originalText/translatedText)
+    const finalEnglish = english || originalText || "";
+    const finalSpanish = spanish || translatedText || "";
+    
+    if (!finalEnglish && !finalSpanish) {
       throw new Error("No text was extracted from the document. Please ensure the document contains readable text.");
     }
     
     // Show results with the download URL for document display
-    showResults(english || "", spanish || "", downloadURL);
+    showResults(finalEnglish, finalSpanish, downloadURL);
     
     setMsg("statusMsg", "Contract scanned and translated successfully!", false);
     
   } catch (err) {
     console.error("Scan error:", err);
-    const errorMessage = err?.message || "Failed to process contract. Please try again.";
+    console.error("Error details:", {
+      message: err?.message,
+      code: err?.code,
+      details: err?.details,
+      stack: err?.stack
+    });
+    
+    // Parse error to get user-friendly message
+    const errorMessage = parseError(err);
     setMsg("errorMsg", errorMessage, true);
     setMsg("statusMsg", "");
   } finally {
@@ -325,9 +509,29 @@ function init() {
     }
   });
   
-  // Toggle view buttons
+  // Toggle view buttons (desktop)
   $("btnShowDocument").addEventListener("click", () => switchView("document"));
   $("btnShowEnglish").addEventListener("click", () => switchView("english"));
+  
+  // Mobile language toggle buttons
+  $("btnMobileEnglish").addEventListener("click", () => switchMobileView("english"));
+  $("btnMobileSpanish").addEventListener("click", () => switchMobileView("spanish"));
+  
+  // Handle window resize to adjust view
+  let resizeTimeout;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const isMobile = window.innerWidth <= 480;
+      if (isMobile && englishText && spanishText) {
+        // On mobile, ensure correct view is shown
+        switchMobileView(currentMobileView);
+      } else if (!isMobile && englishText && spanishText) {
+        // On desktop, ensure document/english toggle works
+        switchView(currentView);
+      }
+    }, 250);
+  });
   
   // Auth state listener
   onAuthStateChanged(auth, (user) => {
