@@ -11,7 +11,7 @@ import { auth, db } from "../config.js";
 
 import {
   onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import {
   collection,
@@ -25,12 +25,14 @@ import {
   query,
   orderBy,
   where
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+import { loadUserProfile, formatAddress } from "../profile-utils.js";
 
 import {
   getFunctions,
   httpsCallable
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js";
 
 const el = (id) => document.getElementById(id);
 
@@ -1057,9 +1059,57 @@ onAuthStateChanged(auth, async (user) => {
     invoiceNumber.value = makeInvoiceNumber();
   }
 
+  // Autofill company info from user profile (only if fields are empty)
+  await autofillCompanyInfo();
+
   await refreshSavedInvoices();
   await refreshBuilderSelect();
 });
+
+// Autofill company information from user profile
+async function autofillCompanyInfo() {
+  if (!state.uid) return;
+  
+  try {
+    const profile = await loadUserProfile(state.uid);
+    if (!profile) return;
+    
+    // Only autofill if fields are currently empty
+    const fromNameEl = el("fromName");
+    const fromEmailEl = el("fromEmail");
+    const fromPhoneEl = el("fromPhone");
+    const fromAddressEl = el("fromAddress");
+    
+    if (fromNameEl && !fromNameEl.value && profile.companyName) {
+      fromNameEl.value = profile.companyName;
+    }
+    
+    if (fromEmailEl && !fromEmailEl.value && profile.email) {
+      fromEmailEl.value = profile.email;
+    }
+    
+    if (fromPhoneEl && !fromPhoneEl.value && profile.phoneNumber) {
+      fromPhoneEl.value = profile.phoneNumber;
+    }
+    
+    if (fromAddressEl && !fromAddressEl.value && profile.address) {
+      // Format address from structured data
+      const addressStr = formatAddress(profile.address);
+      if (addressStr) {
+        fromAddressEl.value = addressStr;
+      }
+    }
+    
+    // Show a subtle hint if profile was used
+    if (profile.companyName || profile.email || profile.phoneNumber || profile.address) {
+      // Optionally show a small message - but keep it subtle
+      // Could add a small notice here if desired
+    }
+  } catch (err) {
+    console.error("Error autofilling company info:", err);
+    // Silently fail - don't break the invoice builder if profile load fails
+  }
+}
 
 // Boot - Ensure DOM is ready before initializing
 function initInvoice() {

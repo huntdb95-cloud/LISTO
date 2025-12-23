@@ -390,6 +390,30 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    // ========== User Profile Document ==========
+    
+    // Standardized user profile at users/{uid}
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      
+      allow write: if isOwner(userId);
+      // Stores: companyName, email, phoneNumber, address { street, city, state, zip }, taxpayerId, createdAt, updatedAt
+      // Structure is flexible to allow for future fields
+    }
+
+    // ========== Audit Documents ==========
+    
+    // Audit data: audits/{uid}
+    match /audits/{userId} {
+      allow read: if isOwner(userId);
+      
+      allow write: if isOwner(userId);
+      // Stores: businessSnapshot, policy { policyNumber, startDate, endDate }, 
+      // questionnaire { workTypeDescription, usedInsuredSubcontractors, workedStates, coiFiles },
+      // payrollSummary, uploadedFiles, auditorEmail, createdAt, updatedAt
+      // Structure is flexible to allow for future fields
+    }
+
     // ========== Default Deny ==========
     
     // Deny all other paths
