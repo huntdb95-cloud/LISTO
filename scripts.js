@@ -445,7 +445,7 @@ const I18N = {
     "dashboard.invoiceDesc": "Create and send invoices",
     "dashboard.auditDesc": "Prepare for insurance audits",
 
-    "employees.title": "Employee Management",
+    "employees.title": "Labor Management",
     "employees.subtitle": "Add and manage your employees and subcontractors. Upload W9s, COIs, and Workers Compensation documents.",
     "employees.addEmployee": "Add Employee",
     "employees.name": "Full Name",
@@ -485,7 +485,7 @@ const I18N = {
     "1099.searchLaborers": "Search laborers by name...",
     "1099.payeeInfo": "Payee Information (from W-9)",
     "1099.w9Missing": "W-9 Information Missing:",
-    "1099.w9MissingDesc": "This laborer does not have complete W-9 information. Please update the W-9 information in Employee Management before generating the 1099-NEC.",
+    "1099.w9MissingDesc": "This laborer does not have complete W-9 information. Please update the W-9 information in Labor Management before generating the 1099-NEC.",
     "1099.paymentSummary": "Payment Summary for",
     "1099.totalCompensation": "Total Nonemployee Compensation (Box 1)",
     "1099.paymentBreakdown": "Payment Breakdown",
@@ -523,6 +523,8 @@ const I18N = {
     "bookkeeping.date": "Date",
     "bookkeeping.memo": "Memo",
     "bookkeeping.actions": "Actions",
+    "bookkeeping.editLaborer": "Edit Laborer",
+    "bookkeeping.laborManagement": "Labor Management",
 
     "contracts.title": "Contracts",
     "contracts.subtitle": "Manage your pre-qualification documents and active builder contracts.",
@@ -954,7 +956,7 @@ const I18N = {
     "dashboard.invoiceDesc": "Crea y envía facturas",
     "dashboard.auditDesc": "Prepárate para auditorías de seguro",
 
-    "employees.title": "Gestión de Empleados",
+    "employees.title": "Gestión de Trabajadores",
     "employees.subtitle": "Agrega y gestiona tus empleados y subcontratistas. Sube W9s, COIs y documentos de Compensación de Trabajadores.",
     "employees.addEmployee": "Agregar Empleado",
     "employees.name": "Nombre Completo",
@@ -1002,6 +1004,8 @@ const I18N = {
     "bookkeeping.date": "Fecha",
     "bookkeeping.memo": "Nota",
     "bookkeeping.actions": "Acciones",
+    "bookkeeping.editLaborer": "Editar Trabajador",
+    "bookkeeping.laborManagement": "Gestión de Trabajadores",
 
     "contracts.title": "Contratos",
     "contracts.subtitle": "Administra tus documentos de precalificación y contratos activos con constructores.",

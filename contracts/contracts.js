@@ -465,7 +465,7 @@ function renderJobsSection() {
   if (!selectedBuilderId) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="contracts-empty-state">Select a builder to view jobs.</td>
+        <td colspan="8" class="contracts-empty-state">Select a builder to view jobs.</td>
       </tr>
     `;
     // Clear mobile cards
@@ -477,7 +477,7 @@ function renderJobsSection() {
   if (builderJobs.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="contracts-empty-state">No jobs found for this builder.</td>
+        <td colspan="8" class="contracts-empty-state">No jobs found for this builder.</td>
       </tr>
     `;
     // Clear mobile cards
