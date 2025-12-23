@@ -1071,8 +1071,21 @@ async function autofillCompanyInfo() {
   if (!state.uid) return;
   
   try {
+    // Load standardized profile from users/{uid}
     const profile = await loadUserProfile(state.uid);
-    if (!profile) return;
+    
+    // Also load legacy profile for backward compatibility (for name field)
+    let legacyProfile = null;
+    try {
+      const legacyProfileRef = doc(db, "users", state.uid, "private", "profile");
+      const legacyProfileSnap = await getDoc(legacyProfileRef);
+      legacyProfile = legacyProfileSnap.exists() ? legacyProfileSnap.data() : null;
+    } catch (legacyErr) {
+      console.warn("Could not load legacy profile:", legacyErr);
+    }
+    
+    // Get current user for email fallback
+    const currentUser = auth.currentUser;
     
     // Only autofill if fields are currently empty
     const fromNameEl = el("fromName");
@@ -1080,30 +1093,33 @@ async function autofillCompanyInfo() {
     const fromPhoneEl = el("fromPhone");
     const fromAddressEl = el("fromAddress");
     
-    if (fromNameEl && !fromNameEl.value && profile.companyName) {
-      fromNameEl.value = profile.companyName;
+    // Business/Company Name: prefer companyName from standardized profile, fallback to name from legacy profile, then displayName
+    if (fromNameEl && !fromNameEl.value) {
+      const businessName = profile?.companyName || legacyProfile?.name || currentUser?.displayName || "";
+      if (businessName) {
+        fromNameEl.value = businessName;
+      }
     }
     
-    if (fromEmailEl && !fromEmailEl.value && profile.email) {
-      fromEmailEl.value = profile.email;
+    // Email: prefer profile email, fallback to auth.currentUser.email
+    if (fromEmailEl && !fromEmailEl.value) {
+      const email = profile?.email || legacyProfile?.email || currentUser?.email || "";
+      if (email) {
+        fromEmailEl.value = email;
+      }
     }
     
-    if (fromPhoneEl && !fromPhoneEl.value && profile.phoneNumber) {
+    // Phone: from standardized profile
+    if (fromPhoneEl && !fromPhoneEl.value && profile?.phoneNumber) {
       fromPhoneEl.value = profile.phoneNumber;
     }
     
-    if (fromAddressEl && !fromAddressEl.value && profile.address) {
-      // Format address from structured data
+    // Address: format from structured data
+    if (fromAddressEl && !fromAddressEl.value && profile?.address) {
       const addressStr = formatAddress(profile.address);
       if (addressStr) {
         fromAddressEl.value = addressStr;
       }
-    }
-    
-    // Show a subtle hint if profile was used
-    if (profile.companyName || profile.email || profile.phoneNumber || profile.address) {
-      // Optionally show a small message - but keep it subtle
-      // Could add a small notice here if desired
     }
   } catch (err) {
     console.error("Error autofilling company info:", err);

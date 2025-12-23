@@ -1217,6 +1217,101 @@ input:focus, select:focus, textarea:focus{
 
 .account-info-card {
   min-width: 0;
+  padding: 24px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.account-info-card .h2 {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.account-info-card .divider {
+  margin: 16px 0;
+  background: var(--border);
+  height: 1px;
+}
+
+.account-info-card .grid-2 {
+  gap: 20px;
+  align-items: start;
+}
+
+.account-info-card .kv-row {
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 8px 0;
+}
+
+.account-info-card .kv-row:last-child {
+  margin-bottom: 0;
+}
+
+.account-info-card .kv-row .muted {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.account-info-card .kv-val {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.account-info-card .profile-picture-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.account-info-card .profile-avatar {
+  width: 120px;
+  height: 120px;
+  border: 2px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.account-info-card .h3 {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.account-info-card .prequal-dashboard-grid {
+  margin-top: 12px;
+}
+
+.account-info-card .prequal-dashboard-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* Desktop: Better spacing for account info */
+@media (min-width: 769px) {
+  .account-info-card {
+    padding: 28px !important;
+  }
+  
+  .account-info-card .grid-2 {
+    gap: 32px;
+  }
+  
+  .account-info-card .kv-row {
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+  }
 }
 
 /* Mobile: Center Edit button in Account Info card */
@@ -1629,7 +1724,7 @@ input:focus, select:focus, textarea:focus{
   /* Pre-qualification section spans full width on desktop */
   .account-prequal-card {
     grid-column: 1 / -1;
-    margin-top: 8px;
+    margin-top: 32px;
   }
 }
 
@@ -1855,7 +1950,7 @@ input:focus, select:focus, textarea:focus{
   /* Pre-qualification section spans full width */
   .account-prequal-card {
     grid-column: 1 / -1;
-    margin-top: 0;
+    margin-top: 32px;
   }
 }
 
@@ -1887,6 +1982,10 @@ input:focus, select:focus, textarea:focus{
   
   .account-dashboard-grid {
     gap: 20px;
+  }
+  
+  .account-prequal-card {
+    margin-top: 24px;
   }
   
   .account-dashboard-column {
