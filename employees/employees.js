@@ -632,7 +632,84 @@ async function deleteEmployee(employeeId, employeeName) {
     if (employee?.coiUrl) await deleteFile(employee.coiUrl);
     if (employee?.workersCompUrl) await deleteFile(employee.workersCompUrl);
     
-    // Delete from Firestore
+    // Delete corresponding laborer if it exists
+    if (employee?.laborerId) {
+      try {
+        const laborerRef = doc(db, "users", currentUid, "laborers", employee.laborerId);
+        const laborerDoc = await getDoc(laborerRef);
+        
+        if (laborerDoc.exists()) {
+          const laborerData = laborerDoc.data();
+          
+          // Delete laborer documents from Storage
+          if (laborerData.documents?.w9?.storagePath) {
+            try {
+              const w9Ref = ref(storage, laborerData.documents.w9.storagePath);
+              await deleteObject(w9Ref);
+            } catch (err) {
+              console.warn("Error deleting laborer W-9 file:", err);
+            }
+          }
+          
+          if (laborerData.documents?.coi?.storagePath) {
+            try {
+              const coiRef = ref(storage, laborerData.documents.coi.storagePath);
+              await deleteObject(coiRef);
+            } catch (err) {
+              console.warn("Error deleting laborer COI file:", err);
+            }
+          }
+          
+          // Delete laborer from Firestore
+          await deleteDoc(laborerRef);
+        }
+      } catch (err) {
+        console.warn("Error deleting corresponding laborer:", err);
+        // Continue with employee deletion even if laborer deletion fails
+      }
+    } else {
+      // If no laborerId stored, try to find by name (for legacy data)
+      // Only delete if exactly one match to avoid deleting wrong laborer
+      try {
+        const laborersCol = collection(db, "users", currentUid, "laborers");
+        const laborersSnap = await getDocs(query(laborersCol, where("displayName", "==", employeeName)));
+        
+        if (laborersSnap.docs.length === 1) {
+          // Only delete if exactly one match (safe)
+          const laborerDoc = laborersSnap.docs[0];
+          const laborerData = laborerDoc.data();
+          
+          // Delete laborer documents from Storage
+          if (laborerData.documents?.w9?.storagePath) {
+            try {
+              const w9Ref = ref(storage, laborerData.documents.w9.storagePath);
+              await deleteObject(w9Ref);
+            } catch (err) {
+              console.warn("Error deleting laborer W-9 file:", err);
+            }
+          }
+          
+          if (laborerData.documents?.coi?.storagePath) {
+            try {
+              const coiRef = ref(storage, laborerData.documents.coi.storagePath);
+              await deleteObject(coiRef);
+            } catch (err) {
+              console.warn("Error deleting laborer COI file:", err);
+            }
+          }
+          
+          // Delete laborer from Firestore
+          await deleteDoc(doc(db, "users", currentUid, "laborers", laborerDoc.id));
+        } else if (laborersSnap.docs.length > 1) {
+          console.warn(`Multiple laborers found with name "${employeeName}". Skipping laborer deletion to avoid data corruption.`);
+        }
+      } catch (err) {
+        console.warn("Error finding/deleting laborer by name:", err);
+        // Continue with employee deletion even if laborer deletion fails
+      }
+    }
+    
+    // Delete employee from Firestore
     const employeeRef = doc(db, "users", currentUid, "employees", employeeId);
     await deleteDoc(employeeRef);
     

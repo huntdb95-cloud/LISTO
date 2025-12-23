@@ -15,6 +15,38 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// Ensure Facebook plugin renders on mobile after page load
+window.addEventListener('load', () => {
+  // Wait for Facebook SDK to be ready
+  if (window.FB) {
+    // Re-parse XFBML to ensure plugin renders
+    window.FB.XFBML.parse();
+  } else {
+    // If FB SDK not ready, wait a bit and try again
+    setTimeout(() => {
+      if (window.FB) {
+        window.FB.XFBML.parse();
+      }
+    }, 1000);
+  }
+});
+
+// Also re-parse when DOM is ready (in case load event already fired)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.FB) {
+      window.FB.XFBML.parse();
+    }
+  });
+} else {
+  // DOM already ready, try parsing immediately
+  setTimeout(() => {
+    if (window.FB) {
+      window.FB.XFBML.parse();
+    }
+  }, 500);
+}
+
 async function loadDashboardData(user) {
   try {
     // Load profile from Firestore

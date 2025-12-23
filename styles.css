@@ -465,6 +465,8 @@ body[data-page="landing"] .lang-switch-mobile {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-top: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .prequal-dashboard-item {
@@ -475,6 +477,10 @@ body[data-page="landing"] .lang-switch-mobile {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   min-height: 44px;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .prequal-dashboard-item .dashboard-status {
@@ -496,6 +502,38 @@ body[data-page="landing"] .lang-switch-mobile {
 
 .prequal-dashboard-item .btn {
   flex-shrink: 0;
+}
+
+/* Hide desktop-only items on mobile */
+@media (max-width: 480px) {
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .prequal-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0;
+    margin-top: 16px;
+  }
+  
+  .prequal-dashboard-item {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+  
+  .prequal-dashboard-item .dashboard-status {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .prequal-dashboard-item .dashboard-status span:not(.dot) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .dashboard-grid {
@@ -1200,12 +1238,23 @@ input:focus, select:focus, textarea:focus{
   .facebook-feed-container {
     min-height: 500px;
     height: 600px;
+    overflow: visible;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .facebook-feed-container .fb-page,
-  .facebook-feed-container .fb-page > span,
+  .facebook-feed-container .fb-page > span {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    position: relative;
+  }
+  
   .facebook-feed-container .fb-page iframe,
   .facebook-feed-container iframe {
     width: 100% !important;
@@ -1213,6 +1262,24 @@ input:focus, select:focus, textarea:focus{
     max-width: 100% !important;
     display: block !important;
     height: 600px !important;
+    min-height: 500px !important;
+    border: none;
+    position: relative;
+  }
+}
+
+/* Additional mobile-specific Facebook fixes for smaller screens */
+@media (max-width: 480px) {
+  .facebook-feed-container {
+    min-height: 500px;
+    height: 650px;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .facebook-feed-container .fb-page iframe,
+  .facebook-feed-container iframe {
+    height: 650px !important;
     min-height: 500px !important;
   }
 }
