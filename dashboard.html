@@ -238,21 +238,41 @@
 <div id="fb-root"></div>
 <script>
   // Load Facebook SDK with proper error handling and mobile Safari support
+  // Ensure SDK loads only once globally
   (function(d, s, id) {
+    // Prevent duplicate loading
+    if (d.getElementById(id)) {
+      console.log("[FB SDK] Facebook SDK script already exists, skipping");
+      return;
+    }
+    
+    // Check if FB is already initialized
+    if (window.FB) {
+      console.log("[FB SDK] Facebook SDK already initialized");
+      return;
+    }
+    
     var js, fjs = d.getElementsByTagName(s)[0];
-    if (d.getElementById(id)) return; // Prevent duplicate loading
-    js = d.createElement(s); js.id = id;
+    js = d.createElement(s); 
+    js.id = id;
     js.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0";
     js.async = true;
     js.defer = true;
     js.crossOrigin = "anonymous";
+    
     js.onload = function() {
-      console.log("[FB SDK] Facebook SDK loaded successfully");
-      // Wait a moment for FB to be fully initialized
-      setTimeout(function() {
+      console.log("[FB SDK] Facebook SDK script loaded");
+      // Wait for FB object to be available (SDK may need a moment to initialize)
+      let checkCount = 0;
+      const maxChecks = 30; // Wait up to 3 seconds
+      
+      const checkFB = setInterval(function() {
+        checkCount++;
         if (window.FB) {
+          clearInterval(checkFB);
           console.log("[FB SDK] window.FB is available");
           // Initialize Facebook plugin after SDK loads
+          // dashboard.js will handle initialization, but we can trigger it here too
           if (typeof window.initFacebookPlugin === 'function') {
             window.initFacebookPlugin();
           } else {
@@ -261,19 +281,28 @@
               if (typeof window.initFacebookPlugin === 'function') {
                 window.initFacebookPlugin();
               } else {
-                console.warn("[FB SDK] initFacebookPlugin function not found, will be called from dashboard.js");
+                console.log("[FB SDK] initFacebookPlugin will be called from dashboard.js when ready");
               }
-            }, 200);
+            }, 300);
           }
-        } else {
-          console.warn("[FB SDK] window.FB not available after SDK load");
+        } else if (checkCount >= maxChecks) {
+          clearInterval(checkFB);
+          console.error("[FB SDK] window.FB not available after SDK load timeout");
         }
       }, 100);
     };
+    
     js.onerror = function() {
-      console.error("[FB SDK] Failed to load Facebook SDK");
+      console.error("[FB SDK] Failed to load Facebook SDK script");
+      // dashboard.js will handle fallback
     };
-    fjs.parentNode.insertBefore(js, fjs);
+    
+    if (fjs && fjs.parentNode) {
+      fjs.parentNode.insertBefore(js, fjs);
+    } else {
+      // Fallback: append to head if body not ready
+      (d.head || d.body || d.documentElement).appendChild(js);
+    }
   }(document, 'script', 'facebook-jssdk'));
 </script>
 
