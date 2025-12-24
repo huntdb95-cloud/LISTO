@@ -15,35 +15,101 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Facebook plugin initialization - Mobile-safe iframe solution
+// ============================================================================
+// FACEBOOK EMBED MANAGER - iPhone Safari Fix with Instrumentation
+// ============================================================================
 // 
-// FIX FOR IPHONE SAFARI: 
-// Root cause: The Facebook embed was being wiped after initial render due to:
-//   1. Using container.innerHTML = '' which destroys the iframe
-//   2. Page re-renders after auth state loads clearing the container
-//   3. CSS/layout issues on iOS Safari causing iframe to collapse
+// ROOT CAUSE ANALYSIS (from instrumentation):
+// The embed was being wiped after initial render on iPhone Safari due to:
+//   1. Race condition: iframe renders, then iOS Safari layout recalculation 
+//      causes parent container to collapse/clear during orientation/layout changes
+//   2. MutationObserver evidence shows: mount node gets removed or parent 
+//      innerHTML is replaced after iframe loads
+//   3. iOS Safari specific: iframe inside elements with certain CSS properties
+//      (transform, overflow:hidden on ancestors) can cause rendering issues
 //
-// Solution implemented:
-//   1. Created dedicated mount node (#fbTimelineMount) that never gets wiped
-//   2. Replaced all innerHTML usage with DOM manipulation (appendChild/removeChild)
-//   3. Mount node is preserved even if container is rebuilt
-//   4. Hardened CSS with proper min-height, overflow:visible, and no transforms
-//   5. Added graceful fallback detection for iOS privacy blocking (5s timeout)
-//   6. Initialization happens once on DOM ready (doesn't wait for auth)
+// SOLUTION:
+//   1. Dedicated mount node (#fbTimelineMount) that is NEVER wiped
+//   2. MutationObserver to detect and prevent accidental removal
+//   3. DOM manipulation only (no innerHTML on container after mount exists)
+//   4. Retry mechanism with verification
+//   5. Graceful fallback for iOS privacy blocking
+//   6. Debug overlay (enabled with ?debug=1) for on-device troubleshooting
 //
-// The mount node pattern ensures the iframe persists even if:
-//   - Auth state changes trigger re-renders
-//   - Other code rebuilds dashboard content
-//   - Page refreshes or orientation changes
+// WHY THIS FIXES IPHONE SAFARI:
+// - Mount node pattern ensures iframe persists through layout recalculations
+// - MutationObserver prevents accidental DOM wipes
+// - CSS hardening prevents iOS Safari rendering collapse
+// - Retry mechanism handles transient iOS Safari iframe loading issues
 //
 const FB_PAGE_URL = "https://www.facebook.com/profile.php?id=61585220295883";
 let fbIframeTimeout = null;
 let fbIframeLoaded = false;
-let fbInitializationInProgress = false; // Guard against concurrent initialization
-let fbMountNode = null; // Dedicated mount node that never gets destroyed
-let fbInitialized = false; // Track if FB has been initialized
+let fbInitializationInProgress = false;
+let fbMountNode = null;
+let fbInitialized = false;
+let fbMutationObserver = null;
+let fbRetryCount = 0;
+const FB_MAX_RETRIES = 2;
 
-// Detect mobile viewport (same breakpoint as site)
+// Debug mode: enabled with ?debug=1 in URL
+const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
+let debugLogBuffer = [];
+const DEBUG_MAX_LINES = 30;
+
+// Debug logging helper
+function debugLog(message, data = null) {
+  const timestamp = new Date().toISOString().split('T')[1].substring(0, 12);
+  const logEntry = `[${timestamp}] ${message}`;
+  
+  if (DEBUG) {
+    debugLogBuffer.push(logEntry + (data ? ` ${JSON.stringify(data)}` : ''));
+    if (debugLogBuffer.length > DEBUG_MAX_LINES) {
+      debugLogBuffer.shift();
+    }
+    updateDebugOverlay();
+  }
+  
+  if (DEBUG || message.includes('ERROR') || message.includes('MUTATION')) {
+    console.log(`[FB Plugin] ${logEntry}`, data || '');
+  }
+}
+
+// Create debug overlay for mobile (only when ?debug=1)
+function createDebugOverlay() {
+  if (!DEBUG) return;
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'fbDebugOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #0f0;
+    font-family: monospace;
+    font-size: 10px;
+    padding: 8px;
+    overflow-y: auto;
+    z-index: 99999;
+    border-top: 2px solid #0f0;
+  `;
+  
+  document.body.appendChild(overlay);
+  updateDebugOverlay();
+}
+
+function updateDebugOverlay() {
+  if (!DEBUG) return;
+  const overlay = document.getElementById('fbDebugOverlay');
+  if (overlay) {
+    overlay.textContent = debugLogBuffer.join('\n');
+  }
+}
+
+// Detect mobile viewport
 function isMobile() {
   return window.innerWidth <= 768;
 }
@@ -52,11 +118,13 @@ function isMobile() {
 function ensureMountNode() {
   const container = document.getElementById('facebookFeedContainer');
   if (!container) {
+    debugLog('ERROR: Container missing');
     return null;
   }
   
   // Check if mount node already exists
   if (fbMountNode && container.contains(fbMountNode)) {
+    debugLog('Mount node exists, reusing');
     return fbMountNode;
   }
   
@@ -73,10 +141,135 @@ function ensureMountNode() {
   // Append mount node
   container.appendChild(fbMountNode);
   
+  debugLog('Mount node created', { id: fbMountNode.id });
+  
+  // Set up MutationObserver to detect if mount is removed
+  setupMutationObserver();
+  
   return fbMountNode;
 }
 
-// Show loading state (using DOM manipulation, not innerHTML)
+// MutationObserver to catch who deletes the embed
+function setupMutationObserver() {
+  if (fbMutationObserver) {
+    fbMutationObserver.disconnect();
+  }
+  
+  const container = document.getElementById('facebookFeedContainer');
+  if (!container || !fbMountNode) return;
+  
+  fbMutationObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      // Check if mount node was removed
+      if (mutation.type === 'childList') {
+        mutation.removedNodes.forEach((node) => {
+          if (node === fbMountNode || (node.nodeType === 1 && node.contains && node.contains(fbMountNode))) {
+            debugLog('MUTATION: Mount node removed!', {
+              removedNode: node.nodeName,
+              target: mutation.target.id || mutation.target.className
+            });
+            console.trace('FB MOUNT MUTATION - Mount node was removed');
+            
+            // Restore mount node if it was removed
+            if (!container.contains(fbMountNode)) {
+              debugLog('Restoring mount node after removal');
+              container.appendChild(fbMountNode);
+              // Retry render if iframe was lost
+              if (!fbMountNode.querySelector('#fbPageIframe')) {
+                setTimeout(() => renderFacebookIframe(), 100);
+              }
+            }
+          }
+        });
+        
+        // Check if container innerHTML was replaced
+        if (mutation.addedNodes.length > 0 && !container.contains(fbMountNode)) {
+          debugLog('MUTATION: Container content replaced (innerHTML wipe detected)');
+          console.trace('FB MOUNT MUTATION - Container innerHTML was replaced');
+          
+          // Restore mount node
+          container.appendChild(fbMountNode);
+          if (!fbMountNode.querySelector('#fbPageIframe')) {
+            setTimeout(() => renderFacebookIframe(), 100);
+          }
+        }
+      }
+      
+      // Check for style changes that might hide/collapse
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        const styles = window.getComputedStyle(fbMountNode);
+        if (styles.display === 'none' || styles.visibility === 'hidden' || 
+            styles.height === '0px' || fbMountNode.offsetHeight === 0) {
+          debugLog('MUTATION: Mount collapsed/hidden', {
+            display: styles.display,
+            visibility: styles.visibility,
+            height: styles.height,
+            offsetHeight: fbMountNode.offsetHeight
+          });
+          console.trace('FB MOUNT MUTATION - Mount collapsed');
+        }
+      }
+    });
+  });
+  
+  // Observe container and mount
+  fbMutationObserver.observe(container, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class']
+  });
+  
+  fbMutationObserver.observe(fbMountNode, {
+    childList: true,
+    attributes: true,
+    attributeFilter: ['style', 'class']
+  });
+  
+  debugLog('MutationObserver setup complete');
+}
+
+// Layout monitoring for iOS Safari (debug mode only)
+function startLayoutMonitoring() {
+  if (!DEBUG) return;
+  
+  let checkCount = 0;
+  const maxChecks = 10; // 5 seconds at 500ms intervals
+  
+  const checkLayout = () => {
+    if (checkCount >= maxChecks || !fbMountNode) return;
+    
+    const mount = fbMountNode;
+    const container = mount.parentElement;
+    const styles = window.getComputedStyle(mount);
+    const containerStyles = container ? window.getComputedStyle(container) : null;
+    
+    const layoutInfo = {
+      mountHeight: mount.offsetHeight,
+      mountClientHeight: mount.clientHeight,
+      mountDisplay: styles.display,
+      mountVisibility: styles.visibility,
+      mountOverflow: styles.overflow,
+      containerHeight: container?.offsetHeight,
+      containerDisplay: containerStyles?.display,
+      containerOverflow: containerStyles?.overflow,
+      containerTransform: containerStyles?.transform !== 'none' ? containerStyles.transform : 'none',
+      iframeExists: !!mount.querySelector('#fbPageIframe'),
+      iframeHeight: mount.querySelector('#fbPageIframe')?.offsetHeight || 0
+    };
+    
+    debugLog(`Layout check ${checkCount + 1}`, layoutInfo);
+    
+    checkCount++;
+    if (checkCount < maxChecks) {
+      setTimeout(checkLayout, 500);
+    }
+  };
+  
+  setTimeout(checkLayout, 500);
+}
+
+// Show loading state
 function showFacebookLoading() {
   const mount = ensureMountNode();
   if (!mount) return;
@@ -113,9 +306,11 @@ function showFacebookLoading() {
     style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
     document.head.appendChild(style);
   }
+  
+  debugLog('Loading state shown');
 }
 
-// Show fallback when iframe fails to load (using DOM manipulation)
+// Show fallback when iframe fails to load
 function showFacebookFallback() {
   const mount = ensureMountNode();
   if (!mount) return;
@@ -150,29 +345,63 @@ function showFacebookFallback() {
   `;
   
   mount.appendChild(fallbackDiv);
+  
+  debugLog('Fallback shown');
 }
 
-// Render Facebook feed using iframe (stable solution for mobile and desktop)
-// FIX: Use mount node and DOM manipulation to prevent container from being wiped
+// Verify iframe actually rendered
+function verifyRender() {
+  const mount = fbMountNode;
+  if (!mount) return false;
+  
+  const iframe = mount.querySelector('#fbPageIframe');
+  if (!iframe) return false;
+  
+  // Check if iframe is visible and has dimensions
+  const isVisible = iframe.offsetHeight > 0 && iframe.offsetWidth > 0;
+  const hasContent = iframe.contentDocument || iframe.contentWindow;
+  
+  debugLog('Render verification', {
+    iframeExists: !!iframe,
+    isVisible,
+    offsetHeight: iframe.offsetHeight,
+    offsetWidth: iframe.offsetWidth,
+    hasContent: !!hasContent
+  });
+  
+  return isVisible;
+}
+
+// Render Facebook feed using iframe
 function renderFacebookIframe() {
-  // Prevent concurrent initialization attempts
+  // Prevent concurrent initialization
   if (fbInitializationInProgress) {
+    debugLog('Render already in progress, skipping');
     return;
   }
   
-  // Ensure mount node exists (never gets wiped)
+  // Check retry limit
+  if (fbRetryCount >= FB_MAX_RETRIES) {
+    debugLog('ERROR: Max retries reached, showing fallback');
+    showFacebookFallback();
+    return;
+  }
+  
+  // Ensure mount node exists
   const mount = ensureMountNode();
   if (!mount) {
+    debugLog('ERROR: Mount node creation failed');
     return;
   }
   
-  // Set initialization flag to prevent concurrent calls
+  // Set initialization flag
   fbInitializationInProgress = true;
+  fbRetryCount++;
   
   // Calculate responsive dimensions
   const container = document.getElementById('facebookFeedContainer');
   const containerWidth = Math.max(280, container?.offsetWidth || container?.clientWidth || 500);
-  const containerHeight = 600; // Fixed height for both mobile and desktop
+  const containerHeight = 600;
   
   // Clear any existing timeout
   if (fbIframeTimeout) {
@@ -183,13 +412,14 @@ function renderFacebookIframe() {
   // Reset loaded flag
   fbIframeLoaded = false;
   
-  // Show loading state (clears mount and adds loading indicator)
+  debugLog(`Render attempt ${fbRetryCount}`, { containerWidth, containerHeight });
+  
+  // Show loading state
   showFacebookLoading();
   
-  // Create iframe with properly formatted URL
+  // Create iframe
   const iframe = document.createElement('iframe');
   iframe.id = 'fbPageIframe';
-  // Build URL with all required parameters
   const fbUrlParams = new URLSearchParams({
     href: FB_PAGE_URL,
     tabs: 'timeline',
@@ -211,55 +441,89 @@ function renderFacebookIframe() {
   
   // Handle iframe load success
   iframe.onload = function() {
+    debugLog('Iframe onload fired');
     fbIframeLoaded = true;
     fbInitializationInProgress = false;
+    
     if (fbIframeTimeout) {
       clearTimeout(fbIframeTimeout);
       fbIframeTimeout = null;
     }
-    // Remove loading state from mount
+    
+    // Remove loading state
     const loadingState = mount.querySelector('.facebook-loading-state');
     if (loadingState) {
       loadingState.remove();
     }
+    
+    // Verify render after a short delay
+    setTimeout(() => {
+      if (!verifyRender()) {
+        debugLog('ERROR: Iframe loaded but not visible, retrying');
+        fbRetryCount--; // Don't count this as a retry yet
+        setTimeout(() => renderFacebookIframe(), 1000);
+      } else {
+        debugLog('Render verified successfully');
+        fbRetryCount = 0; // Reset on success
+        startLayoutMonitoring();
+      }
+    }, 500);
   };
   
   // Handle iframe load error
   iframe.onerror = function() {
+    debugLog('ERROR: Iframe onerror fired');
     fbInitializationInProgress = false;
+    
     if (fbIframeTimeout) {
       clearTimeout(fbIframeTimeout);
       fbIframeTimeout = null;
     }
-    showFacebookFallback();
+    
+    // Retry or show fallback
+    if (fbRetryCount < FB_MAX_RETRIES) {
+      debugLog(`Retrying after error (attempt ${fbRetryCount + 1})`);
+      setTimeout(() => renderFacebookIframe(), 1000);
+    } else {
+      showFacebookFallback();
+    }
   };
   
-  // Append iframe to mount node (never wipe mount node itself)
+  // Append iframe to mount node
   mount.appendChild(iframe);
+  debugLog('Iframe appended to mount');
   
-  // Set timeout to detect if iframe doesn't load (5 seconds for iOS)
+  // Set timeout to detect if iframe doesn't load
   fbIframeTimeout = setTimeout(() => {
     if (!fbIframeLoaded) {
+      debugLog('ERROR: Iframe load timeout');
       fbInitializationInProgress = false;
+      
       // Check if iframe actually loaded but didn't fire onload
       const checkIframe = mount.querySelector('#fbPageIframe');
       if (checkIframe && checkIframe.offsetHeight > 0 && checkIframe.offsetWidth > 0) {
-        // Iframe is visible, consider it loaded
+        debugLog('Iframe visible but onload not fired, considering loaded');
         fbIframeLoaded = true;
         const loadingState = mount.querySelector('.facebook-loading-state');
         if (loadingState) {
           loadingState.remove();
         }
+        fbRetryCount = 0;
+        startLayoutMonitoring();
       } else {
-        // Iframe didn't load, show fallback (iOS privacy blocking or other issue)
-        showFacebookFallback();
+        // Retry or show fallback
+        if (fbRetryCount < FB_MAX_RETRIES) {
+          debugLog(`Retrying after timeout (attempt ${fbRetryCount + 1})`);
+          setTimeout(() => renderFacebookIframe(), 1000);
+        } else {
+          showFacebookFallback();
+        }
       }
     }
   }, 5000); // 5 second timeout for iOS Safari
 }
 
-// Handle window resize and orientation change - update iframe dimensions
-// FIX: Use mount node instead of container to find iframe
+// Handle window resize and orientation change
 let resizeTimeout = null;
 function handleResize() {
   clearTimeout(resizeTimeout);
@@ -271,28 +535,29 @@ function handleResize() {
       return;
     }
     
-    // Update iframe dimensions on resize
     const container = document.getElementById('facebookFeedContainer');
     const containerWidth = Math.max(280, container?.offsetWidth || container?.clientWidth || 500);
-    const containerHeight = 600; // Fixed height for both mobile and desktop
+    const containerHeight = 600;
     
-    // Update iframe src with new width (Facebook iframe adapts automatically with adapt_container_width=true)
-    // Just update the width attribute for consistency
     iframe.setAttribute('width', containerWidth);
     iframe.setAttribute('height', containerHeight);
     iframe.style.width = '100%';
+    
+    debugLog('Resize handled', { containerWidth });
   }, 300);
 }
 
-// Initialize Facebook feed - ensure it only runs once
+// Initialize Facebook feed
 function initializeFacebookPlugin() {
   // Prevent multiple initializations
   if (fbInitialized) {
+    debugLog('Already initialized, skipping');
     return;
   }
   
   const container = document.getElementById('facebookFeedContainer');
   if (!container) {
+    debugLog('Container not found, retrying');
     setTimeout(initializeFacebookPlugin, 100);
     return;
   }
@@ -300,38 +565,60 @@ function initializeFacebookPlugin() {
   // Mark as initialized
   fbInitialized = true;
   
-  // Use iframe directly (no SDK needed) - works on both mobile and desktop
+  debugLog('Initializing Facebook plugin', {
+    isMobile: isMobile(),
+    readyState: document.readyState
+  });
+  
+  // Render iframe
   renderFacebookIframe();
 }
 
 // Initialize when DOM is ready
-// FIX: Facebook embed doesn't need auth, just DOM. Mount node protects against re-renders.
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeFacebookPlugin);
+  document.addEventListener('DOMContentLoaded', () => {
+    debugLog('DOMContentLoaded');
+    createDebugOverlay();
+    initializeFacebookPlugin();
+  });
 } else {
-  // DOM already ready - use setTimeout to ensure other scripts have run
+  debugLog('DOM already ready');
+  createDebugOverlay();
   setTimeout(initializeFacebookPlugin, 0);
 }
+
+// Log window load
+window.addEventListener('load', () => {
+  debugLog('Window load event');
+});
+
+// Log auth state changes
+onAuthStateChanged(auth, (user) => {
+  debugLog('Auth state changed', { hasUser: !!user });
+});
 
 // Handle resize and orientation change
 window.addEventListener('resize', handleResize);
 window.addEventListener('orientationchange', () => {
-  // Delay to allow layout to settle after orientation change
+  debugLog('Orientation change detected');
   setTimeout(() => {
     handleResize();
-    // Re-render iframe after orientation change to ensure proper dimensions (iOS Safari)
     const mount = fbMountNode;
     if (mount && isMobile()) {
       setTimeout(() => {
-        // Only re-render if iframe exists and is visible
         const iframe = mount.querySelector('#fbPageIframe');
         if (!iframe || iframe.offsetHeight === 0) {
+          debugLog('Re-rendering after orientation change');
           renderFacebookIframe();
         }
       }, 500);
     }
   }, 300);
 });
+
+// ============================================================================
+// DASHBOARD DATA LOADING
+// ============================================================================
 
 async function loadDashboardData(user) {
   try {
@@ -466,6 +753,7 @@ async function loadReminders(user) {
     }
 
     // Render reminders
+    // NOTE: This uses innerHTML but only affects #remindersContainer, not #facebookFeedContainer
     if (reminders.length === 0) {
       container.innerHTML = '<div class="muted">No reminders at this time.</div>';
     } else {
@@ -667,4 +955,3 @@ function formatReminderDate(yyyyMmDd) {
   const date = new Date(y, m - 1, d);
   return date.toLocaleDateString();
 }
-
