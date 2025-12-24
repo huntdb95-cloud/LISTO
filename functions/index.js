@@ -541,8 +541,9 @@ async function updateOcrStatus(userId, laborerId, status, error) {
 }
 
 /**
- * Contract Scanner: OCR + Translation
- * Called from frontend to extract text from uploaded contract and translate to Spanish
+ * Document Translator: OCR + Translation
+ * Called from frontend to extract text from uploaded document and translate to Spanish
+ * Uses OCR.Space API for OCR (replacing Google Vision)
  */
 exports.scanContract = functions.https.onCall(async (data, context) => {
   const requestId = generateRequestId();
@@ -595,8 +596,8 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
   }
   
   // Validate file type
-  const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png", "image/heic"];
-  const validExtensions = [".pdf", ".jpg", ".jpeg", ".png", ".heic"];
+  const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+  const validExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
   const fileName = (data.fileName || "").toLowerCase();
   const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
   
@@ -605,7 +606,7 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError(
       "invalid-argument",
       "Invalid file type",
-      createErrorResponse(requestId, "BAD_REQUEST", "Invalid file type. Please upload a PDF, HEIC, JPG, or PNG file.")
+      createErrorResponse(requestId, "BAD_REQUEST", "Invalid file type. Please upload a PDF, JPG, or PNG file.")
     );
   }
   
@@ -646,53 +647,167 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
       );
     }
     
-    // Step 2: Perform OCR using Google Cloud Vision
+    // Step 2: Perform OCR using OCR.Space API
+    // Note: Get your free API key from https://ocr.space/ocrapi/freekey
+    // Set it as environment variable: OCR_SPACE_API_KEY
+    // Free tier: 25,000 requests/month
     let extractedText = "";
     try {
-      const vision = getVisionClient();
+      // Get OCR.Space API key from Firebase config or environment variable
+      // Set via: firebase functions:config:set ocr_space.api_key="YOUR_KEY"
+      // Or set as environment variable: OCR_SPACE_API_KEY
+      let ocrSpaceApiKey = null;
+      try {
+        // Try Firebase Functions config first (recommended)
+        ocrSpaceApiKey = functions.config().ocr_space?.api_key;
+      } catch (e) {
+        // Config not available, will try env var
+      }
+      // Fallback to environment variable
+      if (!ocrSpaceApiKey) {
+        ocrSpaceApiKey = process.env.OCR_SPACE_API_KEY;
+      }
+      if (!ocrSpaceApiKey) {
+        throw new Error("OCR_SPACE_API_KEY environment variable is not set");
+      }
       
-      // Use DOCUMENT_TEXT_DETECTION for better accuracy with dense text
-      const [result] = await vision.documentTextDetection({
-        image: { content: fileBuffer },
+      // OCR.Space API endpoint
+      const ocrSpaceUrl = "https://api.ocr.space/parse/image";
+      
+      // Convert file buffer to base64
+      const base64File = fileBuffer.toString("base64");
+      
+      // Determine file type for OCR.Space
+      const isPdf = data.fileType === "application/pdf";
+      let mimeType = "image/jpeg";
+      if (isPdf) {
+        mimeType = "application/pdf";
+      } else if (data.fileType === "image/png") {
+        mimeType = "image/png";
+      } else if (data.fileType === "image/jpeg" || data.fileType === "image/jpg") {
+        mimeType = "image/jpeg";
+      }
+      
+      // OCR.Space accepts base64 images with data URI format
+      const base64Image = `data:${mimeType};base64,${base64File}`;
+      
+      // Make request to OCR.Space using built-in https module
+      const https = require("https");
+      const { URL } = require("url");
+      
+      const makeRequest = (url, options) => {
+        return new Promise((resolve, reject) => {
+          const urlObj = new URL(url);
+          
+          // Calculate Content-Length if body is provided
+          const body = options.body || "";
+          const bodyLength = Buffer.byteLength(body, "utf8");
+          
+          const requestOptions = {
+            hostname: urlObj.hostname,
+            port: 443,
+            path: urlObj.pathname + urlObj.search,
+            method: options.method || "POST",
+            headers: {
+              ...options.headers,
+              "Content-Length": bodyLength,
+            },
+          };
+          
+          const req = https.request(requestOptions, (res) => {
+            let data = "";
+            res.on("data", (chunk) => { data += chunk; });
+            res.on("end", () => {
+              try {
+                resolve({
+                  ok: res.statusCode >= 200 && res.statusCode < 300,
+                  status: res.statusCode,
+                  json: async () => JSON.parse(data),
+                });
+              } catch (e) {
+                reject(new Error(`Failed to parse OCR response: ${e.message}`));
+              }
+            });
+          });
+          
+          req.on("error", reject);
+          
+          if (body) {
+            req.write(body);
+          }
+          
+          req.end();
+        });
+      };
+      
+      // Prepare request body as URL-encoded form data (OCR.Space accepts this format)
+      const formParams = new URLSearchParams();
+      formParams.append("apikey", ocrSpaceApiKey);
+      formParams.append("base64Image", base64Image);
+      formParams.append("language", "eng"); // English (can be "eng", "spa", "auto", etc.)
+      formParams.append("isOverlayRequired", "false");
+      formParams.append("OCREngine", "2"); // Use OCR Engine 2 (more accurate)
+      
+      const requestBody = formParams.toString();
+      const contentType = "application/x-www-form-urlencoded";
+      
+      const response = await makeRequest(ocrSpaceUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": contentType,
+        },
+        body: requestBody,
       });
       
-      if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
-        extractedText = result.fullTextAnnotation.text;
-      } else if (result.textAnnotations && result.textAnnotations.length > 0) {
-        // Fallback to regular text detection
-        extractedText = result.textAnnotations[0].description || "";
-      } else {
+      const ocrResult = await response.json();
+      
+      // Check for errors in OCR.Space response
+      if (ocrResult.IsErroredOnProcessing === true) {
+        const errorMessages = ocrResult.ErrorMessage || [];
+        const errorMsg = Array.isArray(errorMessages) 
+          ? errorMessages.join(", ") 
+          : String(errorMessages);
+        throw new Error(`OCR.Space error: ${errorMsg || "Unknown error"}`);
+      }
+      
+      // Extract text from OCR.Space response
+      if (!ocrResult.ParsedResults || ocrResult.ParsedResults.length === 0) {
         throw new Error("No text detected in document");
       }
       
-      if (!extractedText || extractedText.trim().length === 0) {
+      // Get text from first parsed result
+      const parsedResult = ocrResult.ParsedResults[0];
+      if (!parsedResult.ParsedText || parsedResult.ParsedText.trim().length === 0) {
         throw new Error("No text extracted from document");
       }
+      
+      extractedText = parsedResult.ParsedText;
       
       if (DEBUG_MODE) {
         console.log(JSON.stringify({
           requestId,
           operation: "ocr_completed",
           textLength: extractedText.length,
+          ocrEngine: "OCR.Space",
         }));
       }
     } catch (error) {
-      // Check for specific Google API errors
+      // Check for specific OCR.Space errors
       let errorCode = "OCR_FAILED";
       let errorMessage = "Failed to extract text from document.";
       
-      if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
-        errorCode = "VISION_PERMISSION";
-        errorMessage = "OCR failed: Google Vision API permission denied. Please check IAM roles.";
-      } else if (error.code === 16 || error.message?.includes("UNAUTHENTICATED")) {
-        errorCode = "VISION_AUTH";
-        errorMessage = "OCR failed: Google Vision API authentication failed. Please check credentials.";
-      } else if (error.message?.includes("quota") || error.message?.includes("limit")) {
-        errorCode = "VISION_QUOTA";
+      if (error.message?.includes("OCR_SPACE_API_KEY")) {
+        errorCode = "OCR_API_KEY_MISSING";
+        errorMessage = "OCR failed: OCR.Space API key is not configured. Please set OCR_SPACE_API_KEY environment variable.";
+      } else if (error.message?.includes("quota") || error.message?.includes("limit") || error.message?.includes("429")) {
+        errorCode = "OCR_QUOTA";
         errorMessage = "OCR failed: API quota exceeded. Please try again later.";
-      } else if (error.message?.includes("No text")) {
+      } else if (error.message?.includes("No text") || error.message?.includes("No text detected")) {
         errorCode = "NO_TEXT_DETECTED";
         errorMessage = "No text was detected in the document. Please ensure the document contains readable text.";
+      } else if (error.message?.includes("OCR.Space error")) {
+        errorCode = "OCR_SPACE_ERROR";
+        errorMessage = error.message;
       }
       
       logError(requestId, "scanContract_ocr", error, {

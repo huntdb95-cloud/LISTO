@@ -50,9 +50,9 @@ function createSidebarHTML(basePath = '') {
                 </a>
               </li>
               <li class="sidebar-submenu-item">
-                <a href="${pathPrefix}contract-scanner/contract-scanner.html" class="sidebar-link sidebar-submenu-link" data-nav="contract-scanner">
+                <a href="${pathPrefix}contract-scanner/contract-scanner.html" class="sidebar-link sidebar-submenu-link" data-nav="document-translator">
                   <span class="sidebar-icon"><i class="bx bx-scan"></i></span>
-                  <span class="sidebar-label">Contract Scanner</span>
+                  <span class="sidebar-label">Document Translator</span>
                 </a>
               </li>
               <li class="sidebar-submenu-item">
@@ -109,7 +109,7 @@ function initSidebar() {
       currentPath.includes('/bookkeeping/') || 
       currentPath.includes('/invoice/') || 
       currentPath.includes('/job-estimator/') ||
-      currentPath.includes('/contract-scanner/') || 
+      currentPath.includes('/contract-scanner/') || // Note: path still uses contract-scanner folder name 
       currentPath.includes('/audit/') || 
       currentPath.includes('/tools/') ||
       currentPath.includes('/account/') ||
@@ -198,7 +198,7 @@ function initSidebarBehavior() {
 
 function checkIfSubmenuShouldBeOpen() {
   const currentPath = window.location.pathname.toLowerCase();
-  const toolPaths = ['/invoice/', '/job-estimator/', '/contract-scanner/', '/audit/', '/tools/', '/1099'];
+  const toolPaths = ['/invoice/', '/job-estimator/', '/contract-scanner/', '/audit/', '/tools/', '/1099']; // Note: path still uses contract-scanner folder
   return toolPaths.some(path => currentPath.includes(path));
 }
 

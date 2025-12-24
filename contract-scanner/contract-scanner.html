@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Contract Scanner</title>
+  <title>Document Translator</title>
 
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="../styles.css" />
@@ -280,7 +280,7 @@
   </style>
 </head>
 
-<body data-page="contract-scanner" data-requires-auth="true">
+<body data-page="document-translator" data-requires-auth="true">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
 <div class="container header-inner">
@@ -304,11 +304,11 @@
   <div class="page-wrap">
     <!-- Header -->
     <div class="card">
-      <h1 style="margin-top:0;" data-i18n="contractScanner.title">Contract Scanner</h1>
-      <div class="pill" data-i18n="contractScanner.subtitle">Google OCR • English ↔ Spanish Translation</div>
-      <p class="muted" style="margin-bottom:0;" data-i18n="contractScanner.description">
-        Upload a contract document (PDF, HEIC, JPG, or PNG) to extract text using Google OCR and translate it into Spanish. 
-        View the original document or English text alongside the Spanish translation.
+      <h1 style="margin-top:0;" data-i18n="documentTranslator.title">Document Translator</h1>
+      <div class="pill" data-i18n="documentTranslator.subtitle">OCR • English ↔ Spanish Translation</div>
+      <p class="muted" style="margin-bottom:0;" data-i18n="documentTranslator.description">
+        Upload a document (PDF, JPG, or PNG) or capture an image to extract text using OCR and translate it into Spanish. 
+        View the original text alongside the Spanish translation side-by-side.
       </p>
     </div>
 
@@ -317,16 +317,16 @@
       <div class="upload-header">
         <label for="contractFile" class="upload-label">
           <span class="upload-icon">📄</span>
-          <span data-i18n="contractScanner.uploadLabel">Upload Contract Document</span>
+          <span data-i18n="documentTranslator.uploadLabel">Upload or Capture Document</span>
         </label>
-        <input id="contractFile" type="file" accept=".pdf,.heic,.jpg,.jpeg,.png" style="display:none;" />
-        <div class="small muted" style="margin-top:8px;" data-i18n="contractScanner.fileHint">
-          Supported formats: PDF, HEIC, JPG, JPEG, PNG
+        <input id="contractFile" type="file" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,image/jpg,application/pdf" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
+        <div class="small muted" style="margin-top:8px;" data-i18n="documentTranslator.fileHint">
+          Supported formats: PDF, JPG, JPEG, PNG. On mobile, you can capture a photo directly.
         </div>
       </div>
       <div class="btn-row" style="margin-top: 16px;">
-        <button id="btnScan" class="btn btn-primary" type="button" data-i18n="contractScanner.scanBtn">Scan & Translate Contract</button>
-        <button id="btnClear" class="btn btn-secondary" type="button" data-i18n="contractScanner.clearBtn">Clear</button>
+        <button id="btnScan" class="btn btn-primary" type="button" data-i18n="documentTranslator.scanBtn">Translate Document</button>
+        <button id="btnClear" class="btn btn-secondary" type="button" data-i18n="documentTranslator.clearBtn">Clear</button>
       </div>
       <div id="statusMsg" class="small muted" style="margin-top:10px;"></div>
       <div id="errorMsg" class="small danger" style="margin-top:10px;"></div>
@@ -357,12 +357,12 @@
                 <span>📄</span> Document
               </button>
               <button id="btnShowEnglish" class="toggle-btn" type="button">
-                <span>📝</span> English Text
+                <span>📝</span> <span data-i18n="documentTranslator.englishTitle">Original Text</span>
               </button>
             </div>
           </div>
           <div class="pane-header" id="mobileEnglishHeader" style="display:none;">
-            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">English (Original)</h3>
+            <h3 data-i18n="documentTranslator.englishTitle" style="margin: 0; font-size: 1.1rem; font-weight: 600;">Original Text</h3>
           </div>
           <div class="pane-content">
             <!-- Document View (Desktop only) -->
@@ -379,7 +379,7 @@
         <!-- Right Pane: Spanish Translation -->
         <div class="pane right-pane mobile-pane active" id="spanishPane">
           <div class="pane-header desktop-pane-header">
-            <h3 data-i18n="contractScanner.spanishTitle" style="margin: 0; font-size: 1.1rem; font-weight: 600;">Español (Traducción)</h3>
+            <h3 data-i18n="documentTranslator.spanishTitle" style="margin: 0; font-size: 1.1rem; font-weight: 600;">Español (Traducción)</h3>
           </div>
           <div class="pane-header" id="mobileSpanishHeader" style="display:none;">
             <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Español (Traducción)</h3>
@@ -392,10 +392,10 @@
 
       <!-- Action Buttons -->
       <div class="action-buttons">
-        <button id="btnCopyEnglish" class="btn btn-secondary" type="button" data-i18n="contractScanner.copyEnglish">Copy English Text</button>
-        <button id="btnCopySpanish" class="btn btn-secondary" type="button" data-i18n="contractScanner.copySpanish">Copy Spanish Text</button>
-        <button id="btnDownloadEnglish" class="btn btn-secondary" type="button" data-i18n="contractScanner.downloadEnglish">Download English (.txt)</button>
-        <button id="btnDownloadSpanish" class="btn btn-secondary" type="button" data-i18n="contractScanner.downloadSpanish">Download Spanish (.txt)</button>
+        <button id="btnCopyEnglish" class="btn btn-secondary" type="button" data-i18n="documentTranslator.copyEnglish">Copy English Text</button>
+        <button id="btnCopySpanish" class="btn btn-secondary" type="button" data-i18n="documentTranslator.copySpanish">Copy Spanish Text</button>
+        <button id="btnDownloadEnglish" class="btn btn-secondary" type="button" data-i18n="documentTranslator.downloadEnglish">Download English (.txt)</button>
+        <button id="btnDownloadSpanish" class="btn btn-secondary" type="button" data-i18n="documentTranslator.downloadSpanish">Download Spanish (.txt)</button>
       </div>
     </div>
 
