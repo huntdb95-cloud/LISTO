@@ -1,13 +1,16 @@
 # Setting Up OCR.Space API Key
 
-Your OCR.Space API key: `K81280465788957`
+## Get Your API Key
+
+1. Visit https://ocr.space/ocrapi/freekey to get a free API key
+2. Free tier: 25,000 requests/month
 
 ## Option 1: Firebase Functions Config (Recommended)
 
 Set the API key using Firebase Functions config:
 
 ```bash
-firebase functions:config:set ocr_space.api_key="K81280465788957"
+firebase functions:config:set ocr_space.api_key="YOUR_OCR_SPACE_API_KEY"
 ```
 
 Then deploy your functions:
@@ -21,21 +24,13 @@ Set as an environment variable in your Firebase Functions:
 
 ```bash
 # For local development, create a .env file in the functions folder:
-echo OCR_SPACE_API_KEY=K81280465788957 > functions/.env
+echo OCR_SPACE_API_KEY=YOUR_OCR_SPACE_API_KEY > functions/.env
 
 # For production, set via Firebase:
-firebase functions:config:set ocr_space.api_key="K81280465788957"
+firebase functions:config:set ocr_space.api_key="YOUR_OCR_SPACE_API_KEY"
 ```
 
-## Option 3: Temporary Hardcode (NOT RECOMMENDED)
-
-If you need to test quickly, you can temporarily hardcode it in `functions/index.js`:
-
-```javascript
-const ocrSpaceApiKey = "K81280465788957"; // TEMPORARY - Move to config!
-```
-
-**⚠️ WARNING:** Remove hardcoded keys before committing to version control!
+**⚠️ WARNING:** Never commit API keys to version control! Always use environment variables or Firebase Functions config.
 
 ## Verify Setup
 

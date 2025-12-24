@@ -127,9 +127,10 @@
 <div class="card pad facebook-feed-card">
 <h2 class="h2" data-i18n="dashboard.facebookFeed">News & Updates</h2>
 <div class="divider"></div>
-<div class="facebook-feed-container">
+<div class="facebook-feed-container" id="facebookFeedContainer">
 <!-- Facebook Page Plugin -->
 <div class="fb-page" 
+     id="fbPagePlugin"
      data-href="https://www.facebook.com/profile.php?id=61585220295883" 
      data-tabs="timeline" 
      data-width="500" 
@@ -184,10 +185,10 @@
           </p>
 </div>
 <div class="footer-links">
-<a href="audit/audit.html">Audit</a>
-<a href="contract-scanner/contract-scanner.html">Translator</a>
-<a href="invoice/invoice.html">Invoice</a>
-<a href="job-estimator/job-estimator.html">Estimator</a>
+<a href="audit/audit.html" data-i18n="footer.audit">Audit</a>
+<a href="contract-scanner/contract-scanner.html" data-i18n="footer.translator">Translator</a>
+<a href="invoice/invoice.html" data-i18n="footer.invoice">Invoice</a>
+<a href="job-estimator/job-estimator.html" data-i18n="footer.estimator">Estimator</a>
 </div>
 </div>
 <div class="container footer-bottom">
@@ -231,7 +232,46 @@
 </script>
 <!-- Facebook SDK -->
 <div id="fb-root"></div>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0"></script>
+<script>
+  // Load Facebook SDK with proper error handling and mobile Safari support
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return; // Prevent duplicate loading
+    js = d.createElement(s); js.id = id;
+    js.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0";
+    js.async = true;
+    js.defer = true;
+    js.crossOrigin = "anonymous";
+    js.onload = function() {
+      console.log("[FB SDK] Facebook SDK loaded successfully");
+      // Wait a moment for FB to be fully initialized
+      setTimeout(function() {
+        if (window.FB) {
+          console.log("[FB SDK] window.FB is available");
+          // Initialize Facebook plugin after SDK loads
+          if (typeof window.initFacebookPlugin === 'function') {
+            window.initFacebookPlugin();
+          } else {
+            // If function not loaded yet, wait a bit more (dashboard.js loads as module)
+            setTimeout(function() {
+              if (typeof window.initFacebookPlugin === 'function') {
+                window.initFacebookPlugin();
+              } else {
+                console.warn("[FB SDK] initFacebookPlugin function not found, will be called from dashboard.js");
+              }
+            }, 200);
+          }
+        } else {
+          console.warn("[FB SDK] window.FB not available after SDK load");
+        }
+      }, 100);
+    };
+    js.onerror = function() {
+      console.error("[FB SDK] Failed to load Facebook SDK");
+    };
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
 
 <script src="sidebar.js"></script>
 <script src="scripts.js" type="module"></script>
