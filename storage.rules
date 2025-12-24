@@ -60,6 +60,23 @@ service firebase.storage {
       allow delete: if isOwnerPath(userId);
     }
 
+    // ========== Document Translator ==========
+    
+    // Document Translator uploads: uploads/{uid}/contract-scanner/*
+    match /uploads/{userId}/contract-scanner/{allPaths=**} {
+      allow read, write: if isOwnerPath(userId)
+        && request.resource.size < 20 * 1024 * 1024  // 20MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+    
+    // OCR output files (read-only for users, write-only for Cloud Functions via Admin SDK)
+    match /ocr-output/{userId}/{allPaths=**} {
+      allow read: if isOwnerPath(userId);
+      // Write is handled by Cloud Functions using Admin SDK (bypasses rules)
+    }
+    
     // ========== Business License ==========
     
     // Business License: users/{uid}/businessLicense/*

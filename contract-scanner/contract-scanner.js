@@ -1,14 +1,20 @@
 // document-translator.js (renamed from contract-scanner.js)
 // Document Translator Tool
-// Uses OCR.Space API to extract text from documents and translates to Spanish
+// Uses Google Cloud Vision OCR to extract text from documents and translates to Spanish
 
-import { auth, storage } from "../config.js";
+import { auth, storage, db } from "../config.js";
 
 import {
   ref,
   uploadBytes,
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+import {
+  collection,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import {
   getFunctions,
@@ -66,9 +72,9 @@ function parseError(error) {
         // Try to extract message from error details
         if (error.details) {
           const details = typeof error.details === "string" ? error.details : JSON.stringify(error.details);
-          if (details.includes("OCR") || details.includes("OCR.Space") || details.includes("OCR_SPACE")) {
+          if (details.includes("OCR") || details.includes("Vision")) {
             return "OCR failed: " + (details.includes("API key") || details.includes("credentials") || details.includes("permission") 
-              ? "OCR.Space API key is missing or invalid" 
+              ? "Google Vision API authentication error" 
               : "Unable to extract text from document");
           }
           if (details.includes("Translation") || details.includes("Translate")) {
@@ -81,9 +87,9 @@ function parseError(error) {
   }
   
   // Check error message for common patterns
-  if (errorMessage.includes("OCR") || errorMessage.includes("OCR.Space") || errorMessage.includes("OCR_SPACE")) {
+  if (errorMessage.includes("OCR") || errorMessage.includes("Vision")) {
     if (errorMessage.includes("API key") || errorMessage.includes("credentials") || errorMessage.includes("permission") || errorMessage.includes("auth")) {
-      return "OCR failed: OCR.Space API key is missing or invalid";
+      return "OCR failed: Google Vision API authentication error. Please contact support.";
     }
     if (errorMessage.includes("quota") || errorMessage.includes("limit") || errorMessage.includes("429")) {
       return "OCR failed: API quota exceeded. Please try again later.";
@@ -364,10 +370,30 @@ async function scanAndTranslate() {
   try {
     currentFile = file;
     
-    // Upload file to Firebase Storage first
+    // Determine file type (image or pdf)
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const fileType = isPdf ? "pdf" : "image";
+    
+    // Create Firestore job document first
+    setMsg("statusMsg", "Creating translation job...");
+    
+    const jobData = {
+      uid: currentUid,
+      fileType: fileType,
+      originalFileName: file.name,
+      status: "uploaded",
+      targetLanguage: "es",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    const jobRef = await addDoc(collection(db, "translatorJobs"), jobData);
+    const jobId = jobRef.id;
+    
+    // Upload file to Firebase Storage
     const safeName = file.name.replace(/[^\w.\-]+/g, "_");
     const timestamp = Date.now();
-    const filePath = `users/${currentUid}/contracts/${timestamp}_${safeName}`;
+    const filePath = `uploads/${currentUid}/contract-scanner/${timestamp}_${safeName}`;
     const storageRef = ref(storage, filePath);
     
     setMsg("statusMsg", "Uploading file...");
@@ -378,26 +404,32 @@ async function scanAndTranslate() {
     
     const downloadURL = await getDownloadURL(storageRef);
     
-    setMsg("statusMsg", "Processing with OCR and Translation... This may take 30-60 seconds.");
+    // Update job with file path
+    await jobRef.update({
+      filePath: filePath,
+      updatedAt: serverTimestamp(),
+    });
+    
+    setMsg("statusMsg", "Processing with OCR and Translation... This may take 30-60 seconds for images, or 2-5 minutes for PDFs.");
     
     // Call Cloud Function to process the file
     // The function will:
-    // 1. Download the file from the URL
-    // 2. Use OCR.Space API for OCR
+    // 1. Verify job exists and belongs to user
+    // 2. Use Google Cloud Vision OCR (textDetection for images, asyncBatchAnnotateFiles for PDFs)
     // 3. Use Google Cloud Translation API to translate to Spanish
-    // 4. Return { english: "...", spanish: "..." }
+    // 4. Save results to Firestore translatorJobs collection
+    // 5. Return { extractedText: "...", translatedText: "...", sourceLanguage: "en" }
     
-    const scanContract = httpsCallable(functions, "scanContract");
-    const result = await scanContract({
-      fileUrl: downloadURL,
-      fileName: file.name,
-      fileType: file.type,
+    const processDocument = httpsCallable(functions, "processDocument");
+    const result = await processDocument({
+      jobId: jobId,
       filePath: filePath,
-      fileSize: file.size
+      fileType: fileType,
+      targetLanguage: "es"
     });
     
     // Log full result for debugging (remove in production if needed)
-    console.log("Scan result:", result?.data);
+    console.log("Process result:", result?.data);
     
     // Check for error in response
     if (result?.data?.error) {
@@ -434,18 +466,14 @@ async function scanAndTranslate() {
       };
     }
     
-    const { english, spanish, originalText, translatedText } = result.data || {};
+    const { extractedText, translatedText } = result.data || {};
     
-    // Support both old format (english/spanish) and new format (originalText/translatedText)
-    const finalEnglish = english || originalText || "";
-    const finalSpanish = spanish || translatedText || "";
-    
-    if (!finalEnglish && !finalSpanish) {
+    if (!extractedText && !translatedText) {
       throw new Error("No text was extracted from the document. Please ensure the document contains readable text.");
     }
     
     // Show results with the download URL for document display
-    showResults(finalEnglish, finalSpanish, downloadURL);
+    showResults(extractedText || "", translatedText || "", downloadURL);
     
     setMsg("statusMsg", "Document translated successfully!", false);
     

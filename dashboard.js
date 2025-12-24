@@ -19,6 +19,7 @@ onAuthStateChanged(auth, async (user) => {
 const FB_PAGE_URL = "https://www.facebook.com/profile.php?id=61585220295883";
 let fbIframeTimeout = null;
 let fbIframeLoaded = false;
+let fbInitializationInProgress = false; // Guard against concurrent initialization
 
 // Detect mobile viewport (same breakpoint as site)
 function isMobile() {
@@ -88,8 +89,17 @@ function showFacebookFallback() {
 
 // Render Facebook feed using iframe (stable solution for mobile and desktop)
 function renderFacebookIframe() {
+  // Prevent concurrent initialization attempts
+  if (fbInitializationInProgress) {
+    console.log("[FB Plugin] Initialization already in progress, skipping");
+    return;
+  }
+  
   const container = document.getElementById('facebookFeedContainer');
   if (!container) return;
+  
+  // Set initialization flag to prevent concurrent calls
+  fbInitializationInProgress = true;
   
   // Calculate responsive dimensions
   const containerWidth = Math.max(280, container.offsetWidth || container.clientWidth || 500);
@@ -107,10 +117,21 @@ function renderFacebookIframe() {
   // Show loading state
   showFacebookLoading();
   
-  // Create iframe
+  // Create iframe with properly formatted URL (no trailing &appId or empty parameters)
   const iframe = document.createElement('iframe');
   iframe.id = 'fbPageIframe';
-  iframe.src = `https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB_PAGE_URL)}&tabs=timeline&width=${containerWidth}&height=${containerHeight}&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true`;
+  // Build URL with all required parameters - ensure no trailing empty parameters
+  const fbUrlParams = new URLSearchParams({
+    href: FB_PAGE_URL,
+    tabs: 'timeline',
+    width: containerWidth.toString(),
+    height: containerHeight.toString(),
+    small_header: 'false',
+    adapt_container_width: 'true',
+    hide_cover: 'false',
+    show_facepile: 'true'
+  });
+  iframe.src = `https://www.facebook.com/plugins/page.php?${fbUrlParams.toString()}`;
   iframe.width = containerWidth;
   iframe.height = containerHeight;
   iframe.style.cssText = 'border:none;overflow:hidden;width:100%;max-width:100%;display:block;min-height:600px;';
@@ -123,6 +144,7 @@ function renderFacebookIframe() {
   iframe.onload = function() {
     console.log("[FB Plugin] Iframe loaded successfully");
     fbIframeLoaded = true;
+    fbInitializationInProgress = false; // Clear initialization flag on success
     if (fbIframeTimeout) {
       clearTimeout(fbIframeTimeout);
       fbIframeTimeout = null;
@@ -137,6 +159,7 @@ function renderFacebookIframe() {
   // Handle iframe load error
   iframe.onerror = function() {
     console.error("[FB Plugin] Iframe failed to load");
+    fbInitializationInProgress = false; // Clear initialization flag on error
     if (fbIframeTimeout) {
       clearTimeout(fbIframeTimeout);
       fbIframeTimeout = null;
@@ -152,16 +175,17 @@ function renderFacebookIframe() {
   fbIframeTimeout = setTimeout(() => {
     if (!fbIframeLoaded) {
       console.warn("[FB Plugin] Iframe load timeout - showing fallback");
+      fbInitializationInProgress = false; // Clear initialization flag on timeout
       // Check if iframe actually loaded but didn't fire onload
       const checkIframe = container.querySelector('#fbPageIframe');
       if (checkIframe && checkIframe.offsetHeight > 0 && checkIframe.offsetWidth > 0) {
         // Iframe is visible, consider it loaded
         fbIframeLoaded = true;
-          const loadingState = container.querySelector('.facebook-loading-state');
-          if (loadingState) {
-            loadingState.remove();
-          }
-          } else {
+        const loadingState = container.querySelector('.facebook-loading-state');
+        if (loadingState) {
+          loadingState.remove();
+        }
+      } else {
         // Iframe didn't load, show fallback
         showFacebookFallback();
       }
