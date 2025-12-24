@@ -1370,6 +1370,9 @@ input:focus, select:focus, textarea:focus{
   min-height: 400px;
   overflow: hidden;
   display: block;
+  position: relative;
+  visibility: visible;
+  opacity: 1;
 }
 
 /* Force Facebook plugin to fill container width */
@@ -1393,17 +1396,22 @@ input:focus, select:focus, textarea:focus{
   display: block;
 }
 
-/* Facebook timeline mobile fix - ensure iframe renders */
+/* Facebook timeline mobile fix - ensure iframe renders on mobile Safari */
 @media (max-width: 768px) {
   .facebook-feed-container {
     min-height: 500px;
-    height: 600px;
+    height: auto;
     overflow: visible;
-    overflow-y: auto;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     position: relative;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1;
   }
   
   .facebook-feed-container .fb-page,
@@ -1412,7 +1420,10 @@ input:focus, select:focus, textarea:focus{
     min-width: 100% !important;
     max-width: 100% !important;
     display: block !important;
-    position: relative;
+    position: relative !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
   }
   
   .facebook-feed-container .fb-page iframe,
@@ -1421,10 +1432,13 @@ input:focus, select:focus, textarea:focus{
     min-width: 100% !important;
     max-width: 100% !important;
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     height: 600px !important;
     min-height: 500px !important;
-    border: none;
-    position: relative;
+    border: none !important;
+    position: relative !important;
+    z-index: 1;
   }
 }
 

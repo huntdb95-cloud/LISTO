@@ -5,6 +5,10 @@
  * - Automatically processes W-9 uploads for laborers
  * - Extracts text using Google Cloud Vision OCR
  * - Parses W-9 fields and updates laborer records
+ * 
+ * Document Translator (scanContract):
+ * - Uses OCR.Space API for OCR (replacing Google Vision for this tool)
+ * - Uses Google Cloud Translation API to translate to Spanish
  */
 
 const functions = require("firebase-functions");
@@ -712,6 +716,7 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
               ...options.headers,
               "Content-Length": bodyLength,
             },
+            timeout: 30000, // 30 second timeout
           };
           
           const req = https.request(requestOptions, (res) => {
@@ -731,6 +736,10 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
           });
           
           req.on("error", reject);
+          req.on("timeout", () => {
+            req.destroy();
+            reject(new Error("OCR request timed out after 30 seconds"));
+          });
           
           if (body) {
             req.write(body);
@@ -751,23 +760,60 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
       const requestBody = formParams.toString();
       const contentType = "application/x-www-form-urlencoded";
       
-      const response = await makeRequest(ocrSpaceUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": contentType,
-        },
-        body: requestBody,
+      // Add timeout to request (30 seconds)
+      const requestTimeout = 30000;
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("OCR request timed out after 30 seconds")), requestTimeout);
       });
       
+      const response = await Promise.race([
+        makeRequest(ocrSpaceUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": contentType,
+          },
+          body: requestBody,
+        }),
+        timeoutPromise,
+      ]);
+      
+      // Check HTTP status code
+      if (!response.ok) {
+        const statusText = response.status === 401 
+          ? "Unauthorized - Invalid API key" 
+          : response.status === 429 
+          ? "Rate limit exceeded" 
+          : response.status === 400 
+          ? "Bad request - Invalid file format or parameters" 
+          : `HTTP ${response.status}`;
+        throw new Error(`OCR.Space API error: ${statusText}`);
+      }
+      
       const ocrResult = await response.json();
+      
+      // Log response for debugging (without sensitive data)
+      if (DEBUG_MODE) {
+        console.log(JSON.stringify({
+          requestId,
+          operation: "ocr_response",
+          status: response.status,
+          hasError: ocrResult.IsErroredOnProcessing,
+          hasResults: !!(ocrResult.ParsedResults && ocrResult.ParsedResults.length > 0),
+        }));
+      }
       
       // Check for errors in OCR.Space response
       if (ocrResult.IsErroredOnProcessing === true) {
         const errorMessages = ocrResult.ErrorMessage || [];
+        const errorDetails = ocrResult.ErrorDetails || [];
         const errorMsg = Array.isArray(errorMessages) 
           ? errorMessages.join(", ") 
           : String(errorMessages);
-        throw new Error(`OCR.Space error: ${errorMsg || "Unknown error"}`);
+        const detailsMsg = Array.isArray(errorDetails) 
+          ? errorDetails.join(", ") 
+          : String(errorDetails);
+        const fullErrorMsg = errorMsg + (detailsMsg ? ` (${detailsMsg})` : "");
+        throw new Error(`OCR.Space error: ${fullErrorMsg || "Unknown error"}`);
       }
       
       // Extract text from OCR.Space response
@@ -781,13 +827,14 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
         throw new Error("No text extracted from document");
       }
       
-      extractedText = parsedResult.ParsedText;
+      extractedText = parsedResult.ParsedText.trim();
       
       if (DEBUG_MODE) {
         console.log(JSON.stringify({
           requestId,
           operation: "ocr_completed",
           textLength: extractedText.length,
+          textPreview: extractedText.substring(0, 200),
           ocrEngine: "OCR.Space",
         }));
       }
@@ -795,30 +842,47 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
       // Check for specific OCR.Space errors
       let errorCode = "OCR_FAILED";
       let errorMessage = "Failed to extract text from document.";
+      let errorDetails = null;
       
-      if (error.message?.includes("OCR_SPACE_API_KEY")) {
+      if (error.message?.includes("OCR_SPACE_API_KEY") || error.message?.includes("not set")) {
         errorCode = "OCR_API_KEY_MISSING";
         errorMessage = "OCR failed: OCR.Space API key is not configured. Please set OCR_SPACE_API_KEY environment variable.";
-      } else if (error.message?.includes("quota") || error.message?.includes("limit") || error.message?.includes("429")) {
+      } else if (error.message?.includes("quota") || error.message?.includes("limit") || error.message?.includes("429") || error.message?.includes("Rate limit")) {
         errorCode = "OCR_QUOTA";
         errorMessage = "OCR failed: API quota exceeded. Please try again later.";
-      } else if (error.message?.includes("No text") || error.message?.includes("No text detected")) {
+      } else if (error.message?.includes("No text") || error.message?.includes("No text detected") || error.message?.includes("No text extracted")) {
         errorCode = "NO_TEXT_DETECTED";
         errorMessage = "No text was detected in the document. Please ensure the document contains readable text.";
+      } else if (error.message?.includes("timed out") || error.message?.includes("timeout")) {
+        errorCode = "OCR_TIMEOUT";
+        errorMessage = "OCR request timed out. The file may be too large or the service is slow. Please try again with a smaller file.";
+      } else if (error.message?.includes("Unauthorized") || error.message?.includes("401")) {
+        errorCode = "OCR_AUTH_FAILED";
+        errorMessage = "OCR failed: Invalid API key. Please check your OCR.Space API key configuration.";
+      } else if (error.message?.includes("Bad request") || error.message?.includes("400")) {
+        errorCode = "OCR_BAD_REQUEST";
+        errorMessage = "OCR failed: Invalid file format or request parameters. Please ensure the file is a valid PDF, JPG, or PNG.";
       } else if (error.message?.includes("OCR.Space error")) {
         errorCode = "OCR_SPACE_ERROR";
         errorMessage = error.message;
+      } else if (error.message?.includes("Failed to parse OCR response")) {
+        errorCode = "OCR_PARSE_ERROR";
+        errorMessage = "OCR failed: Invalid response from OCR service. Please try again.";
+        errorDetails = error.message;
       }
       
+      // Log error with context (no sensitive data)
       logError(requestId, "scanContract_ocr", error, {
-        errorCode: error.code,
-        errorMessage: error.message,
+        errorCode,
+        errorMessage,
+        fileType: data.fileType,
+        fileSize: data.fileSize,
       });
       
       throw new functions.https.HttpsError(
         "internal",
         errorMessage,
-        createErrorResponse(requestId, errorCode, errorMessage)
+        createErrorResponse(requestId, errorCode, errorMessage, errorDetails)
       );
     }
     
@@ -1031,7 +1095,7 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
     logError(requestId, "scanContract_unknown", error);
     throw new functions.https.HttpsError(
       "internal",
-      "An internal server error occurred. Please check that Google Cloud Vision and Translation APIs are properly configured.",
+      "An internal server error occurred. Please try again or contact support if the issue persists.",
       createErrorResponse(requestId, "UNKNOWN", "An internal server error occurred.")
     );
   }

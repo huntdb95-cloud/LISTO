@@ -46,7 +46,7 @@ function parseError(error) {
   
   // Firebase Functions returns "internal" for unhandled errors
   if (errorMessage === "internal" || errorMessage.includes("INTERNAL")) {
-    return "An internal server error occurred. Please check that Google Cloud Vision and Translation APIs are properly configured.";
+    return "An internal server error occurred. Please try again or contact support if the issue persists.";
   }
   
   // Check for specific error codes from Firebase Functions
@@ -66,10 +66,10 @@ function parseError(error) {
         // Try to extract message from error details
         if (error.details) {
           const details = typeof error.details === "string" ? error.details : JSON.stringify(error.details);
-          if (details.includes("OCR") || details.includes("Vision")) {
-            return "OCR failed: " + (details.includes("credentials") || details.includes("permission") 
-              ? "Google Vision API credentials missing or invalid" 
-              : "Unable to extract text from image");
+          if (details.includes("OCR") || details.includes("OCR.Space") || details.includes("OCR_SPACE")) {
+            return "OCR failed: " + (details.includes("API key") || details.includes("credentials") || details.includes("permission") 
+              ? "OCR.Space API key is missing or invalid" 
+              : "Unable to extract text from document");
           }
           if (details.includes("Translation") || details.includes("Translate")) {
             return "Translation failed: " + (details.includes("API key") || details.includes("quota")
@@ -81,12 +81,15 @@ function parseError(error) {
   }
   
   // Check error message for common patterns
-  if (errorMessage.includes("OCR") || errorMessage.includes("Vision")) {
-    if (errorMessage.includes("credentials") || errorMessage.includes("permission") || errorMessage.includes("auth")) {
-      return "OCR failed: Google Vision API credentials missing or invalid";
+  if (errorMessage.includes("OCR") || errorMessage.includes("OCR.Space") || errorMessage.includes("OCR_SPACE")) {
+    if (errorMessage.includes("API key") || errorMessage.includes("credentials") || errorMessage.includes("permission") || errorMessage.includes("auth")) {
+      return "OCR failed: OCR.Space API key is missing or invalid";
     }
-    if (errorMessage.includes("quota") || errorMessage.includes("limit")) {
+    if (errorMessage.includes("quota") || errorMessage.includes("limit") || errorMessage.includes("429")) {
       return "OCR failed: API quota exceeded. Please try again later.";
+    }
+    if (errorMessage.includes("No text") || errorMessage.includes("No text detected") || errorMessage.includes("No text extracted")) {
+      return "No text was detected in the document. Please ensure the document contains readable text.";
     }
     return "OCR failed: " + errorMessage;
   }
