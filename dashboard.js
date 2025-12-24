@@ -15,11 +15,15 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Facebook plugin initialization and mobile Safari support
+// Facebook plugin initialization - Mobile-safe iframe solution
 const FB_PAGE_URL = "https://www.facebook.com/profile.php?id=61585220295883";
-let fbPluginInitialized = false;
-let resizeTimeout = null;
-let fbRenderCheckInterval = null;
+let fbIframeTimeout = null;
+let fbIframeLoaded = false;
+
+// Detect mobile viewport (same breakpoint as site)
+function isMobile() {
+  return window.innerWidth <= 768;
+}
 
 // Show loading state
 function showFacebookLoading() {
@@ -31,7 +35,7 @@ function showFacebookLoading() {
       padding: 40px 20px;
       text-align: center;
       color: var(--muted);
-      min-height: 500px;
+      min-height: 600px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -52,8 +56,8 @@ function showFacebookLoading() {
   }
 }
 
-// Show error state with fallback
-function showFacebookError() {
+// Show fallback when iframe fails to load
+function showFacebookFallback() {
   const container = document.getElementById('facebookFeedContainer');
   if (!container) return;
   
@@ -62,14 +66,14 @@ function showFacebookError() {
       padding: 40px 20px;
       text-align: center;
       color: var(--muted);
-      min-height: 500px;
+      min-height: 600px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 16px;
     ">
-      <div style="font-size: 0.95rem; margin-bottom: 8px;">Facebook feed couldn't load on this device.</div>
+      <div style="font-size: 0.95rem; margin-bottom: 8px;">Updates couldn't load here.</div>
       <a href="${FB_PAGE_URL}" target="_blank" rel="noopener noreferrer" class="btn primary" style="
         display: inline-block;
         padding: 12px 24px;
@@ -78,233 +82,120 @@ function showFacebookError() {
       ">Open Updates on Facebook</a>
     </div>
   `;
+  
+  console.log("[FB Plugin] Showing fallback - iframe failed to load");
 }
 
-// Fallback: Use iframe embed directly (more reliable on mobile)
-function renderFacebookIframeFallback() {
+// Render Facebook feed using iframe (stable solution for mobile and desktop)
+function renderFacebookIframe() {
   const container = document.getElementById('facebookFeedContainer');
   if (!container) return;
   
-  const containerWidth = container.offsetWidth || container.clientWidth || 500;
-  const containerHeight = Math.max(600, window.innerHeight * 0.6);
+  // Calculate responsive dimensions
+  const containerWidth = Math.max(280, container.offsetWidth || container.clientWidth || 500);
+  const containerHeight = 600; // Fixed height for both mobile and desktop
   
-  container.innerHTML = `
-    <iframe 
-      src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB_PAGE_URL)}&tabs=timeline&width=${containerWidth}&height=${containerHeight}&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId"
-      width="${containerWidth}" 
-      height="${containerHeight}"
-      style="border:none;overflow:hidden;width:100%;max-width:100%;display:block;" 
-      scrolling="no" 
-      frameborder="0" 
-      allowfullscreen="true" 
-      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-      id="fbPageIframe"
-    ></iframe>
-  `;
+  // Clear any existing timeout
+  if (fbIframeTimeout) {
+    clearTimeout(fbIframeTimeout);
+    fbIframeTimeout = null;
+  }
   
-  console.log("[FB Plugin] Rendered iframe fallback");
-}
-
-// Check if Facebook plugin iframe has rendered
-function checkFacebookRender() {
-  const container = document.getElementById('facebookFeedContainer');
-  if (!container) return false;
+  // Reset loaded flag
+  fbIframeLoaded = false;
   
-  // Check for iframe inside fb-page
-  const fbPage = container.querySelector('.fb-page');
-  if (fbPage) {
-    const iframe = fbPage.querySelector('iframe');
-    if (iframe && iframe.offsetHeight > 0 && iframe.offsetWidth > 0) {
-      return true;
+  // Show loading state
+  showFacebookLoading();
+  
+  // Create iframe
+  const iframe = document.createElement('iframe');
+  iframe.id = 'fbPageIframe';
+  iframe.src = `https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB_PAGE_URL)}&tabs=timeline&width=${containerWidth}&height=${containerHeight}&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true`;
+  iframe.width = containerWidth;
+  iframe.height = containerHeight;
+  iframe.style.cssText = 'border:none;overflow:hidden;width:100%;max-width:100%;display:block;min-height:600px;';
+  iframe.setAttribute('scrolling', 'no');
+  iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('allowfullscreen', 'true');
+  iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share');
+  
+  // Handle iframe load success
+  iframe.onload = function() {
+    console.log("[FB Plugin] Iframe loaded successfully");
+    fbIframeLoaded = true;
+    if (fbIframeTimeout) {
+      clearTimeout(fbIframeTimeout);
+      fbIframeTimeout = null;
     }
-  }
-  
-  // Also check for direct iframe
-  const directIframe = container.querySelector('iframe');
-  if (directIframe && directIframe.offsetHeight > 0 && directIframe.offsetWidth > 0) {
-    return true;
-  }
-  
-  return false;
-}
-
-// Make function globally accessible for SDK onload callback
-window.initFacebookPlugin = function() {
-  // Prevent multiple simultaneous initializations
-  if (fbPluginInitialized && checkFacebookRender()) {
-    console.log("[FB Plugin] Already initialized and rendered, skipping");
-    return;
-  }
-
-  console.log("[FB Plugin] Initializing Facebook plugin...");
-  
-  // Wait for fb-root to exist
-  const fbRoot = document.getElementById('fb-root');
-  if (!fbRoot) {
-    console.error("[FB Plugin] fb-root element not found");
-    setTimeout(window.initFacebookPlugin, 100);
-    return;
-  }
-
-  if (!window.FB) {
-    console.warn("[FB Plugin] window.FB not available yet, retrying...");
-    setTimeout(window.initFacebookPlugin, 200);
-    return;
-  }
-
-  const container = document.getElementById('facebookFeedContainer');
-  const plugin = document.getElementById('fbPagePlugin');
-  
-  if (!container) {
-    console.error("[FB Plugin] Container not found");
-    return;
-  }
-
-  try {
-    // Ensure plugin element exists - create it if missing
-    if (!plugin) {
-      // Create plugin element (this replaces any loading state, which is expected)
-      container.innerHTML = `
-        <div class="fb-page" 
-             id="fbPagePlugin"
-             data-href="${FB_PAGE_URL}" 
-             data-tabs="timeline" 
-             data-width="500" 
-             data-height="600" 
-             data-small-header="false" 
-             data-adapt-container-width="true" 
-             data-hide-cover="false" 
-             data-show-facepile="true">
-          <blockquote cite="${FB_PAGE_URL}" class="fb-xfbml-parse-ignore">
-            <a href="${FB_PAGE_URL}">Listo - Business Tools</a>
-            <a href="${FB_PAGE_URL}">Listo</a>
-          </blockquote>
-        </div>
-      `;
-    } else {
-      // Plugin exists, but show loading if container is empty or only has loading state
-      // This handles cases where plugin exists but hasn't rendered yet
-      const hasContent = container.children.length > 0 && 
-                        !container.querySelector('.facebook-loading-state') &&
-                        !container.querySelector('.facebook-error-state');
-      if (!hasContent) {
-        showFacebookLoading();
-      }
+    // Remove loading state
+    const loadingState = container.querySelector('.facebook-loading-state');
+    if (loadingState) {
+      loadingState.remove();
     }
-    
-    const pluginElement = document.getElementById('fbPagePlugin');
-    if (!pluginElement) {
-      console.error("[FB Plugin] Plugin element not found after creation");
-      return;
+  };
+  
+  // Handle iframe load error
+  iframe.onerror = function() {
+    console.error("[FB Plugin] Iframe failed to load");
+    if (fbIframeTimeout) {
+      clearTimeout(fbIframeTimeout);
+      fbIframeTimeout = null;
     }
-    
-    // Set responsive width based on container (critical for mobile)
-    const containerWidth = Math.max(280, container.offsetWidth || container.clientWidth || 500);
-    pluginElement.setAttribute('data-width', containerWidth.toString());
-    
-    const isMobile = window.innerWidth <= 768;
-    console.log(`[FB Plugin] Container width: ${containerWidth}px, Mobile: ${isMobile}`);
-    
-    // Parse XFBML - only parse the container, not the entire document
-    window.FB.XFBML.parse(container, function() {
-      console.log("[FB Plugin] Facebook plugin parsed successfully");
-      
-      // Start checking if iframe rendered
-      let checkCount = 0;
-      const maxChecks = 20; // Check for up to 4 seconds (20 * 200ms)
-      
-      if (fbRenderCheckInterval) {
-        clearInterval(fbRenderCheckInterval);
-      }
-      
-      fbRenderCheckInterval = setInterval(() => {
-        checkCount++;
-        
-        if (checkFacebookRender()) {
-          console.log("[FB Plugin] Facebook iframe rendered successfully");
-          clearInterval(fbRenderCheckInterval);
-          fbRenderCheckInterval = null;
-          fbPluginInitialized = true;
-          
-          // Clear any loading state
+    showFacebookFallback();
+  };
+  
+  // Replace container content with iframe
+  container.innerHTML = '';
+  container.appendChild(iframe);
+  
+  // Set timeout to detect if iframe doesn't load (3-5 seconds)
+  fbIframeTimeout = setTimeout(() => {
+    if (!fbIframeLoaded) {
+      console.warn("[FB Plugin] Iframe load timeout - showing fallback");
+      // Check if iframe actually loaded but didn't fire onload
+      const checkIframe = container.querySelector('#fbPageIframe');
+      if (checkIframe && checkIframe.offsetHeight > 0 && checkIframe.offsetWidth > 0) {
+        // Iframe is visible, consider it loaded
+        fbIframeLoaded = true;
           const loadingState = container.querySelector('.facebook-loading-state');
           if (loadingState) {
             loadingState.remove();
           }
-        } else if (checkCount >= maxChecks) {
-          console.warn("[FB Plugin] Facebook iframe did not render after timeout, trying fallback");
-          clearInterval(fbRenderCheckInterval);
-          fbRenderCheckInterval = null;
-          
-          // Try iframe fallback on mobile if SDK render fails
-          if (isMobile) {
-            renderFacebookIframeFallback();
-            fbPluginInitialized = true;
           } else {
-            showFacebookError();
-          }
-        }
-      }, 200);
-      
-      // Also re-parse after a delay for mobile Safari compatibility
-      if (isMobile) {
-        setTimeout(() => {
-          if (window.FB && window.FB.XFBML && container.isConnected) {
-            window.FB.XFBML.parse(container);
-            console.log("[FB Plugin] Re-parsed for mobile Safari compatibility");
-          }
-        }, 500);
+        // Iframe didn't load, show fallback
+        showFacebookFallback();
       }
-    });
-  } catch (error) {
-    console.error("[FB Plugin] Error initializing:", error);
-    showFacebookError();
-  }
-};
+    }
+  }, 4000); // 4 second timeout
+  
+  console.log("[FB Plugin] Rendered iframe embed");
+}
 
-// Handle window resize and orientation change (critical for mobile)
-// IMPORTANT: Do NOT replace innerHTML - just update data-width attribute
+// Handle window resize and orientation change - update iframe dimensions
+let resizeTimeout = null;
 function handleResize() {
   clearTimeout(resizeTimeout);
   resizeTimeout = setTimeout(() => {
     const container = document.getElementById('facebookFeedContainer');
-    const plugin = document.getElementById('fbPagePlugin');
+    const iframe = container?.querySelector('#fbPageIframe');
     
-    if (!container || !window.FB) return;
+    if (!container || !iframe) return;
     
+    // Update iframe dimensions on resize
     const containerWidth = Math.max(280, container.offsetWidth || container.clientWidth || 500);
+    const containerHeight = 600; // Fixed height for both mobile and desktop
     
-    // Update iframe fallback if it exists
-    const iframe = container.querySelector('iframe#fbPageIframe');
-    if (iframe) {
-      const containerHeight = Math.max(600, window.innerHeight * 0.6);
+    // Update iframe src with new width (Facebook iframe adapts automatically with adapt_container_width=true)
+    // Just update the width attribute for consistency
       iframe.setAttribute('width', containerWidth);
       iframe.setAttribute('height', containerHeight);
       iframe.style.width = '100%';
-      return;
-    }
     
-    // Update plugin data-width without destroying the iframe
-    if (plugin && window.FB) {
-      const currentWidth = parseInt(plugin.getAttribute('data-width') || '0');
-      
-      // Only update if width changed significantly (avoid constant updates)
-      if (Math.abs(currentWidth - containerWidth) > 10) {
-        console.log(`[FB Plugin] Resize detected: ${currentWidth}px -> ${containerWidth}px`);
-        plugin.setAttribute('data-width', containerWidth.toString());
-        
-        // Re-parse only if plugin is already initialized (don't destroy iframe)
-        if (fbPluginInitialized && checkFacebookRender()) {
-          // Just update width, don't re-parse (re-parsing can destroy the iframe)
-          // The iframe should adapt automatically with data-adapt-container-width="true"
-          console.log("[FB Plugin] Updated width attribute, iframe should adapt automatically");
-        }
-      }
-    }
+    console.log(`[FB Plugin] Resize: Updated iframe to ${containerWidth}px width`);
   }, 300);
 }
 
-// Initialize when DOM is ready
+// Initialize Facebook feed
 function initializeFacebookPlugin() {
   const container = document.getElementById('facebookFeedContainer');
   if (!container) {
@@ -313,36 +204,10 @@ function initializeFacebookPlugin() {
     return;
   }
   
-  // Check if plugin element already exists in HTML
-  const existingPlugin = document.getElementById('fbPagePlugin');
-  
-  // Only show loading if plugin exists but hasn't rendered yet, or if container is empty
-  // If plugin doesn't exist, initFacebookPlugin() will create it immediately (no need for loading)
-  if (existingPlugin || container.children.length === 0) {
-    showFacebookLoading();
-  }
-  
-  // Check if FB SDK is already loaded
-  if (window.FB) {
-    window.initFacebookPlugin();
-  } else {
-    // Wait for SDK to load (handled by SDK script onload)
-    let checkCount = 0;
-    const maxChecks = 50; // Wait up to 5 seconds
-    
-    const checkInterval = setInterval(() => {
-      checkCount++;
-      if (window.FB) {
-        clearInterval(checkInterval);
-        window.initFacebookPlugin();
-      } else if (checkCount >= maxChecks) {
-        clearInterval(checkInterval);
-        console.error("[FB Plugin] Facebook SDK failed to load after 5 seconds");
-        // Try iframe fallback
-        renderFacebookIframeFallback();
-      }
-    }, 100);
-  }
+  // On mobile: Use iframe directly (skip SDK completely)
+  // On desktop: Also use iframe for reliability (simpler and more stable)
+  console.log(`[FB Plugin] Initializing with iframe embed (Mobile: ${isMobile()})`);
+  renderFacebookIframe();
 }
 
 // Initialize when DOM is ready
@@ -353,29 +218,19 @@ if (document.readyState === 'loading') {
   initializeFacebookPlugin();
 }
 
-// Handle window load event (backup initialization)
-window.addEventListener('load', () => {
-  console.log("[FB Plugin] Window load event fired");
-  if (window.FB && !fbPluginInitialized) {
-    window.initFacebookPlugin();
-  }
-});
-
-// Handle resize and orientation change (critical for mobile)
+// Handle resize and orientation change
 window.addEventListener('resize', handleResize);
 window.addEventListener('orientationchange', () => {
   console.log("[FB Plugin] Orientation change detected");
   // Delay to allow layout to settle after orientation change
   setTimeout(() => {
     handleResize();
-    // Also re-initialize on mobile after orientation change
-    if (window.innerWidth <= 768 && window.FB && !checkFacebookRender()) {
+    // Re-render iframe after orientation change to ensure proper dimensions
+    const container = document.getElementById('facebookFeedContainer');
+    if (container && isMobile()) {
       setTimeout(() => {
-        if (!checkFacebookRender()) {
-          console.log("[FB Plugin] Re-initializing after orientation change");
-          fbPluginInitialized = false;
-          window.initFacebookPlugin();
-        }
+        console.log("[FB Plugin] Re-rendering iframe after orientation change");
+        renderFacebookIframe();
       }, 500);
     }
   }, 300);

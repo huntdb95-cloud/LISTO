@@ -1935,53 +1935,82 @@ async function saveAgreement(user, data) {
   let safeName = null;
   
   try {
+    // Check if jsPDF is loaded
+    if (typeof window.jspdf === "undefined") {
+      throw new Error("PDF library not loaded. Please refresh the page.");
+    }
+
+    console.log("[Agreement] Generating PDF...");
     const pdfDoc = await generateAgreementPDF(data);
     const pdfBlob = pdfDoc.output("blob");
     
-    // Upload PDF to Firebase Storage
-    safeName = `Subcontractor_Agreement_${data.builderName.replace(/[^\w.\-]+/g, "_")}_${Date.now()}.pdf`;
-    pdfPath = `users/${user.uid}/agreements/${safeName}`;
+    // Generate filename with date: SubAgreement_YYYY-MM-DD.pdf
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    safeName = `SubAgreement_${dateStr}.pdf`;
+    
+    // Upload PDF to Firebase Storage - use correct path: users/{uid}/documents/prequal/subagreement/
+    pdfPath = `users/${user.uid}/documents/prequal/subagreement/${safeName}`;
     const storageRef = ref(storage, pdfPath);
     
+    console.log("[Agreement] Uploading PDF to:", pdfPath);
     await uploadBytes(storageRef, pdfBlob, {
       contentType: "application/pdf"
     });
     
+    console.log("[Agreement] Getting download URL...");
     pdfUrl = await getDownloadURL(storageRef);
+    console.log("[Agreement] PDF uploaded successfully:", pdfUrl);
     
-    // Delete old PDF if exists
+    // Delete old PDF if exists (different path)
     const existing = await loadAgreement(user);
     if (existing?.pdfPath && existing.pdfPath !== pdfPath) {
       try {
         const oldRef = ref(storage, existing.pdfPath);
         await deleteObject(oldRef);
+        console.log("[Agreement] Deleted old PDF:", existing.pdfPath);
       } catch (err) {
-        console.warn("Could not delete old PDF:", err);
+        console.warn("[Agreement] Could not delete old PDF:", err);
       }
     }
   } catch (err) {
-    console.error("Error generating/uploading PDF:", err);
-    throw new Error("Failed to generate PDF. Please try again.");
+    console.error("[Agreement] Error generating/uploading PDF:", err);
+    throw new Error(`Failed to save agreement: ${err.message || "Please try again."}`);
   }
 
-  // Save agreement data with PDF metadata
-  await setDoc(refDoc, {
-    ...data,
-    pdfUrl: pdfUrl,
-    pdfPath: pdfPath,
-    pdfFileName: safeName,
-    signedAt: serverTimestamp()
-  }, { merge: true });
+  // Save agreement data with PDF metadata to Firestore
+  try {
+    console.log("[Agreement] Saving to Firestore...");
+    await setDoc(refDoc, {
+      ...data,
+      pdfUrl: pdfUrl,
+      pdfPath: pdfPath,
+      pdfFileName: safeName,
+      signedAt: serverTimestamp(),
+      status: "completed",
+      createdAt: serverTimestamp()
+    }, { merge: true });
+    console.log("[Agreement] Firestore save successful");
+  } catch (err) {
+    console.error("[Agreement] Error saving to Firestore:", err);
+    throw new Error("Failed to save agreement data. Please try again.");
+  }
 
-  // mark prequal complete
-  const prequalRef = await getPrequalDocRef(user.uid);
-  await setDoc(prequalRef, {
-    agreementCompleted: true,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+  // Mark prequal complete
+  try {
+    const prequalRef = await getPrequalDocRef(user.uid);
+    await setDoc(prequalRef, {
+      agreementCompleted: true,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    console.log("[Agreement] Prequal status updated");
+  } catch (err) {
+    console.error("[Agreement] Error updating prequal status:", err);
+    // Don't throw - agreement is saved, just prequal status update failed
+  }
 }
 
-// Initialize signature canvas
+// Initialize signature canvas - Fixed to prevent auto-clearing on desktop
 function initSignatureCanvas() {
   const canvas = document.getElementById("signatureCanvas");
   const clearBtn = document.getElementById("clearSignatureBtn");
@@ -1994,8 +2023,27 @@ function initSignatureCanvas() {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
+  // Store strokes in memory for redraw after resize
+  let strokes = [];
+  let isDrawing = false;
+  let currentStroke = null;
+  let resizeTimeout = null;
+  let isResizing = false;
+
   // Set canvas size based on container width (responsive)
-  function resizeCanvas() {
+  // CRITICAL: Only resize when NOT drawing to prevent canvas clearing during signature
+  function resizeCanvas(force = false) {
+    // Don't resize if currently drawing
+    if (isDrawing && !force) {
+      return;
+    }
+
+    // Don't resize if already resizing
+    if (isResizing) {
+      return;
+    }
+
+    isResizing = true;
     const container = canvas.parentElement;
     if (container) {
       const containerWidth = container.clientWidth - 24; // Account for padding
@@ -2003,9 +2051,19 @@ function initSignatureCanvas() {
       const newWidth = Math.min(600, containerWidth);
       const newHeight = newWidth / aspectRatio;
       
-      // Save current signature if exists
+      // Only resize if dimensions actually changed
+      if (canvas.width === newWidth && canvas.height === newHeight) {
+        isResizing = false;
+        return;
+      }
+
+      // Save current signature image before resize
       const currentSignature = hiddenInput.value;
       
+      // Store current canvas state
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Resize canvas (this clears it)
       canvas.width = newWidth;
       canvas.height = newHeight;
       
@@ -2015,23 +2073,48 @@ function initSignatureCanvas() {
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       
-      // Redraw if there's existing signature data
-      if (currentSignature) {
+      // Redraw signature from stored image data
+      if (currentSignature && currentSignature.startsWith("data:image")) {
         const img = new Image();
         img.onload = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          isResizing = false;
+        };
+        img.onerror = () => {
+          isResizing = false;
         };
         img.src = currentSignature;
+      } else {
+        isResizing = false;
       }
+    } else {
+      isResizing = false;
     }
   }
 
-  // Initial resize
-  resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
+  // Initial resize on load
+  resizeCanvas(true);
 
-  let isDrawing = false;
+  // Debounced resize handler - only resize on window resize/orientation change, NOT during drawing
+  function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (!isDrawing) {
+        resizeCanvas();
+      }
+    }, 300);
+  }
+
+  window.addEventListener("resize", handleResize);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(handleResize, 500);
+  });
+
+  // Prevent canvas from being resized during drawing
+  canvas.style.touchAction = "none"; // Prevent touch scrolling during drawing
+
+  // Declare drawing state variables before use
   let lastX = 0;
   let lastY = 0;
 
@@ -2041,67 +2124,129 @@ function initSignatureCanvas() {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
+    let clientX, clientY;
     if (e.touches && e.touches.length > 0) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY
-      };
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.pointerId !== undefined) {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
+    
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
     };
   }
 
   function startDrawing(e) {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Don't start drawing if resizing
+    if (isResizing) return;
+    
     isDrawing = true;
     const coords = getCoordinates(e);
     lastX = coords.x;
     lastY = coords.y;
+    
+    // Start new stroke
+    currentStroke = [{ x: coords.x, y: coords.y }];
   }
 
   function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing || isResizing) return;
     e.preventDefault();
+    e.stopPropagation();
+    
     const coords = getCoordinates(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
+    
+    // Add point to current stroke
+    if (currentStroke) {
+      currentStroke.push({ x: coords.x, y: coords.y });
+    }
+    
     lastX = coords.x;
     lastY = coords.y;
-    updateSignatureData();
-  }
-
-  function stopDrawing(e) {
-    e.preventDefault();
-    if (isDrawing) {
-      isDrawing = false;
-      updateSignatureData();
+    
+    // Update signature data (debounced to avoid excessive updates)
+    if (!updateSignatureData.timeout) {
+      updateSignatureData.timeout = setTimeout(() => {
+        updateSignatureData();
+        updateSignatureData.timeout = null;
+      }, 100);
     }
   }
 
+  function stopDrawing(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isDrawing = false;
+    
+    // Save completed stroke
+    if (currentStroke && currentStroke.length > 0) {
+      strokes.push([...currentStroke]);
+      currentStroke = null;
+    }
+    
+    // Final update
+    if (updateSignatureData.timeout) {
+      clearTimeout(updateSignatureData.timeout);
+      updateSignatureData.timeout = null;
+    }
+    updateSignatureData();
+  }
+
   function updateSignatureData() {
-    hiddenInput.value = canvas.toDataURL("image/png");
+    if (isResizing) return;
+    try {
+      hiddenInput.value = canvas.toDataURL("image/png");
+    } catch (err) {
+      console.warn("Failed to update signature data:", err);
+    }
   }
 
   function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     hiddenInput.value = "";
+    strokes = [];
+    currentStroke = null;
   }
 
-  // Mouse events
-  canvas.addEventListener("mousedown", startDrawing);
-  canvas.addEventListener("mousemove", draw);
-  canvas.addEventListener("mouseup", stopDrawing);
-  canvas.addEventListener("mouseleave", stopDrawing);
-
-  // Touch events
-  canvas.addEventListener("touchstart", startDrawing);
-  canvas.addEventListener("touchmove", draw);
-  canvas.addEventListener("touchend", stopDrawing);
-  canvas.addEventListener("touchcancel", stopDrawing);
+  // Use pointer events (preferred) - works for both mouse and touch
+  if (window.PointerEvent) {
+    canvas.addEventListener("pointerdown", startDrawing);
+    canvas.addEventListener("pointermove", draw);
+    canvas.addEventListener("pointerup", stopDrawing);
+    canvas.addEventListener("pointercancel", stopDrawing);
+    canvas.addEventListener("pointerleave", stopDrawing);
+  } else {
+    // Fallback: Use touch events if supported, otherwise mouse events
+    // Don't register both to avoid duplicate handlers on touch devices
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      // Touch device - use touch events only
+      canvas.addEventListener("touchstart", startDrawing, { passive: false });
+      canvas.addEventListener("touchmove", draw, { passive: false });
+      canvas.addEventListener("touchend", stopDrawing, { passive: false });
+      canvas.addEventListener("touchcancel", stopDrawing, { passive: false });
+    } else {
+      // Non-touch device - use mouse events only
+      canvas.addEventListener("mousedown", startDrawing);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", stopDrawing);
+      canvas.addEventListener("mouseleave", stopDrawing);
+    }
+  }
 
   // Clear button
   if (clearBtn) {
@@ -2184,6 +2329,34 @@ async function initAgreementPage(user) {
     const accept = document.getElementById("agreementAccept");
     if (accept) accept.checked = !!existing.accepted;
     if (msg && existing.signedAt?.toDate) msg.textContent = `Loaded prior signature: ${existing.signedAt.toDate().toLocaleString()}`;
+    
+    // Show view/download buttons if PDF exists
+    if (existing.pdfUrl) {
+      showAgreementActions(existing.pdfUrl);
+    }
+  }
+
+  // Show view/download buttons after successful save
+  function showAgreementActions(pdfUrl) {
+    if (!pdfUrl) return;
+    
+    let actionsContainer = document.getElementById("agreementActions");
+    if (!actionsContainer) {
+      actionsContainer = document.createElement("div");
+      actionsContainer.id = "agreementActions";
+      actionsContainer.className = "agreement-actions";
+      actionsContainer.style.cssText = "margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;";
+      form.parentElement.insertBefore(actionsContainer, form.nextSibling);
+    }
+    
+    actionsContainer.innerHTML = `
+      <a href="${pdfUrl}" target="_blank" rel="noopener noreferrer" class="btn ghost" id="viewAgreementBtn">
+        View PDF
+      </a>
+      <a href="${pdfUrl}" download class="btn primary" id="downloadAgreementBtn">
+        Download PDF
+      </a>
+    `;
   }
 
   form.addEventListener("submit", async (e) => {
@@ -2200,10 +2373,21 @@ async function initAgreementPage(user) {
     if (!data.accepted) { if (err) err.textContent = "Please check the agreement box to proceed."; return; }
 
     try {
-      if (btn) btn.disabled = true;
-      if (msg) msg.textContent = "Saving…";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+      }
+      if (msg) msg.textContent = "Saving agreement...";
+      
       await saveAgreement(user, data);
-      if (msg) msg.textContent = "Saved. Your agreement is now signed and stored in your account.";
+      
+      // Load saved agreement to get PDF URL
+      const saved = await loadAgreement(user);
+      
+      if (msg) msg.textContent = "✓ Saved! Your agreement is now signed and stored in your account.";
+      
+      // Show view/download buttons
+      showAgreementActions(saved?.pdfUrl);
       
       // Update prequal UI if on prequal page
       const prequalData = await loadPrequalStatus(user.uid);
@@ -2213,10 +2397,13 @@ async function initAgreementPage(user) {
       const clearBtn = document.getElementById("clearAgreementBtn");
       if (clearBtn) clearBtn.style.display = "block";
     } catch (e2) {
-      console.error(e2);
-      if (err) err.textContent = "Save failed. Please try again.";
+      console.error("[Agreement] Save error:", e2);
+      if (err) err.textContent = e2.message || "Save failed. Please try again.";
     } finally {
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Sign & Save";
+      }
     }
   });
 

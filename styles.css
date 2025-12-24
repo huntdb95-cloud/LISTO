@@ -1337,12 +1337,13 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* Desktop: Better spacing for account info */
+/* Desktop-only layout: Name above logo, left-aligned with Edit Account button */
 @media (min-width: 769px) {
   .account-info-card {
     padding: 28px !important;
   }
   
-  /* Desktop: Reorder layout - name above logo */
+  /* Desktop: Reorder layout - name above logo using flexbox */
   .account-info-card .account-info-content-wrapper {
     display: flex;
     flex-direction: column;
@@ -1394,9 +1395,15 @@ input:focus, select:focus, textarea:focus{
   }
 }
 
-/* Mobile: Center Edit button in Account Info card */
+/* Mobile layout intentionally preserved - regression guard */
+/* Mobile: Restore original grid-2 layout (Name and Logo side by side) */
 @media (max-width: 768px) {
-  /* Mobile: Keep original grid-2 layout */
+  /* Reset content-wrapper to allow grid layout (not flexbox) */
+  .account-info-card .account-info-content-wrapper {
+    display: block;
+  }
+  
+  /* Mobile: Restore original grid-2 layout - Name and Logo side by side */
   .account-info-card .account-info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1404,19 +1411,36 @@ input:focus, select:focus, textarea:focus{
     align-items: start;
   }
   
+  /* Reset order to natural flow (Name left, Logo right) */
   .account-info-card .account-info-name-section {
     order: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+  }
+  
+  .account-info-card .account-info-name-section .kv-row {
+    grid-template-columns: 100px 1fr;
+    gap: 12px;
+    padding: 8px 0;
+    margin-bottom: 12px;
+    margin-left: 0;
   }
   
   .account-info-card .account-info-logo-section {
     order: 0;
+    display: block;
+    margin-bottom: 0;
   }
   
-  .account-info-card > div:last-of-type {
-    display: flex;
-    justify-content: center;
+  /* Reset Edit Account button wrapper */
+  .account-info-card .account-info-content-wrapper > div:last-of-type {
+    display: block;
+    padding-left: 0;
+    margin-left: 0;
+    margin-top: 16px;
   }
   
+  /* Center Edit Account button on mobile */
   .account-info-card a.btn {
     margin: 0 auto;
     display: block;
@@ -1431,7 +1455,7 @@ input:focus, select:focus, textarea:focus{
 .facebook-feed-container {
   width: 100% !important;
   min-width: 280px !important;
-  min-height: 500px !important;
+  min-height: 600px !important;
   overflow: visible !important;
   display: block !important;
   position: relative !important;
@@ -1441,6 +1465,9 @@ input:focus, select:focus, textarea:focus{
   /* Prevent container from collapsing or being hidden */
   height: auto !important;
   max-height: none !important;
+  /* Ensure container is never hidden - critical for mobile */
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* Ensure container is never hidden during or after load */
@@ -1448,29 +1475,7 @@ input:focus, select:focus, textarea:focus{
   display: block !important;
 }
 
-/* Force Facebook plugin to fill container width */
-.facebook-feed-container .fb-page {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 100% !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-  /* Prevent plugin from collapsing */
-  min-height: 500px !important;
-}
-
-.facebook-feed-container .fb-page > span {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 100% !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.facebook-feed-container .fb-page iframe,
+/* Facebook iframe styling - ensure it's always visible and properly sized */
 .facebook-feed-container iframe {
   width: 100% !important;
   max-width: 100% !important;
@@ -1481,20 +1486,25 @@ input:focus, select:focus, textarea:focus{
   border: none !important;
   position: relative !important;
   /* Ensure iframe has minimum dimensions */
-  min-height: 500px !important;
+  min-height: 600px !important;
+  height: 600px !important;
+  /* Prevent iframe from being hidden */
+  pointer-events: auto !important;
 }
 
 /* Loading and error states */
 .facebook-loading-state,
 .facebook-error-state {
   width: 100% !important;
-  min-height: 500px !important;
+  min-height: 600px !important;
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
+  /* Ensure states are never hidden */
+  position: relative !important;
 }
 
-/* Facebook timeline mobile fix - ensure iframe renders on mobile Safari */
+/* Mobile: Ensure iframe is always visible and properly sized */
 @media (max-width: 768px) {
   .facebook-feed-container {
     min-height: 600px !important;
@@ -1522,20 +1532,6 @@ input:focus, select:focus, textarea:focus{
     opacity: 1 !important;
   }
   
-  .facebook-feed-container .fb-page,
-  .facebook-feed-container .fb-page > span {
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    display: block !important;
-    position: relative !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    height: auto !important;
-    min-height: 600px !important;
-  }
-  
-  .facebook-feed-container .fb-page iframe,
   .facebook-feed-container iframe {
     width: 100% !important;
     min-width: 100% !important;
@@ -1561,24 +1557,19 @@ input:focus, select:focus, textarea:focus{
 /* Additional mobile-specific Facebook fixes for smaller screens */
 @media (max-width: 480px) {
   .facebook-feed-container {
-    min-height: 650px !important;
+    min-height: 600px !important;
     padding: 0 !important;
     margin: 0 !important;
   }
   
-  .facebook-feed-container .fb-page {
-    min-height: 650px !important;
-  }
-  
-  .facebook-feed-container .fb-page iframe,
   .facebook-feed-container iframe {
-    height: 650px !important;
-    min-height: 650px !important;
+    height: 600px !important;
+    min-height: 600px !important;
   }
   
   .facebook-loading-state,
   .facebook-error-state {
-    min-height: 650px !important;
+    min-height: 600px !important;
   }
 }
 
@@ -4669,5 +4660,77 @@ input:focus, select:focus, textarea:focus{
   .contracts-tab {
     padding: 12px 16px;
     white-space: nowrap;
+  }
+}
+
+/* ===== Agreement Page Styles ===== */
+.agreement-checkbox-wrapper {
+  margin: 16px 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.agreement-checkbox-wrapper .checkline {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.agreement-checkbox-wrapper .checkline input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.agreement-checkbox-wrapper .checkline span {
+  flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.signature-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  margin-bottom: 8px;
+}
+
+.signature-container canvas {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.signature-actions {
+  margin-top: 8px;
+}
+
+.agreement-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .agreement-checkbox-wrapper {
+    margin: 12px 0;
+  }
+  
+  .signature-container canvas {
+    max-width: 100%;
   }
 }
