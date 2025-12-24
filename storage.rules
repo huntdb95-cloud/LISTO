@@ -63,11 +63,14 @@ service firebase.storage {
     // ========== Document Translator ==========
     
     // Document Translator uploads: uploads/{uid}/contract-scanner/*
-    match /uploads/{userId}/contract-scanner/{allPaths=**} {
-      allow read, write: if isOwnerPath(userId)
+    match /uploads/{userId}/contract-scanner/{fileName} {
+      allow read: if isOwnerPath(userId);
+      
+      allow write: if isOwnerPath(userId)
         && request.resource.size < 20 * 1024 * 1024  // 20MB max
         && (request.resource.contentType.matches('application/pdf') ||
             request.resource.contentType.matches('image/.*'));
+      
       allow delete: if isOwnerPath(userId);
     }
     

@@ -426,20 +426,36 @@ service cloud.firestore {
   
   // Translation jobs: /translatorJobs/{jobId}
   match /translatorJobs/{jobId} {
+    // Create: require all mandatory fields, including filePath
     allow create: if isSignedIn() 
       && request.resource.data.uid == request.auth.uid
       && request.resource.data.keys().hasAll(['uid', 'filePath', 'fileType', 'originalFileName', 'status', 'targetLanguage', 'createdAt', 'updatedAt'])
       && request.resource.data.uid is string
       && request.resource.data.filePath is string
+      && request.resource.data.filePath.size() > 0
       && request.resource.data.fileType in ['image', 'pdf']
       && request.resource.data.originalFileName is string
+      && request.resource.data.originalFileName.size() > 0
       && request.resource.data.status == 'uploaded'
       && request.resource.data.targetLanguage == 'es'
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     
-    allow read, update: if isSignedIn() && resource.data.uid == request.auth.uid;
+    // Read: only owner
+    allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
     
+    // Update: only owner, ensure uid and targetLanguage never change, allow adding optional OCR result fields
+    allow update: if isSignedIn() 
+      && resource.data.uid == request.auth.uid
+      && request.resource.data.uid == resource.data.uid  // uid must never change
+      && request.resource.data.targetLanguage == 'es'  // targetLanguage must stay 'es'
+      && request.resource.data.filePath == resource.data.filePath  // filePath must never change
+      && request.resource.data.fileType == resource.data.fileType  // fileType must never change
+      && request.resource.data.originalFileName == resource.data.originalFileName  // originalFileName must never change
+      && request.resource.data.createdAt == resource.data.createdAt  // createdAt must never change
+      && request.resource.data.updatedAt is timestamp;  // updatedAt must always be updated
+    
+    // Delete: only owner
     allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
   }
 }

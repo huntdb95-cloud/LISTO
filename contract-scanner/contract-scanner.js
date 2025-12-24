@@ -370,45 +370,64 @@ async function scanAndTranslate() {
   try {
     currentFile = file;
     
+    // Verify authentication before proceeding
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated. Please sign in and try again.");
+    }
+    
     // Determine file type (image or pdf)
     const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     const fileType = isPdf ? "pdf" : "image";
     
-    // Create Firestore job document first
+    // Compute filePath BEFORE creating Firestore job document
+    // This ensures filePath is included in the initial jobData, as required by Firestore rules
+    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+    const timestamp = Date.now();
+    const filePath = `uploads/${currentUid}/contract-scanner/${timestamp}_${safeName}`;
+    
+    // Create Firestore job document with filePath included
     setMsg("statusMsg", "Creating translation job...");
     
     const jobData = {
       uid: currentUid,
       fileType: fileType,
       originalFileName: file.name,
+      filePath: filePath,  // MUST exist at create time for Firestore rules
       status: "uploaded",
       targetLanguage: "es",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
     
-    const jobRef = await addDoc(collection(db, "translatorJobs"), jobData);
+    let jobRef;
+    try {
+      jobRef = await addDoc(collection(db, "translatorJobs"), jobData);
+    } catch (firestoreError) {
+      console.error("Firestore create error:", firestoreError);
+      console.error("Error code:", firestoreError.code);
+      console.error("Error message:", firestoreError.message);
+      throw new Error(`Failed to create job: ${firestoreError.message || firestoreError.code || "Permission denied"}`);
+    }
+    
     const jobId = jobRef.id;
     
-    // Upload file to Firebase Storage
-    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-    const timestamp = Date.now();
-    const filePath = `uploads/${currentUid}/contract-scanner/${timestamp}_${safeName}`;
+    // Upload file to Firebase Storage using the same filePath
     const storageRef = ref(storage, filePath);
     
     setMsg("statusMsg", "Uploading file...");
     
-    await uploadBytes(storageRef, file, {
-      contentType: file.type || "application/octet-stream"
-    });
+    try {
+      await uploadBytes(storageRef, file, {
+        contentType: file.type || "application/octet-stream"
+      });
+    } catch (storageError) {
+      console.error("Storage upload error:", storageError);
+      console.error("Error code:", storageError.code);
+      console.error("Error message:", storageError.message);
+      throw new Error(`Failed to upload file: ${storageError.message || storageError.code || "Permission denied"}`);
+    }
     
     const downloadURL = await getDownloadURL(storageRef);
-    
-    // Update job with file path
-    await jobRef.update({
-      filePath: filePath,
-      updatedAt: serverTimestamp(),
-    });
     
     setMsg("statusMsg", "Processing with OCR and Translation... This may take 30-60 seconds for images, or 2-5 minutes for PDFs.");
     
