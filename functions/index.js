@@ -6,9 +6,10 @@
  * - Extracts text using Google Cloud Vision OCR
  * - Parses W-9 fields and updates laborer records
  * 
- * Document Translator (scanContract):
- * - Uses OCR.Space API for OCR (replacing Google Vision for this tool)
+ * Document Translator (processDocument):
+ * - Uses Google Cloud Vision OCR for images and PDFs
  * - Uses Google Cloud Translation API to translate to Spanish
+ * - Stores results in Firestore translatorJobs collection
  */
 
 const functions = require("firebase-functions");
@@ -545,11 +546,12 @@ async function updateOcrStatus(userId, laborerId, status, error) {
 }
 
 /**
- * Document Translator: OCR + Translation
- * Called from frontend to extract text from uploaded document and translate to Spanish
- * Uses OCR.Space API for OCR (replacing Google Vision)
+ * Document Translator: processDocument
+ * Uses Google Cloud Vision OCR for images and PDFs
+ * Uses Google Cloud Translation API to translate to Spanish
+ * Stores results in Firestore translatorJobs collection
  */
-exports.scanContract = functions.https.onCall(async (data, context) => {
+exports.processDocument = functions.https.onCall(async (data, context) => {
   const requestId = generateRequestId();
   const startTime = Date.now();
   
@@ -558,17 +560,17 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
     console.log(JSON.stringify({
       requestId,
       timestamp: new Date().toISOString(),
-      operation: "scanContract_start",
+      operation: "processDocument_start",
       environment: ENVIRONMENT,
-      hasFileUrl: !!data.fileUrl,
-      fileName: data.fileName,
+      jobId: data.jobId,
+      filePath: data.filePath,
       fileType: data.fileType,
     }));
   }
   
   // Check authentication
   if (!context.auth) {
-    logError(requestId, "scanContract_auth", new Error("Unauthenticated"));
+    logError(requestId, "processDocument_auth", new Error("Unauthenticated"));
     throw new functions.https.HttpsError(
       "unauthenticated",
       "Please sign in to use this feature.",
@@ -579,328 +581,277 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
   const userId = context.auth.uid;
   
   // Validate input
-  if (!data.fileUrl) {
-    logError(requestId, "scanContract_validation", new Error("Missing fileUrl"));
+  if (!data.jobId || !data.filePath || !data.fileType) {
+    logError(requestId, "processDocument_validation", new Error("Missing required fields"));
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "File URL is required",
-      createErrorResponse(requestId, "BAD_REQUEST", "File URL is required")
-    );
-  }
-  
-  // Validate file size (20 MB max)
-  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
-  if (data.fileSize && data.fileSize > MAX_FILE_SIZE) {
-    logError(requestId, "scanContract_validation", new Error(`File too large: ${data.fileSize} bytes`));
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "File too large",
-      createErrorResponse(requestId, "FILE_TOO_LARGE", `File too large. Maximum size is 20 MB.`)
+      "Job ID, file path, and file type are required",
+      createErrorResponse(requestId, "BAD_REQUEST", "Job ID, file path, and file type are required")
     );
   }
   
   // Validate file type
-  const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
-  const validExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
-  const fileName = (data.fileName || "").toLowerCase();
-  const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
-  
-  if (!validTypes.includes(data.fileType) && !hasValidExtension) {
-    logError(requestId, "scanContract_validation", new Error(`Invalid file type: ${data.fileType}`));
+  const validTypes = ["image", "pdf"];
+  if (!validTypes.includes(data.fileType)) {
+    logError(requestId, "processDocument_validation", new Error(`Invalid file type: ${data.fileType}`));
     throw new functions.https.HttpsError(
       "invalid-argument",
       "Invalid file type",
-      createErrorResponse(requestId, "BAD_REQUEST", "Invalid file type. Please upload a PDF, JPG, or PNG file.")
+      createErrorResponse(requestId, "BAD_REQUEST", "Invalid file type. Must be 'image' or 'pdf'.")
     );
   }
   
+  const db = admin.firestore();
+  const jobRef = db.collection("translatorJobs").doc(data.jobId);
+  
   try {
-    // Step 1: Download file from Storage
-    let fileBuffer;
-    try {
-      const storage = getStorageClient();
-      const fileUrl = data.fileUrl;
-      
-      // Extract bucket and file path from Firebase Storage URL
-      // Format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media&token=...
-      const urlMatch = fileUrl.match(/\/b\/([^\/]+)\/o\/([^?]+)/);
-      if (!urlMatch) {
-        throw new Error("Invalid file URL format");
-      }
-      
-      const bucketName = urlMatch[1];
-      const encodedPath = decodeURIComponent(urlMatch[2]);
-      const bucket = storage.bucket(bucketName);
-      const file = bucket.file(encodedPath);
-      
-      [fileBuffer] = await file.download();
-      
-      if (DEBUG_MODE) {
-        console.log(JSON.stringify({
-          requestId,
-          operation: "file_downloaded",
-          fileSize: fileBuffer.length,
-        }));
-      }
-    } catch (error) {
-      logError(requestId, "scanContract_download", error);
-      throw new functions.https.HttpsError(
-        "internal",
-        "Failed to download file",
-        createErrorResponse(requestId, "FILE_DOWNLOAD_FAILED", "Failed to download file from storage.")
+    // Verify job exists and belongs to user
+    const jobDoc = await jobRef.get();
+    if (!jobDoc.exists) {
+    throw new functions.https.HttpsError(
+        "not-found",
+        "Job not found",
+        createErrorResponse(requestId, "JOB_NOT_FOUND", "Translation job not found.")
       );
     }
     
-    // Step 2: Perform OCR using OCR.Space API
-    // Note: Get your free API key from https://ocr.space/ocrapi/freekey
-    // Set it as environment variable: OCR_SPACE_API_KEY
-    // Free tier: 25,000 requests/month
+    const jobData = jobDoc.data();
+    if (jobData.uid !== userId) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Access denied",
+        createErrorResponse(requestId, "PERMISSION_DENIED", "You do not have access to this job.")
+      );
+    }
+    
+    // Update status to processing
+    await jobRef.update({
+      status: "processing",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    // Get Storage client and file reference
+    const storage = getStorageClient();
+    const bucket = storage.bucket();
+    const file = bucket.file(data.filePath);
+    
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new Error("File not found in storage");
+    }
+  
+    // Perform OCR using Google Cloud Vision
     let extractedText = "";
+    let sourceLanguage = "en"; // Default to English
+    
     try {
-      // Get OCR.Space API key from Firebase config or environment variable
-      // Set via: firebase functions:config:set ocr_space.api_key="YOUR_KEY"
-      // Or set as environment variable: OCR_SPACE_API_KEY
-      let ocrSpaceApiKey = null;
-      try {
-        // Try Firebase Functions config first (recommended)
-        ocrSpaceApiKey = functions.config().ocr_space?.api_key;
-      } catch (e) {
-        // Config not available, will try env var
-      }
-      // Fallback to environment variable
-      if (!ocrSpaceApiKey) {
-        ocrSpaceApiKey = process.env.OCR_SPACE_API_KEY;
-      }
-      if (!ocrSpaceApiKey) {
-        throw new Error("OCR_SPACE_API_KEY environment variable is not set");
-      }
+      const vision = getVisionClient();
       
-      // OCR.Space API endpoint
-      const ocrSpaceUrl = "https://api.ocr.space/parse/image";
-      
-      // Convert file buffer to base64
-      const base64File = fileBuffer.toString("base64");
-      
-      // Determine file type for OCR.Space
-      const isPdf = data.fileType === "application/pdf";
-      let mimeType = "image/jpeg";
-      if (isPdf) {
-        mimeType = "application/pdf";
-      } else if (data.fileType === "image/png") {
-        mimeType = "image/png";
-      } else if (data.fileType === "image/jpeg" || data.fileType === "image/jpg") {
-        mimeType = "image/jpeg";
-      }
-      
-      // OCR.Space accepts base64 images with data URI format
-      const base64Image = `data:${mimeType};base64,${base64File}`;
-      
-      // Make request to OCR.Space using built-in https module
-      const https = require("https");
-      const { URL } = require("url");
-      
-      const makeRequest = (url, options) => {
-        return new Promise((resolve, reject) => {
-          const urlObj = new URL(url);
-          
-          // Calculate Content-Length if body is provided
-          const body = options.body || "";
-          const bodyLength = Buffer.byteLength(body, "utf8");
-          
-          const requestOptions = {
-            hostname: urlObj.hostname,
-            port: 443,
-            path: urlObj.pathname + urlObj.search,
-            method: options.method || "POST",
-            headers: {
-              ...options.headers,
-              "Content-Length": bodyLength,
-            },
-            timeout: 30000, // 30 second timeout
-          };
-          
-          const req = https.request(requestOptions, (res) => {
-            let data = "";
-            res.on("data", (chunk) => { data += chunk; });
-            res.on("end", () => {
-              try {
-                resolve({
-                  ok: res.statusCode >= 200 && res.statusCode < 300,
-                  status: res.statusCode,
-                  json: async () => JSON.parse(data),
-                });
-              } catch (e) {
-                reject(new Error(`Failed to parse OCR response: ${e.message}`));
-              }
-            });
-          });
-          
-          req.on("error", reject);
-          req.on("timeout", () => {
-            req.destroy();
-            reject(new Error("OCR request timed out after 30 seconds"));
-          });
-          
-          if (body) {
-            req.write(body);
+      if (data.fileType === "image") {
+        // For images: use textDetection
+        const gcsUri = `gs://${bucket.name}/${data.filePath}`;
+        
+        const [result] = await vision.textDetection(gcsUri);
+        const detections = result.textAnnotations;
+        
+        if (detections && detections.length > 0) {
+          // Use fullTextAnnotation if available (better quality), otherwise use first detection
+          if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
+            extractedText = result.fullTextAnnotation.text;
+          } else {
+            extractedText = detections[0].description || "";
           }
-          
-          req.end();
-        });
-      };
-      
-      // Prepare request body as URL-encoded form data (OCR.Space accepts this format)
-      const formParams = new URLSearchParams();
-      formParams.append("apikey", ocrSpaceApiKey);
-      formParams.append("base64Image", base64Image);
-      formParams.append("language", "eng"); // English (can be "eng", "spa", "auto", etc.)
-      formParams.append("isOverlayRequired", "false");
-      formParams.append("OCREngine", "2"); // Use OCR Engine 2 (more accurate)
-      
-      const requestBody = formParams.toString();
-      const contentType = "application/x-www-form-urlencoded";
-      
-      // Add timeout to request (30 seconds)
-      const requestTimeout = 30000;
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("OCR request timed out after 30 seconds")), requestTimeout);
-      });
-      
-      const response = await Promise.race([
-        makeRequest(ocrSpaceUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": contentType,
+        }
+        
+        if (!extractedText || extractedText.trim().length === 0) {
+          throw new Error("No text detected in image");
+        }
+        
+        extractedText = extractedText.trim();
+        
+        if (DEBUG_MODE) {
+          console.log(JSON.stringify({
+            requestId,
+            operation: "ocr_image_completed",
+            textLength: extractedText.length,
+            textPreview: extractedText.substring(0, 200),
+          }));
+        }
+      } else if (data.fileType === "pdf") {
+        // For PDFs: use asyncBatchAnnotateFiles
+        const gcsSourceUri = `gs://${bucket.name}/${data.filePath}`;
+        const gcsDestinationUri = `gs://${bucket.name}/ocr-output/${userId}/${data.jobId}/`;
+        
+        const inputConfig = {
+          mimeType: "application/pdf",
+          gcsSource: {
+            uri: gcsSourceUri,
           },
-          body: requestBody,
-        }),
-        timeoutPromise,
-      ]);
-      
-      // Check HTTP status code
-      if (!response.ok) {
-        const statusText = response.status === 401 
-          ? "Unauthorized - Invalid API key" 
-          : response.status === 429 
-          ? "Rate limit exceeded" 
-          : response.status === 400 
-          ? "Bad request - Invalid file format or parameters" 
-          : `HTTP ${response.status}`;
-        throw new Error(`OCR.Space API error: ${statusText}`);
-      }
-      
-      const ocrResult = await response.json();
-      
-      // Log response for debugging (without sensitive data)
-      if (DEBUG_MODE) {
-        console.log(JSON.stringify({
-          requestId,
-          operation: "ocr_response",
-          status: response.status,
-          hasError: ocrResult.IsErroredOnProcessing,
-          hasResults: !!(ocrResult.ParsedResults && ocrResult.ParsedResults.length > 0),
-        }));
-      }
-      
-      // Check for errors in OCR.Space response
-      if (ocrResult.IsErroredOnProcessing === true) {
-        const errorMessages = ocrResult.ErrorMessage || [];
-        const errorDetails = ocrResult.ErrorDetails || [];
-        const errorMsg = Array.isArray(errorMessages) 
-          ? errorMessages.join(", ") 
-          : String(errorMessages);
-        const detailsMsg = Array.isArray(errorDetails) 
-          ? errorDetails.join(", ") 
-          : String(errorDetails);
-        const fullErrorMsg = errorMsg + (detailsMsg ? ` (${detailsMsg})` : "");
-        throw new Error(`OCR.Space error: ${fullErrorMsg || "Unknown error"}`);
-      }
-      
-      // Extract text from OCR.Space response
-      if (!ocrResult.ParsedResults || ocrResult.ParsedResults.length === 0) {
-        throw new Error("No text detected in document");
-      }
-      
-      // Get text from first parsed result
-      const parsedResult = ocrResult.ParsedResults[0];
-      if (!parsedResult.ParsedText || parsedResult.ParsedText.trim().length === 0) {
-        throw new Error("No text extracted from document");
-      }
-      
-      extractedText = parsedResult.ParsedText.trim();
-      
-      if (DEBUG_MODE) {
-        console.log(JSON.stringify({
-          requestId,
-          operation: "ocr_completed",
-          textLength: extractedText.length,
-          textPreview: extractedText.substring(0, 200),
-          ocrEngine: "OCR.Space",
-        }));
+        };
+        
+        const outputConfig = {
+          gcsDestination: {
+            uri: gcsDestinationUri,
+          },
+          batchSize: 2, // Process 2 pages at a time
+        };
+        
+        const request = {
+          requests: [
+            {
+              inputConfig: inputConfig,
+              features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+              outputConfig: outputConfig,
+            },
+          ],
+        };
+        
+        // Start async batch operation
+        const [operation] = await vision.asyncBatchAnnotateFiles(request);
+        const operationName = operation.name;
+        
+        if (DEBUG_MODE) {
+          console.log(JSON.stringify({
+            requestId,
+            operation: "ocr_pdf_started",
+            operationName,
+          }));
+        }
+        
+        // Poll for completion (max 5 minutes)
+        // Note: asyncBatchAnnotateFiles returns a long-running operation
+        // We need to wait for it to complete by checking the output bucket
+        const maxWaitTime = 5 * 60 * 1000; // 5 minutes
+        const pollInterval = 10000; // 10 seconds
+        const startPollTime = Date.now();
+        
+        let completed = false;
+        while (!completed && (Date.now() - startPollTime) < maxWaitTime) {
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
+          
+          // Check if output files exist in the destination bucket
+          const outputPrefix = `ocr-output/${userId}/${data.jobId}/`;
+          const [files] = await bucket.getFiles({ prefix: outputPrefix });
+          
+          // If we have JSON output files, the operation is likely complete
+          const hasJsonFiles = files.some(f => f.name.endsWith(".json"));
+          if (hasJsonFiles) {
+            // Wait a bit more to ensure all files are written
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            completed = true;
+          }
+        }
+        
+        if (!completed) {
+          throw new Error("OCR operation timed out. PDF processing may take longer for large files.");
+        }
+        
+        // Read results from output bucket
+        const outputPrefix = `ocr-output/${userId}/${data.jobId}/`;
+        const [files] = await bucket.getFiles({ prefix: outputPrefix });
+        
+        // Sort files by name (page order)
+        files.sort((a, b) => {
+          const aNum = parseInt(a.name.match(/-(\d+)-output/)?.[1] || "0");
+          const bNum = parseInt(b.name.match(/-(\d+)-output/)?.[1] || "0");
+          return aNum - bNum;
+        });
+        
+        // Extract text from each output file
+        const pageTexts = [];
+        for (const outputFile of files) {
+          if (outputFile.name.endsWith(".json")) {
+            const [fileBuffer] = await outputFile.download();
+            const jsonData = JSON.parse(fileBuffer.toString());
+            
+            // Extract text from response
+            if (jsonData.responses && jsonData.responses.length > 0) {
+              for (const response of jsonData.responses) {
+                if (response.fullTextAnnotation && response.fullTextAnnotation.text) {
+                  pageTexts.push(response.fullTextAnnotation.text);
+                } else if (response.textAnnotations && response.textAnnotations.length > 0) {
+                  pageTexts.push(response.textAnnotations[0].description || "");
+                }
+              }
+            }
+          }
+        }
+        
+        extractedText = pageTexts.join("\n\n");
+        
+        if (!extractedText || extractedText.trim().length === 0) {
+          throw new Error("No text detected in PDF");
+        }
+        
+        extractedText = extractedText.trim();
+        
+        if (DEBUG_MODE) {
+          console.log(JSON.stringify({
+            requestId,
+            operation: "ocr_pdf_completed",
+            textLength: extractedText.length,
+            pagesProcessed: pageTexts.length,
+            textPreview: extractedText.substring(0, 200),
+          }));
+        }
       }
     } catch (error) {
-      // Check for specific OCR.Space errors
       let errorCode = "OCR_FAILED";
       let errorMessage = "Failed to extract text from document.";
-      let errorDetails = null;
       
-      if (error.message?.includes("OCR_SPACE_API_KEY") || error.message?.includes("not set")) {
-        errorCode = "OCR_API_KEY_MISSING";
-        errorMessage = "OCR failed: OCR.Space API key is not configured. Please set OCR_SPACE_API_KEY environment variable.";
-      } else if (error.message?.includes("quota") || error.message?.includes("limit") || error.message?.includes("429") || error.message?.includes("Rate limit")) {
+      if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
+        errorCode = "OCR_PERMISSION";
+        errorMessage = "OCR failed: Google Vision API permission denied. Please check IAM roles.";
+      } else if (error.code === 16 || error.message?.includes("UNAUTHENTICATED")) {
+        errorCode = "OCR_AUTH";
+        errorMessage = "OCR failed: Google Vision API authentication failed. Please check credentials.";
+      } else if (error.message?.includes("quota") || error.message?.includes("limit")) {
         errorCode = "OCR_QUOTA";
         errorMessage = "OCR failed: API quota exceeded. Please try again later.";
-      } else if (error.message?.includes("No text") || error.message?.includes("No text detected") || error.message?.includes("No text extracted")) {
+      } else if (error.message?.includes("not enabled") || error.message?.includes("API not enabled")) {
+        errorCode = "OCR_API_DISABLED";
+        errorMessage = "OCR failed: Google Vision API is not enabled. Please enable it in Google Cloud Console.";
+      } else if (error.message?.includes("No text detected") || error.message?.includes("No text")) {
         errorCode = "NO_TEXT_DETECTED";
         errorMessage = "No text was detected in the document. Please ensure the document contains readable text.";
       } else if (error.message?.includes("timed out") || error.message?.includes("timeout")) {
         errorCode = "OCR_TIMEOUT";
-        errorMessage = "OCR request timed out. The file may be too large or the service is slow. Please try again with a smaller file.";
-      } else if (error.message?.includes("Unauthorized") || error.message?.includes("401")) {
-        errorCode = "OCR_AUTH_FAILED";
-        errorMessage = "OCR failed: Invalid API key. Please check your OCR.Space API key configuration.";
-      } else if (error.message?.includes("Bad request") || error.message?.includes("400")) {
-        errorCode = "OCR_BAD_REQUEST";
-        errorMessage = "OCR failed: Invalid file format or request parameters. Please ensure the file is a valid PDF, JPG, or PNG.";
-      } else if (error.message?.includes("OCR.Space error")) {
-        errorCode = "OCR_SPACE_ERROR";
-        errorMessage = error.message;
-      } else if (error.message?.includes("Failed to parse OCR response")) {
-        errorCode = "OCR_PARSE_ERROR";
-        errorMessage = "OCR failed: Invalid response from OCR service. Please try again.";
-        errorDetails = error.message;
+        errorMessage = "OCR request timed out. The file may be too large. Please try again with a smaller file.";
       }
       
-      // Log error with context (no sensitive data)
-      logError(requestId, "scanContract_ocr", error, {
+      logError(requestId, "processDocument_ocr", error, {
         errorCode,
         errorMessage,
         fileType: data.fileType,
-        fileSize: data.fileSize,
+      });
+      
+      // Update job status to error
+      await jobRef.update({
+        status: "error",
+        errorMessage: errorMessage,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
       
       throw new functions.https.HttpsError(
         "internal",
         errorMessage,
-        createErrorResponse(requestId, errorCode, errorMessage, errorDetails)
+        createErrorResponse(requestId, errorCode, errorMessage)
       );
     }
     
-    // Step 3: Translate to Spanish
+    // Translate to Spanish
     let translatedText = "";
     try {
       const translate = getTranslateClient();
       
-      // Get project ID from environment or Firebase Admin
+      // Get project ID
       let projectId = process.env.GCLOUD_PROJECT;
       if (!projectId) {
-        // Try to get from Firebase Admin
-        const projectIdFromAdmin = admin.app().options.projectId;
-        if (projectIdFromAdmin) {
-          projectId = projectIdFromAdmin;
-        } else {
-          throw new Error("Project ID not found. Please set GCLOUD_PROJECT environment variable.");
-        }
+        projectId = admin.app().options.projectId;
+      }
+      if (!projectId) {
+        throw new Error("Project ID not found");
       }
       
       // Translation API v3 requires location
@@ -1015,6 +966,11 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
         
         if (response.translations && response.translations.length > 0) {
           translatedChunks.push(response.translations[0].translatedText);
+          
+          // Try to get detected source language from first chunk
+          if (translatedChunks.length === 1 && response.translations[0].detectedLanguageCode) {
+            sourceLanguage = response.translations[0].detectedLanguageCode;
+          }
         } else {
           throw new Error("Translation returned empty result");
         }
@@ -1051,9 +1007,13 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
         errorMessage = "Translation failed: Google Translation API is not enabled. Please enable it in Google Cloud Console.";
       }
       
-      logError(requestId, "scanContract_translation", error, {
-        errorCode: error.code,
-        errorMessage: error.message,
+      logError(requestId, "processDocument_translation", error);
+      
+      // Update job status to error
+      await jobRef.update({
+        status: "error",
+        errorMessage: errorMessage,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
       
       throw new functions.https.HttpsError(
@@ -1063,13 +1023,22 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
       );
     }
     
-    // Step 4: Return results
+    // Save results to Firestore
+    await jobRef.update({
+      status: "done",
+      extractedText: extractedText,
+      translatedText: translatedText,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: data.targetLanguage || "es",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    
     const duration = Date.now() - startTime;
     
     if (DEBUG_MODE) {
       console.log(JSON.stringify({
         requestId,
-        operation: "scanContract_success",
+        operation: "processDocument_success",
         duration,
         textLength: extractedText.length,
         translatedLength: translatedText.length,
@@ -1078,10 +1047,9 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
     
     return {
       ok: true,
-      english: extractedText,
-      spanish: translatedText,
-      originalText: extractedText, // Support both formats
+      extractedText: extractedText,
       translatedText: translatedText,
+      sourceLanguage: sourceLanguage,
       requestId,
     };
     
@@ -1091,8 +1059,22 @@ exports.scanContract = functions.https.onCall(async (data, context) => {
       throw error;
     }
     
+    // Update job status to error if we have a jobRef
+    try {
+      if (data.jobId) {
+        const jobRef = db.collection("translatorJobs").doc(data.jobId);
+        await jobRef.update({
+          status: "error",
+          errorMessage: error.message || "An error occurred",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (updateError) {
+      // Ignore update errors if job doesn't exist
+    }
+    
     // Otherwise, wrap it
-    logError(requestId, "scanContract_unknown", error);
+    logError(requestId, "processDocument_unknown", error);
     throw new functions.https.HttpsError(
       "internal",
       "An internal server error occurred. Please try again or contact support if the issue persists.",

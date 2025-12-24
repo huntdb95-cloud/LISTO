@@ -421,5 +421,26 @@ service cloud.firestore {
       allow read, write: if false;
     }
   }
+  
+  // ========== Document Translator Jobs ==========
+  
+  // Translation jobs: /translatorJobs/{jobId}
+  match /translatorJobs/{jobId} {
+    allow create: if isSignedIn() 
+      && request.resource.data.uid == request.auth.uid
+      && request.resource.data.keys().hasAll(['uid', 'filePath', 'fileType', 'originalFileName', 'status', 'targetLanguage', 'createdAt', 'updatedAt'])
+      && request.resource.data.uid is string
+      && request.resource.data.filePath is string
+      && request.resource.data.fileType in ['image', 'pdf']
+      && request.resource.data.originalFileName is string
+      && request.resource.data.status == 'uploaded'
+      && request.resource.data.targetLanguage == 'es'
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.updatedAt is timestamp;
+    
+    allow read, update: if isSignedIn() && resource.data.uid == request.auth.uid;
+    
+    allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+  }
 }
 
