@@ -1487,6 +1487,16 @@ input:focus, select:focus, textarea:focus{
     display: inline-block;
     width: auto;
   }
+  
+  /* Center Account Information header on mobile */
+  .account-info-card .h2 {
+    text-align: center;
+  }
+  
+  /* Center Completion Status header on mobile */
+  .account-info-card .h3 {
+    text-align: center;
+  }
 }
 
 .facebook-feed-card {
@@ -1885,6 +1895,32 @@ input:focus, select:focus, textarea:focus{
 
 .account-page .btn {
   margin-top: 4px;
+}
+
+/* Mobile-only: Center buttons on Settings page */
+@media (max-width: 768px) {
+  /* Center form buttons in Settings page */
+  .account-page .form-section form .btn.primary,
+  .account-page #logoForm .btn.primary,
+  .account-page #logoUploadBtn,
+  .account-page #nameUpdateBtn,
+  .account-page #emailUpdateBtn,
+  .account-page #passwordUpdateBtn,
+  .account-page #contactUpdateBtn,
+  .account-page #taxUpdateBtn {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+  }
+  
+  /* Center View Terms and Conditions button */
+  .account-page .card a.btn.primary[href*="terms.html"] {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+  }
 }
 
 /* Account page grid layout - OLD (kept for backward compatibility) */

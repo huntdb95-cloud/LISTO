@@ -356,7 +356,7 @@ const I18N = {
     "support.contactTitle": "Get in Touch",
     "support.contactDesc": "Need help? Contact us for assistance with your account or questions about using Listo.",
     "support.emailLabel": "Email:",
-    "support.email": "support@listo.com",
+    "support.email": "support@listonow.com",
     "support.hoursLabel": "Support Hours:",
     "support.hours": "Monday - Friday, 9 AM - 5 PM EST",
     "support.resourcesTitle": "Resources",
@@ -391,7 +391,7 @@ const I18N = {
     "terms.section7Title": "7. Modifications",
     "terms.section7Content": "Listo may revise these terms of service at any time without notice. By using this Service you are agreeing to be bound by the then current version of these terms of service.",
     "terms.section8Title": "8. Contact Information",
-    "terms.section8Content": "If you have any questions about these Terms and Conditions, please contact us at support@listo.com.",
+    "terms.section8Content": "If you have any questions about these Terms and Conditions, please contact us at support@listonow.com.",
     "terms.backHome": "Back to Home",
 
     "privacy.title": "Privacy Policy",
@@ -435,7 +435,7 @@ const I18N = {
     "privacy.section8Title": "8. Changes to This Privacy Policy",
     "privacy.section8Content": "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the \"Last updated\" date. You are advised to review this Privacy Policy periodically for any changes.",
     "privacy.section9Title": "9. Contact Us",
-    "privacy.section9Content": "If you have any questions about this Privacy Policy, please contact us at support@listo.com.",
+    "privacy.section9Content": "If you have any questions about this Privacy Policy, please contact us at support@listonow.com.",
 
     "dashboard.title": "Welcome back!",
     "dashboard.subtitle": "Here's an overview of your account and quick access to your tools.",
@@ -943,7 +943,7 @@ const I18N = {
     "support.contactTitle": "Contáctanos",
     "support.contactDesc": "¿Necesitas ayuda? Contáctanos para asistencia con tu cuenta o preguntas sobre cómo usar Listo.",
     "support.emailLabel": "Correo electrónico:",
-    "support.email": "support@listo.com",
+    "support.email": "support@listonow.com",
     "support.hoursLabel": "Horario de Atención:",
     "support.hours": "Lunes - Viernes, 9 AM - 5 PM EST",
     "support.resourcesTitle": "Recursos",
@@ -1095,7 +1095,7 @@ const I18N = {
     "terms.section7Title": "7. Modificaciones",
     "terms.section7Content": "Listo puede revisar estos términos de servicio en cualquier momento sin previo aviso. Al usar este Servicio, acepta estar sujeto a la versión actual de estos términos de servicio.",
     "terms.section8Title": "8. Información de Contacto",
-    "terms.section8Content": "Si tiene alguna pregunta sobre estos Términos y Condiciones, contáctenos en support@listo.com.",
+    "terms.section8Content": "Si tiene alguna pregunta sobre estos Términos y Condiciones, contáctenos en support@listonow.com.",
     "terms.backHome": "Volver al Inicio",
 
     "privacy.title": "Política de Privacidad",
@@ -1139,7 +1139,7 @@ const I18N = {
     "privacy.section8Title": "8. Cambios a Esta Política de Privacidad",
     "privacy.section8Content": "Podemos actualizar esta Política de Privacidad de vez en cuando. Le notificaremos de cualquier cambio publicando la nueva Política de Privacidad en esta página y actualizando la fecha de \"Última actualización\". Se le recomienda revisar esta Política de Privacidad periódicamente para cualquier cambio.",
     "privacy.section9Title": "9. Contáctenos",
-    "privacy.section9Content": "Si tiene alguna pregunta sobre esta Política de Privacidad, contáctenos en support@listo.com.",
+    "privacy.section9Content": "Si tiene alguna pregunta sobre esta Política de Privacidad, contáctenos en support@listonow.com.",
 
     "account.title": "Mi Cuenta",
     "account.subtitle": "Administra la configuración de tu cuenta e información de perfil.",
