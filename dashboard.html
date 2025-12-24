@@ -132,22 +132,7 @@
 <h2 class="h2" data-i18n="dashboard.facebookFeed">News & Updates</h2>
 <div class="divider"></div>
 <div class="facebook-feed-container" id="facebookFeedContainer">
-<!-- Facebook Page Plugin -->
-<div class="fb-page" 
-     id="fbPagePlugin"
-     data-href="https://www.facebook.com/profile.php?id=61585220295883" 
-     data-tabs="timeline" 
-     data-width="500" 
-     data-height="600" 
-     data-small-header="false" 
-     data-adapt-container-width="true" 
-     data-hide-cover="false" 
-     data-show-facepile="true">
-<blockquote cite="https://www.facebook.com/profile.php?id=61585220295883" class="fb-xfbml-parse-ignore">
-<a href="https://www.facebook.com/profile.php?id=61585220295883">Listo - Business Tools</a>
-<a href="https://www.facebook.com/profile.php?id=61585220295883">Listo</a>
-</blockquote>
-</div>
+<!-- Facebook feed will be rendered via iframe by dashboard.js -->
 </div>
 </div>
 </div>
@@ -234,77 +219,7 @@
     location.replace('https:' + window.location.href.substring(window.location.protocol.length));
   }
 </script>
-<!-- Facebook SDK -->
-<div id="fb-root"></div>
-<script>
-  // Load Facebook SDK with proper error handling and mobile Safari support
-  // Ensure SDK loads only once globally
-  (function(d, s, id) {
-    // Prevent duplicate loading
-    if (d.getElementById(id)) {
-      console.log("[FB SDK] Facebook SDK script already exists, skipping");
-      return;
-    }
-    
-    // Check if FB is already initialized
-    if (window.FB) {
-      console.log("[FB SDK] Facebook SDK already initialized");
-      return;
-    }
-    
-    var js, fjs = d.getElementsByTagName(s)[0];
-    js = d.createElement(s); 
-    js.id = id;
-    js.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0";
-    js.async = true;
-    js.defer = true;
-    js.crossOrigin = "anonymous";
-    
-    js.onload = function() {
-      console.log("[FB SDK] Facebook SDK script loaded");
-      // Wait for FB object to be available (SDK may need a moment to initialize)
-      let checkCount = 0;
-      const maxChecks = 30; // Wait up to 3 seconds
-      
-      const checkFB = setInterval(function() {
-        checkCount++;
-        if (window.FB) {
-          clearInterval(checkFB);
-          console.log("[FB SDK] window.FB is available");
-          // Initialize Facebook plugin after SDK loads
-          // dashboard.js will handle initialization, but we can trigger it here too
-          if (typeof window.initFacebookPlugin === 'function') {
-            window.initFacebookPlugin();
-          } else {
-            // If function not loaded yet, wait a bit more (dashboard.js loads as module)
-            setTimeout(function() {
-              if (typeof window.initFacebookPlugin === 'function') {
-                window.initFacebookPlugin();
-              } else {
-                console.log("[FB SDK] initFacebookPlugin will be called from dashboard.js when ready");
-              }
-            }, 300);
-          }
-        } else if (checkCount >= maxChecks) {
-          clearInterval(checkFB);
-          console.error("[FB SDK] window.FB not available after SDK load timeout");
-        }
-      }, 100);
-    };
-    
-    js.onerror = function() {
-      console.error("[FB SDK] Failed to load Facebook SDK script");
-      // dashboard.js will handle fallback
-    };
-    
-    if (fjs && fjs.parentNode) {
-      fjs.parentNode.insertBefore(js, fjs);
-    } else {
-      // Fallback: append to head if body not ready
-      (d.head || d.body || d.documentElement).appendChild(js);
-    }
-  }(document, 'script', 'facebook-jssdk'));
-</script>
+<!-- Facebook feed is loaded via iframe in dashboard.js (no SDK needed) -->
 
 <script src="sidebar.js"></script>
 <script src="scripts.js" type="module"></script>
