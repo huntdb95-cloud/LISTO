@@ -562,9 +562,15 @@ body[data-page="landing"] .lang-switch-mobile {
   .prequal-dashboard-item .dashboard-status span:not(.dot) {
     font-size: 0.75rem;
     max-width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 

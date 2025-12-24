@@ -67,6 +67,12 @@ function createSidebarHTML(basePath = '') {
                   <span class="sidebar-label">1099-NEC Generator</span>
                 </a>
               </li>
+              <li class="sidebar-submenu-item">
+                <a href="${pathPrefix}prequal.html" class="sidebar-link sidebar-submenu-link" data-nav="prequal">
+                  <span class="sidebar-icon"><i class="bx bx-check-square"></i></span>
+                  <span class="sidebar-label">Pre-Qualification</span>
+                </a>
+              </li>
             </ul>
           </li>
           <li class="sidebar-menu-item">
