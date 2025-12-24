@@ -4,9 +4,6 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<link rel="icon" type="image/png" sizes="32x32" href="/images/browsericon.png?v=1">
-<link rel="icon" type="image/png" sizes="16x16" href="/images/browsericon.png?v=1">
-<link rel="apple-touch-icon" href="/images/browsericon.png?v=1">
 <title>Listo — Pre-Qualification Dashboard</title>
 <meta content="Complete W-9, upload COI, sign agreement, and upload business documents to become Pre-Qualified on Listo." name="description"/>
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
@@ -235,7 +232,47 @@
 </div>
 </div>
 </div>
+
+<!-- Compile Packet Section -->
+<div class="card pad mt">
+<h2 class="h2">Compile Pre-Qualification Packet</h2>
+<p class="muted">Download all your pre-qualification documents as a single merged PDF, or attach it to an email.</p>
+<div class="divider"></div>
+<div style="margin-top: 16px;">
+<button class="btn primary" id="compilePacketBtn" type="button">Compile & Download PDF</button>
+<button class="btn ghost" id="compilePacketEmailBtn" type="button" style="margin-left: 12px;">Compile & Email</button>
+<p aria-live="polite" class="muted small" id="compilePacketMsg" role="status" style="margin-top: 12px;"></p>
+<p aria-live="polite" class="form-error" id="compilePacketErr" role="alert" style="margin-top: 8px;"></p>
+</div>
+</div>
 </section>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <div class="mobile-bottom-nav-items">
+    <a href="dashboard.html" class="mobile-bottom-nav-item" data-nav="home">
+      <div class="mobile-bottom-nav-icon">🏠</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.dashboard">Home</div>
+    </a>
+    <a href="contracts/contracts.html" class="mobile-bottom-nav-item" data-nav="contracts">
+      <div class="mobile-bottom-nav-icon">📄</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.contracts">Contracts</div>
+    </a>
+    <a href="bookkeeping/bookkeeping.html" class="mobile-bottom-nav-item" data-nav="bookkeeping">
+      <div class="mobile-bottom-nav-icon">📊</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.bookkeeping">Bookkeeping</div>
+    </a>
+    <a href="tools/tools.html" class="mobile-bottom-nav-item" data-nav="tools">
+      <div class="mobile-bottom-nav-icon">🔧</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.tools">Tools</div>
+    </a>
+    <a href="settings/settings.html" class="mobile-bottom-nav-item" data-nav="settings">
+      <div class="mobile-bottom-nav-icon">⚙️</div>
+      <div class="mobile-bottom-nav-label" data-i18n="nav.settings">Settings</div>
+    </a>
+  </div>
+</nav>
+
 <footer class="site-footer">
 <div class="container footer-inner">
 <div>
@@ -260,6 +297,8 @@
   </main>
 </div>
 
+<!-- pdf-lib for PDF merging -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="sidebar.js"></script>
 <script src="scripts.js" type="module"></script>
 </body>

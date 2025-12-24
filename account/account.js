@@ -53,15 +53,15 @@ onAuthStateChanged(auth, async (user) => {
     // Initialize prequalification status and uploads
     if (typeof window.loadPrequalStatus === 'function' && typeof window.updatePrequalUI === 'function') {
       const prequalData = await window.loadPrequalStatus(user.uid);
-      window.updatePrequalUI(prequalData);
+      await window.updatePrequalUI(prequalData, user.uid);
     }
     
     // Initialize Business License and Workers Comp uploads
     if (typeof window.initBusinessLicenseUpload === 'function') {
-      window.initBusinessLicenseUpload(user);
+      await window.initBusinessLicenseUpload(user);
     }
     if (typeof window.initWorkersCompUpload === 'function') {
-      window.initWorkersCompUpload(user);
+      await window.initWorkersCompUpload(user);
     }
   } else {
     // Should be redirected by scripts.js, but handle gracefully

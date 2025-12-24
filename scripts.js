@@ -23,7 +23,8 @@ import {
   getStorage,
   ref,
   uploadBytes,
-  getDownloadURL
+  getDownloadURL,
+  deleteObject
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
 
 /* ========= i18n ========= */
@@ -1497,8 +1498,9 @@ async function loadPrequalStatus(uid) {
   return snap.data() || {};
 }
 
-function updatePrequalUI(data) {
+async function updatePrequalUI(data, userId = null) {
   const coiMetaText = document.getElementById("coiMetaText");
+  const settingsCoiMetaText = document.getElementById("settingsCoiMetaText");
 
   const w9 = !!data.w9Completed;
   const coi = !!data.coiCompleted;
@@ -1513,6 +1515,13 @@ function updatePrequalUI(data) {
   const businessLicenseDot = document.getElementById("businessLicenseDot");
   const workersCompDot = document.getElementById("workersCompDot");
   
+  // Settings page dots
+  const settingsW9Dot = document.getElementById("settingsW9Dot");
+  const settingsCoiDot = document.getElementById("settingsCoiDot");
+  const settingsAgreementDot = document.getElementById("settingsAgreementDot");
+  const settingsBusinessLicenseDot = document.getElementById("settingsBusinessLicenseDot");
+  const settingsWorkersCompDot = document.getElementById("settingsWorkersCompDot");
+  
   // Dashboard dots
   const dashboardW9Dot = document.getElementById("dashboardW9Dot");
   const dashboardCoiDot = document.getElementById("dashboardCoiDot");
@@ -1520,64 +1529,62 @@ function updatePrequalUI(data) {
   const dashboardBusinessLicenseDot = document.getElementById("dashboardBusinessLicenseDot");
   const dashboardWorkersCompDot = document.getElementById("dashboardWorkersCompDot");
 
-  if (w9Dot) {
-    w9Dot.classList.toggle("dot-on", w9);
-    w9Dot.classList.toggle("dot-off", !w9);
-  }
-  if (dashboardW9Dot) {
-    dashboardW9Dot.classList.toggle("dot-on", w9);
-    dashboardW9Dot.classList.toggle("dot-off", !w9);
-  }
-  if (coiDot) {
-    coiDot.classList.toggle("dot-on", coi);
-    coiDot.classList.toggle("dot-off", !coi);
-  }
-  if (dashboardCoiDot) {
-    dashboardCoiDot.classList.toggle("dot-on", coi);
-    dashboardCoiDot.classList.toggle("dot-off", !coi);
-  }
-  if (agreementDot) {
-    agreementDot.classList.toggle("dot-on", agr);
-    agreementDot.classList.toggle("dot-off", !agr);
-  }
-  if (dashboardAgreementDot) {
-    dashboardAgreementDot.classList.toggle("dot-on", agr);
-    dashboardAgreementDot.classList.toggle("dot-off", !agr);
-  }
-  if (businessLicenseDot) {
-    businessLicenseDot.classList.toggle("dot-on", hasBusinessLicense);
-    businessLicenseDot.classList.toggle("dot-off", !hasBusinessLicense);
-  }
-  if (dashboardBusinessLicenseDot) {
-    dashboardBusinessLicenseDot.classList.toggle("dot-on", hasBusinessLicense);
-    dashboardBusinessLicenseDot.classList.toggle("dot-off", !hasBusinessLicense);
-  }
-  if (workersCompDot) {
-    workersCompDot.classList.toggle("dot-on", hasWorkersComp);
-    workersCompDot.classList.toggle("dot-off", !hasWorkersComp);
-  }
-  if (dashboardWorkersCompDot) {
-    dashboardWorkersCompDot.classList.toggle("dot-on", hasWorkersComp);
-    dashboardWorkersCompDot.classList.toggle("dot-off", !hasWorkersComp);
-  }
+  // Helper function to update a dot
+  const updateDot = (dot, isOn) => {
+    if (dot) {
+      dot.classList.toggle("dot-on", isOn);
+      dot.classList.toggle("dot-off", !isOn);
+    }
+  };
+
+  // Update all dots
+  updateDot(w9Dot, w9);
+  updateDot(settingsW9Dot, w9);
+  updateDot(dashboardW9Dot, w9);
+  
+  updateDot(coiDot, coi);
+  updateDot(settingsCoiDot, coi);
+  updateDot(dashboardCoiDot, coi);
+  
+  updateDot(agreementDot, agr);
+  updateDot(settingsAgreementDot, agr);
+  updateDot(dashboardAgreementDot, agr);
+  
+  updateDot(businessLicenseDot, hasBusinessLicense);
+  updateDot(settingsBusinessLicenseDot, hasBusinessLicense);
+  updateDot(dashboardBusinessLicenseDot, hasBusinessLicense);
+  
+  updateDot(workersCompDot, hasWorkersComp);
+  updateDot(settingsWorkersCompDot, hasWorkersComp);
+  updateDot(dashboardWorkersCompDot, hasWorkersComp);
 
   const expiresOn = data?.coi?.expiresOn;
+  const lang = document.documentElement.lang || "en";
+  const label = (I18N[lang]?.["prequal.coiExpires"] || "Expires");
+  
   if (coiMetaText && expiresOn) {
-    const lang = document.documentElement.lang || "en";
-    const label = (I18N[lang]?.["prequal.coiExpires"] || "Expires");
     coiMetaText.textContent = `${label}: ${formatDate(expiresOn)}`;
+  }
+  if (settingsCoiMetaText && expiresOn) {
+    settingsCoiMetaText.textContent = `${label}: ${formatDate(expiresOn)}`;
   }
 
   // Show/hide view buttons based on completion status
   const w9ViewBtn = document.getElementById("w9ViewBtn");
+  const settingsW9ViewBtn = document.getElementById("settingsW9ViewBtn");
+  
   if (w9ViewBtn) {
     w9ViewBtn.style.display = w9 ? "inline-block" : "none";
   }
+  if (settingsW9ViewBtn) {
+    settingsW9ViewBtn.style.display = w9 ? "inline-block" : "none";
+  }
 
   const coiViewBtn = document.getElementById("coiViewBtn");
+  const settingsCoiViewBtn = document.getElementById("settingsCoiViewBtn");
+  
   if (coiViewBtn && coi && data?.coi?.filePath) {
     coiViewBtn.style.display = "inline-block";
-    // Set the COI view link URL
     getDownloadURL(ref(storage, data.coi.filePath)).then(url => {
       coiViewBtn.href = url;
     }).catch(err => {
@@ -1586,22 +1593,62 @@ function updatePrequalUI(data) {
   } else if (coiViewBtn) {
     coiViewBtn.style.display = "none";
   }
+  
+  if (settingsCoiViewBtn && coi && data?.coi?.filePath) {
+    settingsCoiViewBtn.style.display = "inline-block";
+    getDownloadURL(ref(storage, data.coi.filePath)).then(url => {
+      settingsCoiViewBtn.href = url;
+    }).catch(err => {
+      console.error("Error getting COI URL:", err);
+    });
+  } else if (settingsCoiViewBtn) {
+    settingsCoiViewBtn.style.display = "none";
+  }
 
   const agreementViewBtn = document.getElementById("agreementViewBtn");
+  const settingsAgreementViewBtn = document.getElementById("settingsAgreementViewBtn");
+  
+  // Load agreement to get PDF URL if agreement is completed
+  if ((agreementViewBtn || settingsAgreementViewBtn) && agr && userId) {
+    try {
+      const agreementData = await loadAgreement({ uid: userId });
+      const pdfUrl = agreementData?.pdfUrl;
+      
+      if (agreementViewBtn && pdfUrl) {
+        agreementViewBtn.href = pdfUrl;
+        agreementViewBtn.target = "_blank";
+        agreementViewBtn.rel = "noopener";
+      }
+      if (settingsAgreementViewBtn && pdfUrl) {
+        settingsAgreementViewBtn.href = pdfUrl;
+        settingsAgreementViewBtn.target = "_blank";
+        settingsAgreementViewBtn.rel = "noopener";
+      }
+    } catch (err) {
+      console.warn("Could not load agreement PDF URL:", err);
+    }
+  }
+  
   if (agreementViewBtn) {
     agreementViewBtn.style.display = agr ? "inline-block" : "none";
+  }
+  if (settingsAgreementViewBtn) {
+    settingsAgreementViewBtn.style.display = agr ? "inline-block" : "none";
   }
 }
 
 async function initPrequalPage(user) {
   const data = await loadPrequalStatus(user.uid);
-  updatePrequalUI(data);
+  await updatePrequalUI(data, user.uid);
   
   // Initialize Business License upload
-  initBusinessLicenseUpload(user);
+  await initBusinessLicenseUpload(user);
 
   // Initialize Workers Comp upload
-  initWorkersCompUpload(user);
+  await initWorkersCompUpload(user);
+  
+  // Initialize compile packet functionality
+  initCompilePacket(user);
 }
 
 // Make prequal functions available globally for contracts.js and account.js
@@ -1746,10 +1793,183 @@ async function loadAgreement(user) {
   return snap.exists() ? snap.data() : null;
 }
 
+// Generate PDF from agreement data
+async function generateAgreementPDF(data) {
+  if (typeof window.jspdf === "undefined") {
+    throw new Error("jsPDF library not loaded. Please refresh the page.");
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "in",
+    format: [8.5, 11] // Letter size: 8.5" x 11"
+  });
+
+  const pageWidth = 8.5;
+  const pageHeight = 11;
+  const margin = 0.75;
+  const contentWidth = pageWidth - (margin * 2);
+  let yPos = margin;
+  const lineHeight = 0.2;
+  const fontSize = 10;
+  const smallFontSize = 9;
+
+  // Helper to add text with word wrapping
+  function addText(text, fontSize, isBold = false, align = "left") {
+    doc.setFontSize(fontSize);
+    if (isBold) doc.setFont(undefined, "bold");
+    else doc.setFont(undefined, "normal");
+    
+    const lines = doc.splitTextToSize(text, contentWidth);
+    lines.forEach((line) => {
+      if (yPos + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin;
+      }
+      doc.text(line, margin, yPos, { align });
+      yPos += lineHeight;
+    });
+  }
+
+  // Title
+  doc.setFontSize(14);
+  doc.setFont(undefined, "bold");
+  doc.text("SUBCONTRACTORS AGREEMENT", pageWidth / 2, yPos, { align: "center" });
+  yPos += 0.3;
+
+  // Introduction paragraph
+  const introText = `This Document is a binding contract, which will serve as a blanket agreement for and between ${data.builderName} herein known as Builder, and the undersigned referred to hereafter as Subcontractor. By signing, Subcontractor and Builder agree to the terms set forth herein. This agreement shall remain in force from the date hereof and from year to year, unless a change is agreed to in writing by both Builder and Subcontractor. The parties agree to the following:`;
+  addText(introText, fontSize);
+  yPos += 0.1;
+
+  // Agreement sections (abbreviated for PDF - include key sections)
+  const sections = [
+    { title: "1. GENERAL PERFORMANCE", text: "All Work of the Subcontractor will be performed in a good and workmanlike manner in accordance with the plans and specifications for each job and must comply with all Federal and State laws, codes and regulations and all county and/or municipal ordinances and regulations effective where the work is to be performed under this contract. All permits, fees, taxes, and expenses connected with such compliance are to be paid by the Subcontractor." },
+    { title: "2. INDEPENDENT CONTRACTOR", text: "The Builder and Subcontractor agree that the Subcontractor is being hired solely as an Independent Contractor and that neither the Subcontractor, nor his employees shall be deemed to be employees of the Builder." },
+    { title: "3. TIME", text: "The Subcontractor agrees to promptly begin work as soon as notified by the Builder, and to complete the work in a professional and workmanlike manner within a reasonable period of time once work is commenced and in any event by the deadlines established by the Builder in writing." },
+    { title: "4. EXTRAS", text: "No deviations from the work specified in the contract will be permitted or paid for unless a written extra work or change order is first agreed upon and signed as required." },
+    { title: "5. ASSIGNMENT", text: "No assignment of this subcontract agreement by Subcontractor is permitted without prior written permission from the Builder." },
+    { title: "6. HOLD HARMLESS", text: "The Subcontractor agrees to protect, defend and indemnify the Builder against and hold the Builder harmless for any and all claims, demands, liabilities, losses, expenses, suits and actions (including attorney's fees) for or on account of any injury to any person, or any death at any time resulting from such injury, or any damage to any property, which may arise out of or in connection with the work covered by this subcontract." },
+    { title: "7. MECHANICS LIEN", text: "Subcontractor shall furnish all partial and final lien waivers and release and sworn statements under the Tennessee State Mechanic's Lien Law, for Subcontractor and for all Subcontractor's material men and suppliers in a form satisfactory and acceptable to Builder as a condition precedent to partial and final payments to Subcontractor hereunder, as may be required by Builder." },
+    { title: "8. CLEAN-UP", text: "Subcontractor agrees to clean up all debris, trash, and refuse generated by his own trade at the end of each day and deposit into trash bin provided by Builder, and shall clean all walls, floors and other finished surfaces soiled as a result of his trade." },
+    { title: "9. DEFAULT", text: "If Subcontractor shall default in the performance of any of his duties or obligations hereunder, and such default shall continue after verbal or written notice, Builder may immediately terminate this Agreement." },
+    { title: "10. CARE OF MATERIALS", text: "Subcontractor agrees to be diligent in the proper care of materials supplied by Builder. All usable materials are to be stored in an orderly way that protects them from wind, moisture, and provides general site safety." },
+    { title: "11. PAYMENT", text: "Builder shall provide stated time frames for Subcontractor to submit invoices for the work performed. Invoices not received by the stated time will be processed and paid in the next pay period." },
+    { title: "12. INSURANCE", text: "Subcontractor shall provide Builder at the time of the signing of this agreement with a Certificate of Insurance, showing the following insurance during the period of the contract: Commercial General Liability coverage with limits equal to or exceeding $1,000,000 Combined Single Limit each occurrence; Workers Compensation Insurance covering all persons performing work at the Builder's job sites; Automobile Liability Insurance for any and all vehicles used at any jobsites for a minimum coverage amount of $500,000 each accident." },
+    { title: "13. CONDUCT", text: "Subcontractor agrees that his employees and agents of the subcontractor shall conduct themselves in a professional manner at all times. Subcontractor further agrees, himself, employees and agents shall not use or be under the influence of alcoholic beverages or drugs on the job site." },
+    { title: "14. MAINTENANCE OF EROSION CONTROL", text: "Subcontractor agrees that he, his employees and all agents of the subcontractor shall not disturb any erosion control systems constructed on site in behalf of the Builder." },
+    { title: "15. ARBITRATION", text: "It is hereby agreed that should any dispute arise respecting the provisions of this Agreement or of the true meaning of the Drawings or Specifications it shall be decided by binding arbitration and said arbitration shall be the sole remedy for dispute resolution." },
+    { title: "16. WARRANTY", text: "Subcontractor shall warrant against any defects in workmanship and/or materials, which were supplied by subcontractor for a period of one year from the date the home is first occupied by the homeowner." }
+  ];
+
+  sections.forEach((section) => {
+    if (yPos + lineHeight * 3 > pageHeight - margin) {
+      doc.addPage();
+      yPos = margin;
+    }
+    addText(section.title, fontSize, true);
+    addText(section.text, smallFontSize);
+    yPos += 0.1;
+  });
+
+  // Signature section
+  yPos += 0.2;
+  if (yPos + 1.5 > pageHeight - margin) {
+    doc.addPage();
+    yPos = margin;
+  }
+
+  // Add signature image
+  if (data.signature && data.signature.startsWith("data:image")) {
+    try {
+      // Calculate signature size (max 3" wide, 1" tall)
+      const maxWidth = 3;
+      const maxHeight = 1;
+      
+      // Get image dimensions from base64
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = data.signature;
+      });
+
+      let sigWidth = img.width / 72; // Convert pixels to inches (assuming 72 DPI)
+      let sigHeight = img.height / 72;
+      const aspectRatio = sigWidth / sigHeight;
+
+      if (sigWidth > maxWidth) {
+        sigWidth = maxWidth;
+        sigHeight = sigWidth / aspectRatio;
+      }
+      if (sigHeight > maxHeight) {
+        sigHeight = maxHeight;
+        sigWidth = sigHeight * aspectRatio;
+      }
+
+      doc.addImage(data.signature, "PNG", margin, yPos, sigWidth, sigHeight);
+      yPos += sigHeight + 0.2;
+    } catch (err) {
+      console.warn("Could not embed signature image:", err);
+      addText("Signature: [See signed document]", fontSize, true);
+    }
+  }
+
+  // Signer information
+  yPos += 0.2;
+  addText(`Subcontractor Name: ${data.subcontractorName}`, fontSize);
+  addText(`Title: ${data.title}`, fontSize);
+  addText(`Date Signed: ${data.date}`, fontSize);
+  addText(`Builder Name: ${data.builderName}`, fontSize);
+
+  return doc;
+}
+
 async function saveAgreement(user, data) {
   const refDoc = await getAgreementDocRef(user.uid);
+  
+  // Generate PDF
+  let pdfUrl = null;
+  let pdfPath = null;
+  let safeName = null;
+  
+  try {
+    const pdfDoc = await generateAgreementPDF(data);
+    const pdfBlob = pdfDoc.output("blob");
+    
+    // Upload PDF to Firebase Storage
+    safeName = `Subcontractor_Agreement_${data.builderName.replace(/[^\w.\-]+/g, "_")}_${Date.now()}.pdf`;
+    pdfPath = `users/${user.uid}/agreements/${safeName}`;
+    const storageRef = ref(storage, pdfPath);
+    
+    await uploadBytes(storageRef, pdfBlob, {
+      contentType: "application/pdf"
+    });
+    
+    pdfUrl = await getDownloadURL(storageRef);
+    
+    // Delete old PDF if exists
+    const existing = await loadAgreement(user);
+    if (existing?.pdfPath && existing.pdfPath !== pdfPath) {
+      try {
+        const oldRef = ref(storage, existing.pdfPath);
+        await deleteObject(oldRef);
+      } catch (err) {
+        console.warn("Could not delete old PDF:", err);
+      }
+    }
+  } catch (err) {
+    console.error("Error generating/uploading PDF:", err);
+    throw new Error("Failed to generate PDF. Please try again.");
+  }
+
+  // Save agreement data with PDF metadata
   await setDoc(refDoc, {
     ...data,
+    pdfUrl: pdfUrl,
+    pdfPath: pdfPath,
+    pdfFileName: safeName,
     signedAt: serverTimestamp()
   }, { merge: true });
 
@@ -1987,7 +2207,11 @@ async function initAgreementPage(user) {
       
       // Update prequal UI if on prequal page
       const prequalData = await loadPrequalStatus(user.uid);
-      updatePrequalUI(prequalData);
+      await updatePrequalUI(prequalData, user.uid);
+      
+      // Show clear button if agreement exists
+      const clearBtn = document.getElementById("clearAgreementBtn");
+      if (clearBtn) clearBtn.style.display = "block";
     } catch (e2) {
       console.error(e2);
       if (err) err.textContent = "Save failed. Please try again.";
@@ -1995,6 +2219,93 @@ async function initAgreementPage(user) {
       if (btn) btn.disabled = false;
     }
   });
+
+  // Clear agreement button
+  const clearBtn = document.getElementById("clearAgreementBtn");
+  if (clearBtn) {
+    const existing = await loadAgreement(user);
+    if (existing && existing.signedAt) {
+      clearBtn.style.display = "block";
+    }
+    
+    clearBtn.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to clear this agreement? This will reset your completion status and you'll need to sign again.")) {
+        return;
+      }
+      
+      try {
+        clearBtn.disabled = true;
+        if (msg) msg.textContent = "Clearing agreement...";
+        
+        // Delete PDF from storage if exists
+        if (existing?.pdfPath) {
+          try {
+            const pdfRef = ref(storage, existing.pdfPath);
+            await deleteObject(pdfRef);
+          } catch (err) {
+            console.warn("Could not delete PDF:", err);
+          }
+        }
+        
+        // Delete agreement document
+        const refDoc = await getAgreementDocRef(user.uid);
+        await setDoc(refDoc, {
+          builderName: "",
+          subcontractorName: "",
+          title: "",
+          signature: "",
+          date: "",
+          accepted: false,
+          pdfUrl: null,
+          pdfPath: null,
+          pdfFileName: null,
+          signedAt: null
+        }, { merge: true });
+        
+        // Reset prequal status
+        const prequalRef = await getPrequalDocRef(user.uid);
+        await setDoc(prequalRef, {
+          agreementCompleted: false,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        
+        // Clear form
+        if (builderNameInput) builderNameInput.value = "";
+        const subNameInput = document.getElementById("agreementSubName");
+        const titleInput = document.getElementById("agreementTitle");
+        const dateInput = document.getElementById("agreementDate");
+        const acceptInput = document.getElementById("agreementAccept");
+        if (subNameInput) subNameInput.value = "";
+        if (titleInput) titleInput.value = "";
+        if (dateInput) dateInput.value = "";
+        if (acceptInput) acceptInput.checked = false;
+        if (builderNameDisplay) builderNameDisplay.textContent = "[Builder Name]";
+        
+        // Clear signature canvas
+        const canvas = document.getElementById("signatureCanvas");
+        const hiddenInput = document.getElementById("agreementSignature");
+        if (canvas && hiddenInput) {
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          hiddenInput.value = "";
+        }
+        
+        // Hide clear button
+        clearBtn.style.display = "none";
+        
+        // Update prequal UI
+        const prequalData = await loadPrequalStatus(user.uid);
+        await updatePrequalUI(prequalData, user.uid);
+        
+        if (msg) msg.textContent = "Agreement cleared. You can now sign a new agreement.";
+      } catch (error) {
+        console.error("Error clearing agreement:", error);
+        if (err) err.textContent = "Failed to clear agreement. Please try again.";
+      } finally {
+        clearBtn.disabled = false;
+      }
+    });
+  }
 }
 
 
@@ -2144,7 +2455,7 @@ async function initW9Page(user) {
       
       // Update prequal UI if on prequal page
       const prequalData = await loadPrequalStatus(user.uid);
-      updatePrequalUI(prequalData);
+      await updatePrequalUI(prequalData, user.uid);
     } catch (e2) {
       console.error(e2);
       if (err) err.textContent = "Save failed. Please try again.";
@@ -2159,92 +2470,162 @@ async function renderBusinessLicenseCurrent(user) {
   const snap = await getDoc(getPrequalDocRef(user.uid));
   const data = snap.exists() ? (snap.data() || {}) : {};
   const businessLicense = data.businessLicense || null;
+  
+  // Account page elements
   const currentDiv = document.getElementById("businessLicenseCurrent");
   const fileNameEl = document.getElementById("businessLicenseFileName");
   const uploadedEl = document.getElementById("businessLicenseUploaded");
   const downloadLink = document.getElementById("businessLicenseDownloadLink");
-
-  if (!businessLicense) {
-    if (currentDiv) currentDiv.hidden = true;
-    return;
-  }
-
-  if (currentDiv) currentDiv.hidden = false;
-  if (fileNameEl) fileNameEl.textContent = businessLicense.fileName || "—";
-  if (uploadedEl) uploadedEl.textContent = businessLicense.uploadedAtMs ? new Date(businessLicense.uploadedAtMs).toLocaleString() : "—";
-
   const viewLink = document.getElementById("businessLicenseViewLink");
   
-  if (downloadLink && businessLicense.filePath) {
-    try {
-      const url = await getDownloadURL(ref(storage, businessLicense.filePath));
-      downloadLink.href = url;
-      downloadLink.hidden = false;
-      if (viewLink) {
-        viewLink.href = url;
-        viewLink.hidden = false;
-      }
-    } catch {
-      downloadLink.hidden = true;
-      if (viewLink) viewLink.hidden = true;
+  // Settings page elements
+  const settingsCurrentDiv = document.getElementById("settingsBusinessLicenseCurrent");
+  const settingsFileNameEl = document.getElementById("settingsBusinessLicenseFileName");
+  const settingsUploadedEl = document.getElementById("settingsBusinessLicenseUploaded");
+  const settingsDownloadLink = document.getElementById("settingsBusinessLicenseDownloadLink");
+  const settingsViewLink = document.getElementById("settingsBusinessLicenseViewLink");
+
+  // Helper function to render for a specific set of elements
+  const renderForElements = async (currentDivEl, fileNameElEl, uploadedElEl, downloadLinkEl, viewLinkEl) => {
+    if (!businessLicense) {
+      if (currentDivEl) currentDivEl.hidden = true;
+      return;
     }
-  } else {
-    if (viewLink) viewLink.hidden = true;
-  }
+
+    if (currentDivEl) currentDivEl.hidden = false;
+    if (fileNameElEl) fileNameElEl.textContent = businessLicense.fileName || "—";
+    if (uploadedElEl) uploadedElEl.textContent = businessLicense.uploadedAtMs ? new Date(businessLicense.uploadedAtMs).toLocaleString() : "—";
+
+    if (downloadLinkEl && businessLicense.filePath) {
+      try {
+        const url = await getDownloadURL(ref(storage, businessLicense.filePath));
+        downloadLinkEl.href = url;
+        downloadLinkEl.hidden = false;
+        if (viewLinkEl) {
+          viewLinkEl.href = url;
+          viewLinkEl.hidden = false;
+        }
+      } catch {
+        downloadLinkEl.hidden = true;
+        if (viewLinkEl) viewLinkEl.hidden = true;
+      }
+    } else {
+      if (downloadLinkEl) downloadLinkEl.hidden = true;
+      if (viewLinkEl) viewLinkEl.hidden = true;
+    }
+  };
+  
+  // Render for both account and settings pages
+  await renderForElements(currentDiv, fileNameEl, uploadedEl, downloadLink, viewLink);
+  await renderForElements(settingsCurrentDiv, settingsFileNameEl, settingsUploadedEl, settingsDownloadLink, settingsViewLink);
 }
 
-function initBusinessLicenseUpload(user) {
+async function initBusinessLicenseUpload(user) {
+  // Initialize account page form
   const form = document.getElementById("businessLicenseForm");
-  if (!form) return;
+  if (form) {
+    await renderBusinessLicenseCurrent(user);
 
-  renderBusinessLicenseCurrent(user);
+    const fileInput = document.getElementById("businessLicenseFile");
+    const msg = document.getElementById("businessLicenseMsg");
+    const err = document.getElementById("businessLicenseErr");
+    const btn = document.getElementById("businessLicenseUploadBtn");
 
-  const fileInput = document.getElementById("businessLicenseFile");
-  const msg = document.getElementById("businessLicenseMsg");
-  const err = document.getElementById("businessLicenseErr");
-  const btn = document.getElementById("businessLicenseUploadBtn");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (msg) msg.textContent = "";
+      if (err) err.textContent = "";
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (msg) msg.textContent = "";
-    if (err) err.textContent = "";
+      const file = fileInput?.files?.[0];
+      if (!file) { if (err) err.textContent = "Please choose a file."; return; }
 
-    const file = fileInput?.files?.[0];
-    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const path = `users/${user.uid}/businessLicense/${Date.now()}_${safeName}`;
+      const storageRef = ref(storage, path);
 
-    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-    const path = `users/${user.uid}/businessLicense/${Date.now()}_${safeName}`;
-    const storageRef = ref(storage, path);
+      try {
+        if (btn) btn.disabled = true;
+        if (msg) msg.textContent = "Uploading…";
 
-    try {
-      if (btn) btn.disabled = true;
-      if (msg) msg.textContent = "Uploading…";
+        await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
 
-      await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+        await setDoc(getPrequalDocRef(user.uid), {
+          businessLicense: {
+            fileName: file.name,
+            filePath: path,
+            uploadedAtMs: Date.now()
+          },
+          updatedAt: serverTimestamp()
+        }, { merge: true });
 
-      await setDoc(getPrequalDocRef(user.uid), {
-        businessLicense: {
-          fileName: file.name,
-          filePath: path,
-          uploadedAtMs: Date.now()
-        },
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+        if (msg) msg.textContent = "Saved. Your business license is now on file.";
+        form.reset();
+        await renderBusinessLicenseCurrent(user);
+        
+        // Update prequal UI
+        const data = await loadPrequalStatus(user.uid);
+        await updatePrequalUI(data, user.uid);
+      } catch (e2) {
+        console.error(e2);
+        if (err) err.textContent = "Upload failed. Please try again.";
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+  
+  // Initialize settings page form
+  const settingsForm = document.getElementById("settingsBusinessLicenseForm");
+  if (settingsForm) {
+    await renderBusinessLicenseCurrent(user);
 
-      if (msg) msg.textContent = "Saved. Your business license is now on file.";
-      form.reset();
-      await renderBusinessLicenseCurrent(user);
-      
-      // Update prequal UI
-      const data = await loadPrequalStatus(user.uid);
-      updatePrequalUI(data);
-    } catch (e2) {
-      console.error(e2);
-      if (err) err.textContent = "Upload failed. Please try again.";
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  });
+    const fileInput = document.getElementById("settingsBusinessLicenseFile");
+    const msg = document.getElementById("settingsBusinessLicenseMsg");
+    const err = document.getElementById("settingsBusinessLicenseErr");
+    const btn = document.getElementById("settingsBusinessLicenseUploadBtn");
+
+    settingsForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (msg) msg.textContent = "";
+      if (err) err.textContent = "";
+
+      const file = fileInput?.files?.[0];
+      if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const path = `users/${user.uid}/businessLicense/${Date.now()}_${safeName}`;
+      const storageRef = ref(storage, path);
+
+      try {
+        if (btn) btn.disabled = true;
+        if (msg) msg.textContent = "Uploading…";
+
+        await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+
+        await setDoc(getPrequalDocRef(user.uid), {
+          businessLicense: {
+            fileName: file.name,
+            filePath: path,
+            uploadedAtMs: Date.now()
+          },
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        if (msg) msg.textContent = "Saved. Your business license is now on file.";
+        settingsForm.reset();
+        await renderBusinessLicenseCurrent(user);
+        
+        // Update prequal UI
+        const data = await loadPrequalStatus(user.uid);
+        await updatePrequalUI(data, user.uid);
+      } catch (e2) {
+        console.error(e2);
+        if (err) err.textContent = "Upload failed. Please try again.";
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
 }
 
 /* ========= Workers Comp Exemption Upload ========= */
@@ -2252,90 +2633,360 @@ async function renderWorkersCompCurrent(user) {
   const snap = await getDoc(getPrequalDocRef(user.uid));
   const data = snap.exists() ? (snap.data() || {}) : {};
   const workersComp = data.workersComp || null;
+  
+  // Account page elements
   const currentDiv = document.getElementById("workersCompCurrent");
   const fileNameEl = document.getElementById("workersCompFileName");
   const uploadedEl = document.getElementById("workersCompUploaded");
   const downloadLink = document.getElementById("workersCompDownloadLink");
-
-  if (!workersComp) {
-    if (currentDiv) currentDiv.hidden = true;
-    return;
-  }
-
-  if (currentDiv) currentDiv.hidden = false;
-  if (fileNameEl) fileNameEl.textContent = workersComp.fileName || "—";
-  if (uploadedEl) uploadedEl.textContent = workersComp.uploadedAtMs ? new Date(workersComp.uploadedAtMs).toLocaleString() : "—";
-
   const viewLink = document.getElementById("workersCompViewLink");
   
-  if (downloadLink && workersComp.filePath) {
-    try {
-      const url = await getDownloadURL(ref(storage, workersComp.filePath));
-      downloadLink.href = url;
-      downloadLink.hidden = false;
-      if (viewLink) {
-        viewLink.href = url;
-        viewLink.hidden = false;
-      }
-    } catch {
-      downloadLink.hidden = true;
-      if (viewLink) viewLink.hidden = true;
+  // Settings page elements
+  const settingsCurrentDiv = document.getElementById("settingsWorkersCompCurrent");
+  const settingsFileNameEl = document.getElementById("settingsWorkersCompFileName");
+  const settingsUploadedEl = document.getElementById("settingsWorkersCompUploaded");
+  const settingsDownloadLink = document.getElementById("settingsWorkersCompDownloadLink");
+  const settingsViewLink = document.getElementById("settingsWorkersCompViewLink");
+
+  // Helper function to render for a specific set of elements
+  const renderForElements = async (currentDivEl, fileNameElEl, uploadedElEl, downloadLinkEl, viewLinkEl) => {
+    if (!workersComp) {
+      if (currentDivEl) currentDivEl.hidden = true;
+      return;
     }
-  } else {
-    if (viewLink) viewLink.hidden = true;
+
+    if (currentDivEl) currentDivEl.hidden = false;
+    if (fileNameElEl) fileNameElEl.textContent = workersComp.fileName || "—";
+    if (uploadedElEl) uploadedElEl.textContent = workersComp.uploadedAtMs ? new Date(workersComp.uploadedAtMs).toLocaleString() : "—";
+
+    if (downloadLinkEl && workersComp.filePath) {
+      try {
+        const url = await getDownloadURL(ref(storage, workersComp.filePath));
+        downloadLinkEl.href = url;
+        downloadLinkEl.hidden = false;
+        if (viewLinkEl) {
+          viewLinkEl.href = url;
+          viewLinkEl.hidden = false;
+        }
+      } catch {
+        downloadLinkEl.hidden = true;
+        if (viewLinkEl) viewLinkEl.hidden = true;
+      }
+    } else {
+      if (downloadLinkEl) downloadLinkEl.hidden = true;
+      if (viewLinkEl) viewLinkEl.hidden = true;
+    }
+  };
+  
+  // Render for both account and settings pages
+  await renderForElements(currentDiv, fileNameEl, uploadedEl, downloadLink, viewLink);
+  await renderForElements(settingsCurrentDiv, settingsFileNameEl, settingsUploadedEl, settingsDownloadLink, settingsViewLink);
+}
+
+async function initWorkersCompUpload(user) {
+  // Initialize account page form
+  const form = document.getElementById("workersCompForm");
+  if (form) {
+    await renderWorkersCompCurrent(user);
+
+    const fileInput = document.getElementById("workersCompFile");
+    const msg = document.getElementById("workersCompMsg");
+    const err = document.getElementById("workersCompErr");
+    const btn = document.getElementById("workersCompUploadBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (msg) msg.textContent = "";
+      if (err) err.textContent = "";
+
+      const file = fileInput?.files?.[0];
+      if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const path = `users/${user.uid}/workersComp/${Date.now()}_${safeName}`;
+      const storageRef = ref(storage, path);
+
+      try {
+        if (btn) btn.disabled = true;
+        if (msg) msg.textContent = "Uploading…";
+
+        await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+
+        await setDoc(getPrequalDocRef(user.uid), {
+          workersComp: {
+            fileName: file.name,
+            filePath: path,
+            uploadedAtMs: Date.now()
+          },
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        if (msg) msg.textContent = "Saved. Your workers compensation exemption is now on file.";
+        form.reset();
+        await renderWorkersCompCurrent(user);
+        
+        // Update prequal UI
+        const data = await loadPrequalStatus(user.uid);
+        await updatePrequalUI(data, user.uid);
+      } catch (e2) {
+        console.error(e2);
+        if (err) err.textContent = "Upload failed. Please try again.";
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+  
+  // Initialize settings page form
+  const settingsForm = document.getElementById("settingsWorkersCompForm");
+  if (settingsForm) {
+    await renderWorkersCompCurrent(user);
+
+    const fileInput = document.getElementById("settingsWorkersCompFile");
+    const msg = document.getElementById("settingsWorkersCompMsg");
+    const err = document.getElementById("settingsWorkersCompErr");
+    const btn = document.getElementById("settingsWorkersCompUploadBtn");
+
+    settingsForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (msg) msg.textContent = "";
+      if (err) err.textContent = "";
+
+      const file = fileInput?.files?.[0];
+      if (!file) { if (err) err.textContent = "Please choose a file."; return; }
+
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const path = `users/${user.uid}/workersComp/${Date.now()}_${safeName}`;
+      const storageRef = ref(storage, path);
+
+      try {
+        if (btn) btn.disabled = true;
+        if (msg) msg.textContent = "Uploading…";
+
+        await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+
+        await setDoc(getPrequalDocRef(user.uid), {
+          workersComp: {
+            fileName: file.name,
+            filePath: path,
+            uploadedAtMs: Date.now()
+          },
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        if (msg) msg.textContent = "Saved. Your workers compensation exemption is now on file.";
+        settingsForm.reset();
+        await renderWorkersCompCurrent(user);
+        
+        // Update prequal UI
+        const data = await loadPrequalStatus(user.uid);
+        await updatePrequalUI(data, user.uid);
+      } catch (e2) {
+        console.error(e2);
+        if (err) err.textContent = "Upload failed. Please try again.";
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
   }
 }
 
-function initWorkersCompUpload(user) {
-  const form = document.getElementById("workersCompForm");
-  if (!form) return;
-
-  renderWorkersCompCurrent(user);
-
-  const fileInput = document.getElementById("workersCompFile");
-  const msg = document.getElementById("workersCompMsg");
-  const err = document.getElementById("workersCompErr");
-  const btn = document.getElementById("workersCompUploadBtn");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (msg) msg.textContent = "";
-    if (err) err.textContent = "";
-
-    const file = fileInput?.files?.[0];
-    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
-
-    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-    const path = `users/${user.uid}/workersComp/${Date.now()}_${safeName}`;
-    const storageRef = ref(storage, path);
-
+/* ========= Compile Pre-Qualification Packet ========= */
+async function initCompilePacket(user) {
+  const compileBtn = document.getElementById("compilePacketBtn");
+  const emailBtn = document.getElementById("compilePacketEmailBtn");
+  const msg = document.getElementById("compilePacketMsg");
+  const err = document.getElementById("compilePacketErr");
+  
+  if (!compileBtn || !emailBtn) return;
+  
+  async function compilePacket() {
+    if (typeof window.PDFLib === "undefined") {
+      if (err) err.textContent = "PDF library not loaded. Please refresh the page.";
+      return null;
+    }
+    
     try {
-      if (btn) btn.disabled = true;
-      if (msg) msg.textContent = "Uploading…";
-
-      await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
-
-      await setDoc(getPrequalDocRef(user.uid), {
-        workersComp: {
-          fileName: file.name,
-          filePath: path,
-          uploadedAtMs: Date.now()
-        },
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-
-      if (msg) msg.textContent = "Saved. Your workers compensation exemption is now on file.";
-      form.reset();
-      await renderWorkersCompCurrent(user);
+      if (msg) msg.textContent = "Compiling packet...";
+      if (err) err.textContent = "";
       
-      // Update prequal UI
-      const data = await loadPrequalStatus(user.uid);
-      updatePrequalUI(data);
-    } catch (e2) {
-      console.error(e2);
-      if (err) err.textContent = "Upload failed. Please try again.";
-    } finally {
-      if (btn) btn.disabled = false;
+      const { PDFDocument } = window.PDFLib;
+      const mergedPdf = await PDFDocument.create();
+      
+      let docCount = 0;
+      
+      // 1. Subcontractor Agreement
+      const agreement = await loadAgreement(user);
+      if (agreement?.pdfPath) {
+        try {
+          const pdfUrl = await getDownloadURL(ref(storage, agreement.pdfPath));
+          const response = await fetch(pdfUrl);
+          const pdfBytes = await response.arrayBuffer();
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+          pages.forEach(page => mergedPdf.addPage(page));
+          docCount++;
+        } catch (e) {
+          console.warn("Could not load agreement PDF:", e);
+        }
+      }
+      
+      // 2. W-9 (if saved as PDF - currently W-9 is stored as data, would need PDF generation)
+      // Skipping for now as W-9 PDF generation would require additional implementation
+      
+      // 3. COI
+      const prequalData = await loadPrequalStatus(user.uid);
+      if (prequalData?.coi?.filePath) {
+        try {
+          const pdfUrl = await getDownloadURL(ref(storage, prequalData.coi.filePath));
+          const response = await fetch(pdfUrl);
+          const fileBlob = await response.blob();
+          
+          if (fileBlob.type === "application/pdf") {
+            const pdfBytes = await fileBlob.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+            pages.forEach(page => mergedPdf.addPage(page));
+          } else {
+            // Convert image to PDF page
+            const imageBytes = await fileBlob.arrayBuffer();
+            let image;
+            try {
+              image = await mergedPdf.embedPng(imageBytes);
+            } catch {
+              image = await mergedPdf.embedJpg(imageBytes);
+            }
+            const page = mergedPdf.addPage([8.5 * 72, 11 * 72]); // Letter size in points
+            const dims = image.scaleToFit(page.getWidth(), page.getHeight());
+            page.drawImage(image, {
+              x: (page.getWidth() - dims.width) / 2,
+              y: (page.getHeight() - dims.height) / 2,
+              width: dims.width,
+              height: dims.height,
+            });
+          }
+          docCount++;
+        } catch (e) {
+          console.warn("Could not load COI:", e);
+        }
+      }
+      
+      // 4. Business License
+      if (prequalData?.businessLicense?.filePath) {
+        try {
+          const pdfUrl = await getDownloadURL(ref(storage, prequalData.businessLicense.filePath));
+          const response = await fetch(pdfUrl);
+          const fileBlob = await response.blob();
+          
+          if (fileBlob.type === "application/pdf") {
+            const pdfBytes = await fileBlob.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+            pages.forEach(page => mergedPdf.addPage(page));
+          } else {
+            const imageBytes = await fileBlob.arrayBuffer();
+            let image;
+            try {
+              image = await mergedPdf.embedPng(imageBytes);
+            } catch {
+              image = await mergedPdf.embedJpg(imageBytes);
+            }
+            const page = mergedPdf.addPage([8.5 * 72, 11 * 72]);
+            const dims = image.scaleToFit(page.getWidth(), page.getHeight());
+            page.drawImage(image, {
+              x: (page.getWidth() - dims.width) / 2,
+              y: (page.getHeight() - dims.height) / 2,
+              width: dims.width,
+              height: dims.height,
+            });
+          }
+          docCount++;
+        } catch (e) {
+          console.warn("Could not load Business License:", e);
+        }
+      }
+      
+      // 5. Workers Comp
+      if (prequalData?.workersComp?.filePath) {
+        try {
+          const pdfUrl = await getDownloadURL(ref(storage, prequalData.workersComp.filePath));
+          const response = await fetch(pdfUrl);
+          const fileBlob = await response.blob();
+          
+          if (fileBlob.type === "application/pdf") {
+            const pdfBytes = await fileBlob.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+            pages.forEach(page => mergedPdf.addPage(page));
+          } else {
+            const imageBytes = await fileBlob.arrayBuffer();
+            let image;
+            try {
+              image = await mergedPdf.embedPng(imageBytes);
+            } catch {
+              image = await mergedPdf.embedJpg(imageBytes);
+            }
+            const page = mergedPdf.addPage([8.5 * 72, 11 * 72]);
+            const dims = image.scaleToFit(page.getWidth(), page.getHeight());
+            page.drawImage(image, {
+              x: (page.getWidth() - dims.width) / 2,
+              y: (page.getHeight() - dims.height) / 2,
+              width: dims.width,
+              height: dims.height,
+            });
+          }
+          docCount++;
+        } catch (e) {
+          console.warn("Could not load Workers Comp:", e);
+        }
+      }
+      
+      if (mergedPdf.getPageCount() === 0) {
+        if (err) err.textContent = "No documents available to compile. Please complete at least one pre-qualification item.";
+        return null;
+      }
+      
+      const pdfBytes = await mergedPdf.save();
+      if (msg) msg.textContent = `Packet compiled successfully with ${docCount} document(s)!`;
+      return new Blob([pdfBytes], { type: "application/pdf" });
+    } catch (error) {
+      console.error("Error compiling packet:", error);
+      if (err) err.textContent = "Failed to compile packet. Please try again.";
+      return null;
+    }
+  }
+  
+  compileBtn.addEventListener("click", async () => {
+    const pdfBlob = await compilePacket();
+    if (pdfBlob) {
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Pre-Qualification_Packet_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  });
+  
+  emailBtn.addEventListener("click", async () => {
+    const pdfBlob = await compilePacket();
+    if (pdfBlob) {
+      // Download first, then open email
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Pre-Qualification_Packet_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Open email client with instructions
+      const emailBody = encodeURIComponent(`Please find attached my Pre-Qualification Packet.\n\nNote: The PDF has been downloaded to your device. Please attach it manually to this email.`);
+      window.location.href = `mailto:?subject=Pre-Qualification Packet&body=${emailBody}`;
+      if (msg) msg.textContent = "PDF downloaded. Please attach it to the email that opened.";
     }
   });
 }
@@ -2789,12 +3440,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Account page handles prequal initialization in account.js
         // But we still need to update dashboard status dots
         const prequalData = await loadPrequalStatus(user.uid);
-        updatePrequalUI(prequalData);
+        await updatePrequalUI(prequalData, user.uid);
       }
       if (page === "dashboard") {
         // Dashboard needs prequal status for the account info box
         const prequalData = await loadPrequalStatus(user.uid);
-        updatePrequalUI(prequalData);
+        await updatePrequalUI(prequalData, user.uid);
       }
       if (page === "coi") await initCoiPage(user);
       if (page === "w9") await initW9Page(user);
