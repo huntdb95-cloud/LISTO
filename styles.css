@@ -1432,7 +1432,7 @@ input:focus, select:focus, textarea:focus{
     box-sizing: border-box;
   }
   
-  /* Logo section: Remove centering, align left */
+  /* Logo section: Center on mobile */
   .account-info-card .account-info-logo-section {
     order: 0;
     display: block;
@@ -1443,11 +1443,12 @@ input:focus, select:focus, textarea:focus{
     box-sizing: border-box;
   }
   
-  /* Remove centering from profile picture container on mobile */
+  /* Center profile picture container on mobile */
   .account-info-card .account-info-logo-section .profile-picture-container {
-    justify-content: flex-start !important;
-    margin-left: 0;
-    margin-right: 0;
+    justify-content: center !important;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
     padding-left: 0;
     padding-right: 0;
   }
@@ -1466,22 +1467,23 @@ input:focus, select:focus, textarea:focus{
     box-sizing: border-box;
   }
   
-  /* Edit Account button wrapper: Align left to match logo */
+  /* Edit Account button wrapper: Center on mobile */
   .account-info-card .account-info-content-wrapper > div:last-of-type {
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding-left: 0;
     padding-right: 0;
-    margin-left: 0;
-    margin-right: 0;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 0 !important;
     width: 100%;
     box-sizing: border-box;
   }
   
-  /* Edit Account button: Align left to match logo (remove center alignment) */
+  /* Edit Account button: Center on mobile */
   .account-info-card .account-info-content-wrapper > div:last-of-type a.btn {
-    margin: 0;
-    margin-left: 0;
+    margin: 0 auto;
     display: inline-block;
     width: auto;
   }
