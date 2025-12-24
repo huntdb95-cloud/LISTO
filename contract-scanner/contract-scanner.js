@@ -1,6 +1,6 @@
-// contract-scanner.js
-// Contract Scanner Tool
-// Uses Google OCR to extract text from contracts and translates to Spanish
+// document-translator.js (renamed from contract-scanner.js)
+// Document Translator Tool
+// Uses OCR.Space API to extract text from documents and translates to Spanish
 
 import { auth, storage } from "../config.js";
 
@@ -329,18 +329,17 @@ async function scanAndTranslate() {
   // Validate file type
   const validTypes = [
     "application/pdf",
-    "image/heic",
     "image/jpeg",
     "image/jpg",
     "image/png"
   ];
   
-  const validExtensions = [".pdf", ".heic", ".jpg", ".jpeg", ".png"];
+  const validExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
   const fileName = file.name.toLowerCase();
   const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
   
   if (!validTypes.includes(file.type) && !hasValidExtension) {
-    setMsg("errorMsg", "Please upload a PDF, HEIC, JPG, or PNG file.", true);
+    setMsg("errorMsg", "Please upload a PDF, JPG, or PNG file.", true);
     return;
   }
   
@@ -376,12 +375,12 @@ async function scanAndTranslate() {
     
     const downloadURL = await getDownloadURL(storageRef);
     
-    setMsg("statusMsg", "Processing with Google OCR and Translation... This may take 30-60 seconds.");
+    setMsg("statusMsg", "Processing with OCR and Translation... This may take 30-60 seconds.");
     
     // Call Cloud Function to process the file
     // The function will:
     // 1. Download the file from the URL
-    // 2. Use Google Cloud Vision API for OCR
+    // 2. Use OCR.Space API for OCR
     // 3. Use Google Cloud Translation API to translate to Spanish
     // 4. Return { english: "...", spanish: "..." }
     
@@ -445,7 +444,7 @@ async function scanAndTranslate() {
     // Show results with the download URL for document display
     showResults(finalEnglish, finalSpanish, downloadURL);
     
-    setMsg("statusMsg", "Contract scanned and translated successfully!", false);
+    setMsg("statusMsg", "Document translated successfully!", false);
     
   } catch (err) {
     console.error("Scan error:", err);
@@ -539,15 +538,15 @@ function init() {
   
   $("btnDownloadEnglish").addEventListener("click", () => {
     const filename = currentFile 
-      ? `contract_english_${currentFile.name.replace(/\.[^/.]+$/, "")}.txt`
-      : "contract_english.txt";
+      ? `document_english_${currentFile.name.replace(/\.[^/.]+$/, "")}.txt`
+      : "document_english.txt";
     downloadText(englishText, filename);
   });
   
   $("btnDownloadSpanish").addEventListener("click", () => {
     const filename = currentFile 
-      ? `contract_spanish_${currentFile.name.replace(/\.[^/.]+$/, "")}.txt`
-      : "contract_spanish.txt";
+      ? `document_spanish_${currentFile.name.replace(/\.[^/.]+$/, "")}.txt`
+      : "document_spanish.txt";
     downloadText(spanishText, filename);
   });
   
