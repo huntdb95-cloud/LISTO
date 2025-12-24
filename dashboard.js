@@ -62,10 +62,17 @@ window.initFacebookPlugin = function() {
         fbPluginInitialized = true;
         
         // Re-parse after a short delay to ensure mobile Safari renders
+        // Always re-query the container by ID to avoid using a detached element
         setTimeout(() => {
           if (window.FB && window.FB.XFBML) {
-            window.FB.XFBML.parse(container);
-            console.log("[FB Plugin] Re-parsed for mobile Safari compatibility");
+            // Re-query container to ensure we have the current DOM element
+            const currentContainer = document.getElementById('facebookFeedContainer');
+            if (currentContainer && currentContainer.isConnected) {
+              window.FB.XFBML.parse(currentContainer);
+              console.log("[FB Plugin] Re-parsed for mobile Safari compatibility");
+            } else {
+              console.warn("[FB Plugin] Container not found or detached, skipping re-parse");
+            }
           }
         }, 500);
       });
@@ -91,7 +98,9 @@ function handleResize() {
       // Only re-render if width changed significantly (avoid constant re-rendering)
       if (Math.abs(parseInt(currentWidth || 0) - containerWidth) > 10) {
         console.log(`[FB Plugin] Resize detected: ${currentWidth}px -> ${containerWidth}px`);
-        plugin.setAttribute('data-width', containerWidth.toString());
+        
+        // Reset initialization flag since we're replacing the container
+        fbPluginInitialized = false;
         
         // Clear and re-parse
         const containerClone = container.cloneNode(false);
@@ -115,7 +124,10 @@ function handleResize() {
         `;
         
         if (window.FB && window.FB.XFBML) {
+          // Use the new container element
           window.FB.XFBML.parse(containerClone);
+          // Mark as initialized after successful replacement
+          fbPluginInitialized = true;
         }
       }
     }
