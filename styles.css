@@ -991,6 +991,39 @@ body[data-page="landing"] .lang-switch-mobile {
   color: var(--brand-dark);
   transform: translateY(-1px);
 }
+
+/* Mobile: Force 4-column layout for footer quick links */
+@media (max-width: 768px) {
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  .footer-links a {
+    padding: 10px 4px;
+    font-size: 0.8rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0; /* Allow flex shrinking */
+    line-height: 1.2;
+  }
+  /* If more than 4 links, wrap to next row */
+  .footer-links a:nth-child(n+5) {
+    grid-column: span 2;
+  }
+}
+
+/* Extra small mobile: slightly smaller font if needed */
+@media (max-width: 375px) {
+  .footer-links a {
+    font-size: 0.75rem;
+    padding: 8px 4px;
+  }
+}
 .footer-bottom{
   margin-top: 16px;
   padding-top: 14px;
