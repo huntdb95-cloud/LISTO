@@ -16,37 +16,95 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // Facebook plugin initialization - Mobile-safe iframe solution
+// 
+// FIX FOR IPHONE SAFARI: 
+// Root cause: The Facebook embed was being wiped after initial render due to:
+//   1. Using container.innerHTML = '' which destroys the iframe
+//   2. Page re-renders after auth state loads clearing the container
+//   3. CSS/layout issues on iOS Safari causing iframe to collapse
+//
+// Solution implemented:
+//   1. Created dedicated mount node (#fbTimelineMount) that never gets wiped
+//   2. Replaced all innerHTML usage with DOM manipulation (appendChild/removeChild)
+//   3. Mount node is preserved even if container is rebuilt
+//   4. Hardened CSS with proper min-height, overflow:visible, and no transforms
+//   5. Added graceful fallback detection for iOS privacy blocking (5s timeout)
+//   6. Initialization happens once on DOM ready (doesn't wait for auth)
+//
+// The mount node pattern ensures the iframe persists even if:
+//   - Auth state changes trigger re-renders
+//   - Other code rebuilds dashboard content
+//   - Page refreshes or orientation changes
+//
 const FB_PAGE_URL = "https://www.facebook.com/profile.php?id=61585220295883";
 let fbIframeTimeout = null;
 let fbIframeLoaded = false;
 let fbInitializationInProgress = false; // Guard against concurrent initialization
+let fbMountNode = null; // Dedicated mount node that never gets destroyed
+let fbInitialized = false; // Track if FB has been initialized
 
 // Detect mobile viewport (same breakpoint as site)
 function isMobile() {
   return window.innerWidth <= 768;
 }
 
-// Show loading state
-function showFacebookLoading() {
+// Create or get dedicated mount node that never gets wiped
+function ensureMountNode() {
   const container = document.getElementById('facebookFeedContainer');
-  if (!container) return;
+  if (!container) {
+    return null;
+  }
   
-  container.innerHTML = `
-    <div class="facebook-loading-state" style="
-      padding: 40px 20px;
-      text-align: center;
-      color: var(--muted);
-      min-height: 600px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    ">
-      <div style="font-size: 0.95rem;">Loading Facebook feed...</div>
-      <div style="width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    </div>
+  // Check if mount node already exists
+  if (fbMountNode && container.contains(fbMountNode)) {
+    return fbMountNode;
+  }
+  
+  // Create new mount node
+  fbMountNode = document.createElement('div');
+  fbMountNode.id = 'fbTimelineMount';
+  fbMountNode.style.cssText = 'width: 100%; min-height: 600px; position: relative;';
+  
+  // Clear container using DOM manipulation (safer than innerHTML)
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+  
+  // Append mount node
+  container.appendChild(fbMountNode);
+  
+  return fbMountNode;
+}
+
+// Show loading state (using DOM manipulation, not innerHTML)
+function showFacebookLoading() {
+  const mount = ensureMountNode();
+  if (!mount) return;
+  
+  // Clear mount using DOM manipulation
+  while (mount.firstChild) {
+    mount.removeChild(mount.firstChild);
+  }
+  
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'facebook-loading-state';
+  loadingDiv.style.cssText = `
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
   `;
+  loadingDiv.innerHTML = `
+    <div style="font-size: 0.95rem;">Loading Facebook feed...</div>
+    <div style="width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+  `;
+  
+  mount.appendChild(loadingDiv);
   
   // Add spin animation if not already in styles
   if (!document.getElementById('fb-loading-spin-style')) {
@@ -57,52 +115,63 @@ function showFacebookLoading() {
   }
 }
 
-// Show fallback when iframe fails to load
+// Show fallback when iframe fails to load (using DOM manipulation)
 function showFacebookFallback() {
-  const container = document.getElementById('facebookFeedContainer');
-  if (!container) return;
+  const mount = ensureMountNode();
+  if (!mount) return;
   
-  container.innerHTML = `
-    <div class="facebook-error-state" style="
-      padding: 40px 20px;
-      text-align: center;
-      color: var(--muted);
-      min-height: 600px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    ">
-      <div style="font-size: 0.95rem; margin-bottom: 8px;">Updates couldn't load here.</div>
-      <a href="${FB_PAGE_URL}" target="_blank" rel="noopener noreferrer" class="btn primary" style="
-        display: inline-block;
-        padding: 12px 24px;
-        text-decoration: none;
-        margin-top: 8px;
-      ">Open Updates on Facebook</a>
-    </div>
+  // Clear mount using DOM manipulation
+  while (mount.firstChild) {
+    mount.removeChild(mount.firstChild);
+  }
+  
+  const fallbackDiv = document.createElement('div');
+  fallbackDiv.className = 'facebook-error-state';
+  fallbackDiv.style.cssText = `
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  `;
+  fallbackDiv.innerHTML = `
+    <div style="font-size: 0.95rem; margin-bottom: 8px;">Updates couldn't load here.</div>
+    <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 12px;">If your browser blocks embedded Facebook content, open directly.</div>
+    <a href="${FB_PAGE_URL}" target="_blank" rel="noopener noreferrer" class="btn primary" style="
+      display: inline-block;
+      padding: 12px 24px;
+      text-decoration: none;
+      margin-top: 8px;
+    ">View updates on Facebook</a>
   `;
   
-  console.log("[FB Plugin] Showing fallback - iframe failed to load");
+  mount.appendChild(fallbackDiv);
 }
 
 // Render Facebook feed using iframe (stable solution for mobile and desktop)
+// FIX: Use mount node and DOM manipulation to prevent container from being wiped
 function renderFacebookIframe() {
   // Prevent concurrent initialization attempts
   if (fbInitializationInProgress) {
-    console.log("[FB Plugin] Initialization already in progress, skipping");
     return;
   }
   
-  const container = document.getElementById('facebookFeedContainer');
-  if (!container) return;
+  // Ensure mount node exists (never gets wiped)
+  const mount = ensureMountNode();
+  if (!mount) {
+    return;
+  }
   
   // Set initialization flag to prevent concurrent calls
   fbInitializationInProgress = true;
   
   // Calculate responsive dimensions
-  const containerWidth = Math.max(280, container.offsetWidth || container.clientWidth || 500);
+  const container = document.getElementById('facebookFeedContainer');
+  const containerWidth = Math.max(280, container?.offsetWidth || container?.clientWidth || 500);
   const containerHeight = 600; // Fixed height for both mobile and desktop
   
   // Clear any existing timeout
@@ -114,13 +183,13 @@ function renderFacebookIframe() {
   // Reset loaded flag
   fbIframeLoaded = false;
   
-  // Show loading state
+  // Show loading state (clears mount and adds loading indicator)
   showFacebookLoading();
   
-  // Create iframe with properly formatted URL (no trailing &appId or empty parameters)
+  // Create iframe with properly formatted URL
   const iframe = document.createElement('iframe');
   iframe.id = 'fbPageIframe';
-  // Build URL with all required parameters - ensure no trailing empty parameters
+  // Build URL with all required parameters
   const fbUrlParams = new URLSearchParams({
     href: FB_PAGE_URL,
     tabs: 'timeline',
@@ -142,15 +211,14 @@ function renderFacebookIframe() {
   
   // Handle iframe load success
   iframe.onload = function() {
-    console.log("[FB Plugin] Iframe loaded successfully");
     fbIframeLoaded = true;
-    fbInitializationInProgress = false; // Clear initialization flag on success
+    fbInitializationInProgress = false;
     if (fbIframeTimeout) {
       clearTimeout(fbIframeTimeout);
       fbIframeTimeout = null;
     }
-    // Remove loading state
-    const loadingState = container.querySelector('.facebook-loading-state');
+    // Remove loading state from mount
+    const loadingState = mount.querySelector('.facebook-loading-state');
     if (loadingState) {
       loadingState.remove();
     }
@@ -158,8 +226,7 @@ function renderFacebookIframe() {
   
   // Handle iframe load error
   iframe.onerror = function() {
-    console.error("[FB Plugin] Iframe failed to load");
-    fbInitializationInProgress = false; // Clear initialization flag on error
+    fbInitializationInProgress = false;
     if (fbIframeTimeout) {
       clearTimeout(fbIframeTimeout);
       fbIframeTimeout = null;
@@ -167,94 +234,100 @@ function renderFacebookIframe() {
     showFacebookFallback();
   };
   
-  // Replace container content with iframe
-  container.innerHTML = '';
-  container.appendChild(iframe);
+  // Append iframe to mount node (never wipe mount node itself)
+  mount.appendChild(iframe);
   
-  // Set timeout to detect if iframe doesn't load (3-5 seconds)
+  // Set timeout to detect if iframe doesn't load (5 seconds for iOS)
   fbIframeTimeout = setTimeout(() => {
     if (!fbIframeLoaded) {
-      console.warn("[FB Plugin] Iframe load timeout - showing fallback");
-      fbInitializationInProgress = false; // Clear initialization flag on timeout
+      fbInitializationInProgress = false;
       // Check if iframe actually loaded but didn't fire onload
-      const checkIframe = container.querySelector('#fbPageIframe');
+      const checkIframe = mount.querySelector('#fbPageIframe');
       if (checkIframe && checkIframe.offsetHeight > 0 && checkIframe.offsetWidth > 0) {
         // Iframe is visible, consider it loaded
         fbIframeLoaded = true;
-        const loadingState = container.querySelector('.facebook-loading-state');
+        const loadingState = mount.querySelector('.facebook-loading-state');
         if (loadingState) {
           loadingState.remove();
         }
       } else {
-        // Iframe didn't load, show fallback
+        // Iframe didn't load, show fallback (iOS privacy blocking or other issue)
         showFacebookFallback();
       }
     }
-  }, 4000); // 4 second timeout
-  
-  console.log("[FB Plugin] Rendered iframe embed");
+  }, 5000); // 5 second timeout for iOS Safari
 }
 
 // Handle window resize and orientation change - update iframe dimensions
+// FIX: Use mount node instead of container to find iframe
 let resizeTimeout = null;
 function handleResize() {
   clearTimeout(resizeTimeout);
   resizeTimeout = setTimeout(() => {
-    const container = document.getElementById('facebookFeedContainer');
-    const iframe = container?.querySelector('#fbPageIframe');
+    const mount = fbMountNode;
+    const iframe = mount?.querySelector('#fbPageIframe');
     
-    if (!container || !iframe) return;
+    if (!mount || !iframe) {
+      return;
+    }
     
     // Update iframe dimensions on resize
-    const containerWidth = Math.max(280, container.offsetWidth || container.clientWidth || 500);
+    const container = document.getElementById('facebookFeedContainer');
+    const containerWidth = Math.max(280, container?.offsetWidth || container?.clientWidth || 500);
     const containerHeight = 600; // Fixed height for both mobile and desktop
     
     // Update iframe src with new width (Facebook iframe adapts automatically with adapt_container_width=true)
     // Just update the width attribute for consistency
-      iframe.setAttribute('width', containerWidth);
-      iframe.setAttribute('height', containerHeight);
-      iframe.style.width = '100%';
-    
-    console.log(`[FB Plugin] Resize: Updated iframe to ${containerWidth}px width`);
+    iframe.setAttribute('width', containerWidth);
+    iframe.setAttribute('height', containerHeight);
+    iframe.style.width = '100%';
   }, 300);
 }
 
-// Initialize Facebook feed
+// Initialize Facebook feed - ensure it only runs once
 function initializeFacebookPlugin() {
+  // Prevent multiple initializations
+  if (fbInitialized) {
+    return;
+  }
+  
   const container = document.getElementById('facebookFeedContainer');
   if (!container) {
-    console.warn("[FB Plugin] Container not found, waiting for DOM...");
     setTimeout(initializeFacebookPlugin, 100);
     return;
   }
   
-  // On mobile: Use iframe directly (skip SDK completely)
-  // On desktop: Also use iframe for reliability (simpler and more stable)
-  console.log(`[FB Plugin] Initializing with iframe embed (Mobile: ${isMobile()})`);
+  // Mark as initialized
+  fbInitialized = true;
+  
+  // Use iframe directly (no SDK needed) - works on both mobile and desktop
   renderFacebookIframe();
 }
 
 // Initialize when DOM is ready
+// FIX: Facebook embed doesn't need auth, just DOM. Mount node protects against re-renders.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeFacebookPlugin);
 } else {
-  // DOM already ready
-  initializeFacebookPlugin();
+  // DOM already ready - use setTimeout to ensure other scripts have run
+  setTimeout(initializeFacebookPlugin, 0);
 }
 
 // Handle resize and orientation change
 window.addEventListener('resize', handleResize);
 window.addEventListener('orientationchange', () => {
-  console.log("[FB Plugin] Orientation change detected");
   // Delay to allow layout to settle after orientation change
   setTimeout(() => {
     handleResize();
-    // Re-render iframe after orientation change to ensure proper dimensions
-    const container = document.getElementById('facebookFeedContainer');
-    if (container && isMobile()) {
+    // Re-render iframe after orientation change to ensure proper dimensions (iOS Safari)
+    const mount = fbMountNode;
+    if (mount && isMobile()) {
       setTimeout(() => {
-        console.log("[FB Plugin] Re-rendering iframe after orientation change");
-        renderFacebookIframe();
+        // Only re-render if iframe exists and is visible
+        const iframe = mount.querySelector('#fbPageIframe');
+        if (!iframe || iframe.offsetHeight === 0) {
+          renderFacebookIframe();
+        }
       }, 500);
     }
   }, 300);

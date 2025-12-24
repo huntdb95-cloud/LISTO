@@ -1509,6 +1509,23 @@ input:focus, select:focus, textarea:focus{
   margin: 0 !important;
 }
 
+/* FIX: Dedicated mount node styling - never gets wiped */
+#fbTimelineMount {
+  width: 100% !important;
+  min-height: 600px !important;
+  position: relative !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  /* Prevent mount from being hidden or collapsed */
+  padding: 0 !important;
+  margin: 0 !important;
+  /* Ensure no transform on mount that could break iOS rendering */
+  transform: none !important;
+}
+
 /* Ensure container is never hidden during or after load */
 .facebook-feed-container:not([style*="display: none"]) {
   display: block !important;
@@ -1562,6 +1579,28 @@ input:focus, select:focus, textarea:focus{
     /* Ensure container is never hidden on mobile */
     padding: 0 !important;
     margin: 0 !important;
+    /* FIX: Prevent transform that could break iOS Safari rendering */
+    transform: none !important;
+  }
+  
+  /* FIX: Mount node styling for iOS Safari */
+  #fbTimelineMount {
+    min-height: 600px !important;
+    height: auto !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
   }
   
   /* Prevent parent from hiding container */
@@ -1569,6 +1608,8 @@ input:focus, select:focus, textarea:focus{
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    /* FIX: Prevent transform on parent that could break iOS rendering */
+    transform: none !important;
   }
   
   .facebook-feed-container iframe {
@@ -1585,6 +1626,8 @@ input:focus, select:focus, textarea:focus{
     z-index: 1;
     /* Prevent iframe from being hidden */
     pointer-events: auto !important;
+    /* FIX: Ensure no transform on iframe */
+    transform: none !important;
   }
   
   .facebook-loading-state,
@@ -1593,17 +1636,27 @@ input:focus, select:focus, textarea:focus{
   }
 }
 
-/* Additional mobile-specific Facebook fixes for smaller screens */
+/* Additional mobile-specific Facebook fixes for smaller screens (iPhone) */
 @media (max-width: 480px) {
   .facebook-feed-container {
     min-height: 600px !important;
     padding: 0 !important;
     margin: 0 !important;
+    transform: none !important;
+  }
+  
+  /* FIX: Mount node for iPhone Safari */
+  #fbTimelineMount {
+    min-height: 600px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
   }
   
   .facebook-feed-container iframe {
     height: 600px !important;
     min-height: 600px !important;
+    transform: none !important;
   }
   
   .facebook-loading-state,
