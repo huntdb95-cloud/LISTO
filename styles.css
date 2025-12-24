@@ -1374,6 +1374,7 @@ input:focus, select:focus, textarea:focus{
   .account-info-card .account-info-content-wrapper > div:last-of-type {
     padding-left: 0;
     margin-left: 0;
+    margin-top: 16px;
   }
   
   /* Logo second, centered */
@@ -1395,56 +1396,94 @@ input:focus, select:focus, textarea:focus{
   }
 }
 
-/* Mobile layout intentionally preserved - regression guard */
-/* Mobile: Restore original grid-2 layout (Name and Logo side by side) */
+/* Mobile layout: Name in separate row, Logo + Edit Account aligned below */
 @media (max-width: 768px) {
-  /* Reset content-wrapper to allow grid layout (not flexbox) */
+  /* Ensure content wrapper uses block layout */
   .account-info-card .account-info-content-wrapper {
     display: block;
+    box-sizing: border-box;
   }
   
-  /* Mobile: Restore original grid-2 layout - Name and Logo side by side */
+  /* Mobile: Single column layout - Name on top, Logo + Button below */
   .account-info-card .account-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
   }
   
-  /* Reset order to natural flow (Name left, Logo right) */
+  /* Name section: Full width at top */
   .account-info-card .account-info-name-section {
     order: 0;
-    margin-bottom: 0;
+    width: 100%;
+    margin-bottom: 20px;
     padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
   }
   
   .account-info-card .account-info-name-section .kv-row {
     grid-template-columns: 100px 1fr;
     gap: 12px;
     padding: 8px 0;
-    margin-bottom: 12px;
+    margin-bottom: 0;
     margin-left: 0;
+    width: 100%;
+    box-sizing: border-box;
   }
   
+  /* Logo section: Remove centering, align left */
   .account-info-card .account-info-logo-section {
     order: 0;
     display: block;
-    margin-bottom: 0;
+    width: 100%;
+    margin-bottom: 16px;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
   }
   
-  /* Reset Edit Account button wrapper */
+  /* Remove centering from profile picture container on mobile */
+  .account-info-card .account-info-logo-section .profile-picture-container {
+    justify-content: flex-start !important;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  /* Ensure profile avatar doesn't cause overflow */
+  .account-info-card .account-info-logo-section .profile-avatar {
+    max-width: 100%;
+    height: auto;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure avatar image doesn't overflow */
+  .account-info-card .account-info-logo-section .profile-avatar img {
+    max-width: 100%;
+    height: auto;
+    box-sizing: border-box;
+  }
+  
+  /* Edit Account button wrapper: Align left to match logo */
   .account-info-card .account-info-content-wrapper > div:last-of-type {
     display: block;
     padding-left: 0;
+    padding-right: 0;
     margin-left: 0;
-    margin-top: 16px;
+    margin-right: 0;
+    margin-top: 0 !important;
+    width: 100%;
+    box-sizing: border-box;
   }
   
-  /* Center Edit Account button on mobile */
-  .account-info-card a.btn {
-    margin: 0 auto;
-    display: block;
-    width: fit-content;
+  /* Edit Account button: Align left to match logo (remove center alignment) */
+  .account-info-card .account-info-content-wrapper > div:last-of-type a.btn {
+    margin: 0;
+    margin-left: 0;
+    display: inline-block;
+    width: auto;
   }
 }
 
