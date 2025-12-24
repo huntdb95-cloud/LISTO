@@ -1342,6 +1342,47 @@ input:focus, select:focus, textarea:focus{
     padding: 28px !important;
   }
   
+  /* Desktop: Reorder layout - name above logo */
+  .account-info-card .account-info-content-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .account-info-card .account-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  /* Name field first, left-aligned with Edit Account button */
+  .account-info-card .account-info-name-section {
+    order: 1;
+    margin-bottom: 20px;
+    padding-left: 0;
+  }
+  
+  .account-info-card .account-info-name-section .kv-row {
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    margin-bottom: 0;
+    margin-left: 0;
+  }
+  
+  /* Ensure Edit Account button aligns with name field */
+  .account-info-card .account-info-content-wrapper > div:last-of-type {
+    padding-left: 0;
+    margin-left: 0;
+  }
+  
+  /* Logo second, centered */
+  .account-info-card .account-info-logo-section {
+    order: 2;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  
   .account-info-card .grid-2 {
     gap: 32px;
   }
@@ -1355,6 +1396,22 @@ input:focus, select:focus, textarea:focus{
 
 /* Mobile: Center Edit button in Account Info card */
 @media (max-width: 768px) {
+  /* Mobile: Keep original grid-2 layout */
+  .account-info-card .account-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  
+  .account-info-card .account-info-name-section {
+    order: 0;
+  }
+  
+  .account-info-card .account-info-logo-section {
+    order: 0;
+  }
+  
   .account-info-card > div:last-of-type {
     display: flex;
     justify-content: center;

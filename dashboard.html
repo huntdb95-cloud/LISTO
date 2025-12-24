@@ -47,13 +47,15 @@
 <div class="card pad account-info-card">
 <h2 class="h2" data-i18n="dashboard.accountInfo">Owners Dashboard</h2>
 <div class="divider"></div>
-<div class="grid-2">
-<div>
+<div class="account-info-content-wrapper">
+<div class="grid-2 account-info-grid">
+<div class="account-info-name-section">
 <div class="kv-row">
 <div class="muted" data-i18n="dashboard.name">Name:</div>
 <div class="kv-val" id="dashboardName">—</div>
 </div>
 </div>
+<div class="account-info-logo-section">
 <div class="profile-picture-container" style="justify-content: center;">
 <div class="profile-avatar" id="dashboardAvatar" style="width: 120px; height: 120px;">
 <img id="dashboardAvatarImage" alt="Profile" style="display: none;" />
@@ -61,8 +63,10 @@
 </div>
 </div>
 </div>
+</div>
 <div style="margin-top: 16px;">
 <a class="btn primary" href="account/account.html" data-i18n="dashboard.editAccount">Edit Account</a>
+</div>
 </div>
 <div class="divider" style="margin-top: 24px;"></div>
 <!-- Completion Status -->
