@@ -144,16 +144,50 @@
       }
     }
     
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+      /* Make all containers full width on mobile */
+      body[data-page="bookkeeping"] .page-wrap {
+        padding: 16px;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* Summary cards full width and match Contracts height */
       .bookkeeping-summary-cards { 
         grid-template-columns: 1fr; 
+        gap: 12px;
+        margin-bottom: 20px;
       }
+      
+      /* Match Contracts stat card padding (20px) for consistent height */
+      .bookkeeping-summary-cards .card {
+        padding: 20px !important;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* Date range full width */
       .bookkeeping-date-range { 
         flex-direction: column; 
+        width: 100%;
+        gap: 8px;
       }
       .bookkeeping-date-range input { 
         width: 100%; 
+        box-sizing: border-box;
       }
+      .bookkeeping-date-range button {
+        width: 100%;
+      }
+      
+      /* Main layout cards full width */
+      .bookkeeping-main-layout .card {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 20px !important;
+      }
+      
       table { 
         font-size: 0.85rem; 
       }
@@ -193,24 +227,24 @@
         <div class="muted">Track 1099 laborers and payments</div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <a href="../employees/employees.html" class="btn ghost" style="text-decoration: none; display: inline-flex; align-items: center;" data-i18n="bookkeeping.laborManagement">Labor Management</a>
-        <div class="muted" id="statusText">Loading…</div>
+        <a href="../employees/employees.html" class="btn primary" style="text-decoration: none; display: inline-flex; align-items: center;" data-i18n="bookkeeping.laborManagement">Labor Management</a>
+        <div class="muted" id="statusText" style="display: none;">Loading…</div>
       </div>
     </div>
 
     <!-- Summary Cards -->
     <div class="bookkeeping-summary-cards">
-      <div class="card" style="padding: 24px;">
+      <div class="card contracts-stat-card" style="padding: 20px;">
         <div class="contracts-stat-card-label">Total Paid (Date Range)</div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);" id="summaryTotalPaid">$0.00</div>
+        <div class="contracts-stat-card-value" id="summaryTotalPaid">$0.00</div>
       </div>
-      <div class="card" style="padding: 24px;">
+      <div class="card contracts-stat-card" style="padding: 20px;">
         <div class="contracts-stat-card-label">Laborers Paid</div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);" id="summaryLaborersPaid">0</div>
+        <div class="contracts-stat-card-value" id="summaryLaborersPaid">0</div>
       </div>
-      <div class="card" style="padding: 24px;">
+      <div class="card contracts-stat-card" style="padding: 20px;">
         <div class="contracts-stat-card-label">YTD Total Paid</div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);" id="summaryYtdPaid">$0.00</div>
+        <div class="contracts-stat-card-value" id="summaryYtdPaid">$0.00</div>
       </div>
     </div>
 
