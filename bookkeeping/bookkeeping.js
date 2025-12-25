@@ -839,22 +839,31 @@ function init() {
         selectedLaborerId = null;
         renderLaborersList();
         $("laborerDetailPanel").style.display = "none";
-        if ($("statusText")) $("statusText").textContent = "Please log in to use Bookkeeping.";
+        if ($("statusText")) {
+          $("statusText").textContent = "Please log in to use Bookkeeping.";
+          $("statusText").style.display = "block";
+        }
         return;
       }
       
       currentUid = user.uid;
-      if ($("statusText")) $("statusText").textContent = "Loading…";
+      if ($("statusText")) {
+        $("statusText").textContent = "Loading…";
+        $("statusText").style.display = "block";
+      }
       
       await Promise.all([
         loadLaborers(),
         loadPayments()
       ]);
       
-      if ($("statusText")) $("statusText").textContent = "Ready";
+      if ($("statusText")) $("statusText").style.display = "none";
     } catch (err) {
       console.error(err);
-      if ($("statusText")) $("statusText").textContent = "Error";
+      if ($("statusText")) {
+        $("statusText").textContent = "Error";
+        $("statusText").style.display = "block";
+      }
       showMessage("Firebase error. Check config.js and Firestore rules.", true);
     }
   });
