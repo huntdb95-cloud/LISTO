@@ -4749,17 +4749,17 @@ input:focus, select:focus, textarea:focus{
   
   /* Fix header-inner padding and ensure grid doesn't overflow */
   body[data-page="contracts"] .header-inner {
-    padding: 16px 12px;
-    gap: 8px;
+    padding: 18px 20px;
+    gap: 18px;
     min-width: 0; /* Allow grid to shrink */
     /* Keep existing grid-template-columns from @media (max-width: 1023px) */
   }
   
-  /* Ensure brand logo doesn't overflow */
+  /* Ensure brand logo matches other pages */
   body[data-page="contracts"] .brand-logo {
+    height: 84px;
+    width: auto;
     max-width: 100%;
-    height: auto;
-    max-height: 64px;
   }
   
   /* Fix page-wrap padding when combined with contracts-dashboard */

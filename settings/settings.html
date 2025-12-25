@@ -277,9 +277,16 @@
 </details>
 
 <!-- Pre-Qualification Documents Section (Mobile Only) -->
-<div class="card account-prequal-card mobile-only" style="margin-top: 24px;">
+<details class="settings-section mobile-only" id="settingsPrequalSection" style="margin-top: 24px;">
+<summary class="settings-section-summary">
+<span class="settings-section-title" data-i18n="prequal.sectionTitle">Pre-Qualification Documents</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
+<div class="card account-prequal-card" style="margin-top: 0;">
 <div class="account-card-header">
-<h2 data-i18n="prequal.sectionTitle">Pre-Qualification Documents</h2>
 <p class="account-card-description" data-i18n="prequal.sectionDesc">Complete these documents to become pre-qualified for work with general contractors.</p>
 </div>
 <div class="account-card-divider"></div>
@@ -408,6 +415,8 @@
 </div>
 </div>
 </div>
+</div>
+</details>
 
 <!-- Support Section -->
 <details class="settings-section" id="settingsSupportSection">
@@ -577,6 +586,7 @@
     'settingsContactSection',
     'settingsTaxSection',
     'settingsLanguageSection',
+    'settingsPrequalSection',
     'settingsSupportSection'
   ];
   
@@ -587,6 +597,7 @@
     settingsContactSection: false,
     settingsTaxSection: false,
     settingsLanguageSection: true,
+    settingsPrequalSection: true,
     settingsSupportSection: false
   };
   
@@ -597,6 +608,7 @@
     settingsContactSection: false,
     settingsTaxSection: false,
     settingsLanguageSection: false,
+    settingsPrequalSection: false,
     settingsSupportSection: false
   };
   
