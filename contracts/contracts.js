@@ -391,13 +391,18 @@ function renderContractsList() {
     
     html += `
       <div class="contracts-list-item contracts-list-builder ${isSelected ? "contracts-list-item-selected" : ""}" 
-           data-builder-id="${builder.id}">
-        <div class="contracts-list-item-header" onclick="selectBuilder('${builder.id}')">
+           data-builder-id="${builder.id}"
+           aria-selected="${isSelected}"
+           tabindex="0"
+           role="button"
+           onclick="selectBuilder('${builder.id}')"
+           onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectBuilder('${builder.id}'); }">
+        <div class="contracts-list-item-header">
           <div class="contracts-list-item-title">
             <strong>${escapeHtml(builder.name)}</strong>
             <span class="contracts-list-item-count">${builderJobsCount} job${builderJobsCount !== 1 ? "s" : ""}</span>
           </div>
-          <button type="button" class="contracts-list-item-action" onclick="event.stopPropagation(); showBuilderModal('${builder.id}')">
+          <button type="button" class="contracts-list-item-action" onclick="event.stopPropagation(); showBuilderModal('${builder.id}')" aria-label="Edit builder">
             <span>✎</span>
           </button>
         </div>
