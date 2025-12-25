@@ -393,7 +393,7 @@ body[data-page="landing"] .lang-switch-mobile {
 }
 
 /* ========== Sections ========== */
-.section{ padding: 64px 0; }
+.section{ padding: 24px 0 64px; }
 
 .section.alt{
   background: radial-gradient(900px 500px at 10% 0%, rgba(77,167,99,0.14), transparent 55%),
@@ -2083,6 +2083,84 @@ input:focus, select:focus, textarea:focus{
   }
 }
 
+/* ===== Settings Page Collapsible Sections ===== */
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.settings-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-section-summary:hover {
+  background: rgba(77, 167, 99, 0.04);
+  border-color: rgba(77, 167, 99, 0.2);
+}
+
+.settings-section-title {
+  flex: 1;
+}
+
+.settings-section-chevron {
+  flex-shrink: 0;
+  margin-left: 12px;
+  color: var(--muted);
+  transition: transform 0.3s ease, color 0.2s ease;
+  transform: rotate(0deg);
+}
+
+.settings-section[open] .settings-section-chevron {
+  transform: rotate(180deg);
+  color: var(--brand);
+}
+
+.settings-section-content {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.settings-section-content .card {
+  margin-top: 0;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.settings-section[open] .settings-section-summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+/* Mobile adjustments for settings sections */
+@media (max-width: 768px) {
+  .settings-section-summary {
+    padding: 16px 20px;
+    font-size: 1rem;
+  }
+  
+  .settings-section-content .card {
+    padding: 20px 16px;
+  }
+}
+
 /* ===== My Account Dashboard Layout ===== */
 .account-dashboard {
   max-width: 1200px;
@@ -2466,6 +2544,73 @@ input:focus, select:focus, textarea:focus{
   color: var(--text);
 }
 .grid-2.tight{ gap: 10px; }
+
+/* ===== W-9 Mobile Responsive Styles ===== */
+@media (max-width: 768px) {
+  /* Single column layout on mobile */
+  body[data-page="w9"] .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  /* Full-width inputs on mobile */
+  body[data-page="w9"] .field input,
+  body[data-page="w9"] .fieldset input,
+  body[data-page="w9"] .field textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Stack grid-2 tight on mobile */
+  body[data-page="w9"] .grid-2.tight {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Full-width buttons on mobile */
+  body[data-page="w9"] .row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  body[data-page="w9"] .row .btn {
+    width: 100%;
+  }
+  
+  /* W-9 preview card adjustments - allow horizontal scroll for the sheet */
+  body[data-page="w9"] .w9-stage {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px;
+  }
+  
+  /* Keep sheet at original size but allow scrolling on mobile */
+  /* The sheet stays at 816px width, and users can scroll horizontally to see it */
+  body[data-page="w9"] .w9-sheet {
+    min-width: 816px;
+  }
+  
+  /* Adjust radio grid to single column on mobile */
+  body[data-page="w9"] .radio-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Better spacing for form sections */
+  body[data-page="w9"] .card.pad {
+    padding: 20px 16px;
+  }
+  
+  /* Row-between adjustments on mobile */
+  body[data-page="w9"] .row-between {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  body[data-page="w9"] .row-between .btn {
+    align-self: flex-start;
+  }
+}
 
 /* ===== Agreement helpers ===== */
 .legal { color: var(--text); }

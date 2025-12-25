@@ -39,17 +39,21 @@
 </div>
 </div>
 
-<!-- Account Settings Section -->
+<!-- Profile Picture & Logo Section -->
+<details class="settings-section" id="settingsProfileSection" open>
+<summary class="settings-section-summary">
+<span class="settings-section-title" data-i18n="account.profileTitle">Profile Picture</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
 <div class="card">
-<h2 data-i18n="account.title">My Account</h2>
-<p class="muted" data-i18n="account.subtitle">Manage your account settings and profile information.</p>
+<h2 data-i18n="account.profileTitle">Profile Picture</h2>
+<p class="muted" data-i18n="account.profileDesc">Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.</p>
 <div class="divider"></div>
 
-<!-- Profile Picture -->
 <div style="margin-top: 20px;">
-<h3 data-i18n="account.profileTitle">Profile Picture</h3>
-<p class="muted small" data-i18n="account.profileDesc">Upload your company logo. It will appear in a circular container, or your initials will be shown if no logo is uploaded.</p>
-
 <div class="profile-picture-container">
 <div class="profile-avatar" id="profileAvatar">
 <img id="avatarImage" alt="Profile" style="display: none;" />
@@ -71,7 +75,22 @@
 <div id="logoError" class="form-error"></div>
 </form>
 </div>
+</div>
+</div>
+</details>
 
+<!-- Account Information Section (Name, Email, Password) -->
+<details class="settings-section" id="settingsAccountSection" open>
+<summary class="settings-section-summary">
+<span class="settings-section-title" data-i18n="account.title">Account Information</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
+<div class="card">
+<h2 data-i18n="account.title">Account Information</h2>
+<p class="muted" data-i18n="account.subtitle">Manage your account settings and profile information.</p>
 <div class="divider"></div>
 
 <!-- Name -->
@@ -139,14 +158,25 @@
 <div id="passwordError" class="form-error"></div>
 </form>
 </div>
+</div>
+</div>
+</details>
 
+<!-- Contact & Address Section -->
+<details class="settings-section" id="settingsContactSection">
+<summary class="settings-section-summary">
+<span class="settings-section-title">Contact & Address</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
+<div class="card">
+<h2>Contact & Address</h2>
+<p class="muted">Update your phone number and business address. This information will be used to autofill invoices and tax forms.</p>
 <div class="divider"></div>
 
-<!-- Contact & Address -->
 <div class="form-section">
-<h3>Contact & Address</h3>
-<p class="muted small">Update your phone number and business address. This information will be used to autofill invoices and tax forms.</p>
-
 <form id="contactForm">
 <div class="form-group">
 <label for="profilePhoneNumber">Phone Number *</label>
@@ -180,14 +210,25 @@
 <div id="contactError" class="form-error"></div>
 </form>
 </div>
+</div>
+</div>
+</details>
 
+<!-- Tax Information Section -->
+<details class="settings-section" id="settingsTaxSection">
+<summary class="settings-section-summary">
+<span class="settings-section-title">Tax Information</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
+<div class="card">
+<h2>Tax Information</h2>
+<p class="muted">Taxpayer Identification Number (TIN / EIN / SSN). Optional. Used to autofill your 1099-NEC payer info.</p>
 <div class="divider"></div>
 
-<!-- Tax Information -->
 <div class="form-section">
-<h3>Tax Information</h3>
-<p class="muted small">Taxpayer Identification Number (TIN / EIN / SSN). Optional. Used to autofill your 1099-NEC payer info.</p>
-
 <form id="taxForm">
 <div class="form-group">
 <label for="profileTaxpayerId">Taxpayer Identification Number (TIN / EIN / SSN)</label>
@@ -200,14 +241,25 @@
 <div id="taxError" class="form-error"></div>
 </form>
 </div>
+</div>
+</div>
+</details>
 
+<!-- Language Preference Section -->
+<details class="settings-section" id="settingsLanguageSection" open>
+<summary class="settings-section-summary">
+<span class="settings-section-title" data-i18n="account.languageTitle">Language Preference</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
+<div class="card">
+<h2 data-i18n="account.languageTitle">Language Preference</h2>
+<p class="muted" data-i18n="account.languageDesc">Choose your preferred language for the application interface.</p>
 <div class="divider"></div>
 
-<!-- Language Preference -->
 <div class="form-section">
-<h3 data-i18n="account.languageTitle">Language Preference</h3>
-<p class="muted small" data-i18n="account.languageDesc">Choose your preferred language for the application interface.</p>
-
 <form id="languageForm">
 <div class="form-group language-form-group">
 <label data-i18n="account.languageLabel">Language</label>
@@ -221,6 +273,8 @@
 </form>
 </div>
 </div>
+</div>
+</details>
 
 <!-- Pre-Qualification Documents Section (Mobile Only) -->
 <div class="card account-prequal-card mobile-only" style="margin-top: 24px;">
@@ -356,7 +410,15 @@
 </div>
 
 <!-- Support Section -->
-<div class="card" style="margin-top: 24px;">
+<details class="settings-section" id="settingsSupportSection">
+<summary class="settings-section-summary">
+<span class="settings-section-title" data-i18n="support.title">Support</span>
+<svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</summary>
+<div class="settings-section-content">
+<div class="card" style="margin-top: 0;">
 <h2 data-i18n="support.title">Support</h2>
 <p class="muted" data-i18n="support.subtitle">
             Get help with Listo. Find answers to common questions and learn how to use our tools.
@@ -462,6 +524,7 @@
 </div>
 </div>
 </div>
+</details>
 </div>
   </main>
 </div>
@@ -504,6 +567,92 @@
 <script src="../sidebar.js"></script>
 <script type="module" src="../scripts.js"></script>
 <script type="module" src="../account/account.js"></script>
+<script>
+// Settings page collapsible sections - localStorage persistence
+(function() {
+  const STORAGE_KEY = 'settingsSectionsState';
+  const sectionIds = [
+    'settingsProfileSection',
+    'settingsAccountSection',
+    'settingsContactSection',
+    'settingsTaxSection',
+    'settingsLanguageSection',
+    'settingsSupportSection'
+  ];
+  
+  // Default states: true = open, false = closed
+  const defaultStates = {
+    settingsProfileSection: true,
+    settingsAccountSection: true,
+    settingsContactSection: false,
+    settingsTaxSection: false,
+    settingsLanguageSection: true,
+    settingsSupportSection: false
+  };
+  
+  // Mobile defaults: only first section open
+  const mobileDefaultStates = {
+    settingsProfileSection: true,
+    settingsAccountSection: false,
+    settingsContactSection: false,
+    settingsTaxSection: false,
+    settingsLanguageSection: false,
+    settingsSupportSection: false
+  };
+  
+  function getSavedState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  function saveState() {
+    try {
+      const state = {};
+      sectionIds.forEach(id => {
+        const details = document.getElementById(id);
+        if (details) {
+          state[id] = details.open;
+        }
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn('Could not save settings state:', e);
+    }
+  }
+  
+  function initializeSections() {
+    const savedState = getSavedState();
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const defaults = isMobile ? mobileDefaultStates : defaultStates;
+    
+    sectionIds.forEach(id => {
+      const details = document.getElementById(id);
+      if (!details) return;
+      
+      // Use saved state if available, otherwise use defaults
+      if (savedState && savedState.hasOwnProperty(id)) {
+        details.open = savedState[id];
+      } else {
+        details.open = defaults[id] || false;
+      }
+      
+      // Listen for toggle events
+      details.addEventListener('toggle', saveState);
+    });
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSections);
+  } else {
+    initializeSections();
+  }
+})();
+</script>
 
 </body>
 </html>
