@@ -148,6 +148,23 @@
     }
     
     @media (max-width: 768px) {
+      /*
+       * ROOT CAUSE ANALYSIS:
+       * 1. Summary cards grid uses `repeat(auto-fit, minmax(200px, 1fr))` which allows columns
+       *    to shrink when content is narrower than container (auto-fit collapses empty columns).
+       * 2. Grid items (cards) lack flex constraints, allowing them to shrink below 100% width
+       *    when parent recalculates layout after data loads.
+       * 3. Date range container has inline `flex: 1; min-width: 150px` allowing flex shrinking.
+       * 4. Parent containers lack explicit width constraints, so content-driven sizing causes
+       *    layout reflow when data loads (empty state vs filled state have different widths).
+       * 
+       * FIX STRATEGY:
+       * - Force all containers to block-level with explicit 100% width
+       * - Prevent flex shrink with flex: 0 0 100% on grid/flex items
+       * - Lock parent layouts to stable column structure
+       * - Constrain inner text to prevent content from forcing container resize
+       */
+      
       /* Prevent horizontal overflow on page */
       body[data-page="bookkeeping"] {
         overflow-x: hidden;
@@ -162,26 +179,35 @@
         overflow-x: hidden;
       }
       
-      /* Summary cards full width and stable - prevent shrinking */
+      /*
+       * SUMMARY CARDS GRID - Lock to single column, prevent shrinking
+       * Root cause: auto-fit grid allows columns to collapse when content is narrow
+       * Fix: Force 1fr column, prevent grid items from shrinking with flex: 0 0 100%
+       */
       .bookkeeping-summary-cards { 
+        display: grid !important;
         grid-template-columns: 1fr !important; 
         gap: 12px;
         margin-bottom: 20px;
-        width: 100%;
-        max-width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box;
+        align-items: stretch; /* Ensure all cards same height */
       }
       
-      /* Match Contracts stat card padding (20px) for consistent height */
-      .bookkeeping-summary-cards .card {
-        padding: 20px !important;
+      /* Lock grid items to 100% width, prevent shrink */
+      .bookkeeping-summary-cards > .card {
+        display: block !important;
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+        padding: 20px !important;
+        /* Grid items don't use flex, so width constraints are sufficient */
       }
       
       /* Prevent stat card values from forcing container resize */
       .bookkeeping-summary-cards .contracts-stat-card-label {
+        display: block;
         width: 100%;
         box-sizing: border-box;
         min-width: 0;
@@ -191,6 +217,7 @@
       }
       
       .bookkeeping-summary-cards .contracts-stat-card-value {
+        display: block;
         width: 100%;
         box-sizing: border-box;
         min-width: 0;
@@ -200,60 +227,81 @@
         word-break: break-all;
       }
       
-      /* Date range full width - prevent shrinking */
+      /*
+       * DATE RANGE CONTAINER - Lock to column layout, prevent flex shrink
+       * Root cause: Inline flex: 1; min-width: 150px allows items to shrink
+       * Fix: Force column layout, block-level inputs with 100% width
+       */
       .bookkeeping-date-range { 
+        display: flex !important;
         flex-direction: column !important; 
         width: 100% !important;
         max-width: 100% !important;
         gap: 8px;
         box-sizing: border-box;
-        flex-shrink: 0;
+        flex-shrink: 0 !important;
+        align-items: stretch; /* Stretch children to full width */
       }
       .bookkeeping-date-range input { 
+        display: block !important;
         width: 100% !important; 
         max-width: 100% !important;
-        min-width: 0 !important;
-        flex: 0 0 auto !important;
+        flex: 0 0 auto !important; /* Override inline flex: 1, prevent flex shrink */
         box-sizing: border-box !important;
       }
       .bookkeeping-date-range button {
+        display: block !important;
         width: 100% !important;
         max-width: 100% !important;
         flex: 0 0 auto !important;
         box-sizing: border-box;
       }
       
-      /* Main layout cards full width - prevent shrinking */
+      /*
+       * MAIN LAYOUT CARDS - Lock to single column, prevent shrinking
+       * Root cause: Grid items can shrink when content changes
+       * Fix: Force single column grid, block-level cards with 100% width
+       */
       .bookkeeping-main-layout {
-        width: 100%;
-        max-width: 100%;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box;
+        align-items: stretch;
       }
       
-      .bookkeeping-main-layout .card {
+      .bookkeeping-main-layout > .card {
+        display: block !important;
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
         padding: 20px !important;
+        /* Grid items don't use flex, width constraints are sufficient */
       }
       
-      /* Laborers list container - prevent shrinking */
+      /*
+       * LABORERS LIST CONTAINER - Prevent shrinking
+       * Root cause: Container width can shrink when content loads
+       * Fix: Block-level with explicit 100% width constraints
+       */
       #laborersList {
-        width: 100%;
-        max-width: 100%;
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box;
-        min-width: 0;
       }
       
       /* Laborer items - prevent text from forcing resize */
       .bookkeeping-laborer-item {
-        width: 100%;
-        max-width: 100%;
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box;
-        min-width: 0;
       }
       
       .bookkeeping-laborer-item-name {
+        display: block;
         width: 100%;
         box-sizing: border-box;
         min-width: 0;
@@ -263,6 +311,7 @@
       }
       
       .bookkeeping-laborer-item-type {
+        display: block;
         width: 100%;
         box-sizing: border-box;
         min-width: 0;
@@ -274,10 +323,10 @@
       /* Payments table - prevent from shrinking parent */
       table { 
         font-size: 0.85rem; 
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box;
+        table-layout: fixed; /* Prevent table from expanding beyond container */
       }
       table th, table td { 
         padding: 8px !important;
