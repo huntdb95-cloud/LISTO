@@ -148,54 +148,153 @@
     }
     
     @media (max-width: 768px) {
+      /* Prevent horizontal overflow on page */
+      body[data-page="bookkeeping"] {
+        overflow-x: hidden;
+      }
+      
       /* Make all containers full width on mobile */
       body[data-page="bookkeeping"] .page-wrap {
         padding: 16px;
         max-width: 100%;
         width: 100%;
         box-sizing: border-box;
+        overflow-x: hidden;
       }
       
-      /* Summary cards full width and match Contracts height */
+      /* Summary cards full width and stable - prevent shrinking */
       .bookkeeping-summary-cards { 
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr !important; 
         gap: 12px;
         margin-bottom: 20px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       
       /* Match Contracts stat card padding (20px) for consistent height */
       .bookkeeping-summary-cards .card {
         padding: 20px !important;
-        width: 100%;
-        box-sizing: border-box;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
       
-      /* Date range full width */
-      .bookkeeping-date-range { 
-        flex-direction: column; 
+      /* Prevent stat card values from forcing container resize */
+      .bookkeeping-summary-cards .contracts-stat-card-label {
         width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      .bookkeeping-summary-cards .contracts-stat-card-value {
+        width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        word-break: break-all;
+      }
+      
+      /* Date range full width - prevent shrinking */
+      .bookkeeping-date-range { 
+        flex-direction: column !important; 
+        width: 100% !important;
+        max-width: 100% !important;
         gap: 8px;
+        box-sizing: border-box;
+        flex-shrink: 0;
       }
       .bookkeeping-date-range input { 
-        width: 100%; 
-        box-sizing: border-box;
+        width: 100% !important; 
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
+        box-sizing: border-box !important;
       }
       .bookkeeping-date-range button {
-        width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 auto !important;
+        box-sizing: border-box;
       }
       
-      /* Main layout cards full width */
-      .bookkeeping-main-layout .card {
+      /* Main layout cards full width - prevent shrinking */
+      .bookkeeping-main-layout {
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
+      }
+      
+      .bookkeeping-main-layout .card {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
         padding: 20px !important;
       }
       
+      /* Laborers list container - prevent shrinking */
+      #laborersList {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      
+      /* Laborer items - prevent text from forcing resize */
+      .bookkeeping-laborer-item {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      
+      .bookkeeping-laborer-item-name {
+        width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      .bookkeeping-laborer-item-type {
+        width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      /* Payments table - prevent from shrinking parent */
       table { 
         font-size: 0.85rem; 
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
       table th, table td { 
-        padding: 8px !important; 
+        padding: 8px !important;
+      }
+      
+      /* Long text in table cells should wrap */
+      table td {
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      /* Currency amounts should truncate if too long */
+      table td.bookkeeping-num {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
       }
     }
   </style>

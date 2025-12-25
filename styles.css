@@ -4169,17 +4169,44 @@ input:focus, select:focus, textarea:focus{
   transition: all 0.2s ease;
 }
 
-.contracts-list-item:hover {
+.contracts-list-item:hover:not(.contracts-list-item-selected) {
   background: var(--brand-light);
 }
 
+.contracts-list-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 .contracts-list-item-selected {
-  background: var(--brand);
+  background: var(--brand-dark);
   color: white;
+  border: 1px solid var(--brand-dark);
+  font-weight: 600;
+}
+
+.contracts-list-item-selected:hover {
+  background: var(--brand-dark);
+  opacity: 0.95;
+}
+
+.contracts-list-item-selected:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 .contracts-list-item-selected .contracts-list-item-title {
   color: white;
+  font-weight: 600;
+}
+
+.contracts-list-item-selected .contracts-list-item-title strong {
+  font-weight: 600;
+}
+
+.contracts-list-item-selected .contracts-list-item-count {
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 1;
 }
 
 .contracts-list-item-selected .contracts-status-badge {
@@ -4224,6 +4251,20 @@ input:focus, select:focus, textarea:focus{
 .contracts-list-item-action:hover {
   background: var(--bg);
   color: var(--text);
+}
+
+.contracts-list-item-selected .contracts-list-item-action {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.contracts-list-item-selected .contracts-list-item-action:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.contracts-list-item-selected .contracts-list-item-action:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
 }
 
 .contracts-list-contracts {
