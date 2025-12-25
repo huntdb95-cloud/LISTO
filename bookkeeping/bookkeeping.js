@@ -713,7 +713,7 @@ function renderPayments() {
       <td>${escapeHtml(p.method || "")}</td>
       <td>${escapeHtml(p.memo || "")}</td>
       <td class="bookkeeping-num">
-        <button type="button" class="bookkeeping-btn bookkeeping-btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="window.deletePayment('${p.id}')">Delete</button>
+        <button type="button" class="btn bookkeeping-btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="window.deletePayment('${p.id}')">Delete</button>
       </td>
     </tr>
   `).join("");

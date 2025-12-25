@@ -63,12 +63,13 @@
 <input type="file" id="logoFile" accept="image/*" />
 <div class="small muted" data-i18n="account.logoHint">Accepted: JPG, PNG, GIF, WebP (max 5MB)</div>
 </div>
+<div class="logo-buttons-container">
 <button type="submit" class="btn primary" id="logoUploadBtn" data-i18n="account.uploadLogo">Upload Logo</button>
+<button type="button" class="btn ghost" id="removeLogoBtn" style="display: none; margin-top: 16px;" data-i18n="account.removeLogo">Remove Logo</button>
+</div>
 <div id="logoMsg" class="form-msg"></div>
 <div id="logoError" class="form-error"></div>
 </form>
-
-<button type="button" class="btn ghost" id="removeLogoBtn" style="display: none; margin-top: 16px;" data-i18n="account.removeLogo">Remove Logo</button>
 </div>
 
 <div class="divider"></div>
@@ -208,9 +209,9 @@
 <p class="muted small" data-i18n="account.languageDesc">Choose your preferred language for the application interface.</p>
 
 <form id="languageForm">
-<div class="form-group">
+<div class="form-group language-form-group">
 <label data-i18n="account.languageLabel">Language</label>
-<div aria-label="Language preference" class="lang-switch" role="group">
+<div aria-label="Language preference" class="lang-switch language-switch-container" role="group">
 <button type="button" aria-pressed="true" class="chip" data-lang="en" id="langEnBtn">English</button>
 <button type="button" aria-pressed="false" class="chip" data-lang="es" id="langEsBtn">Español</button>
 </div>

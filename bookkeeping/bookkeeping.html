@@ -9,109 +9,157 @@
   <link rel="stylesheet" href="../styles.css" />
 
   <style>
-    /* Bookkeeping page scoped styles */
-    .bookkeeping-page-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .bookkeeping-page-title { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin: 10px 0 18px; flex-wrap: wrap; }
-    .bookkeeping-page-title h1 { margin:0; font-size: 1.6rem; }
-    .bookkeeping-muted { opacity: .75; font-size: .95rem; }
+    /* Bookkeeping page scoped styles - only keep what JS depends on */
     
-    /* Summary Cards */
-    .bookkeeping-summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .bookkeeping-summary-card { background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 20px; }
-    .bookkeeping-summary-card-label { font-size: 0.9rem; opacity: .7; margin-bottom: 8px; }
-    .bookkeeping-summary-card-value { font-size: 1.8rem; font-weight: 800; color: #111827; }
+    /* Summary Cards Grid */
+    .bookkeeping-summary-cards { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 16px; 
+      margin-bottom: 24px; 
+    }
     
     /* Main Layout */
-    .bookkeeping-main-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
-    .bookkeeping-laborers-list { background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 16px; }
-    .bookkeeping-laborer-detail { background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 16px; }
+    .bookkeeping-main-layout { 
+      display: grid; 
+      grid-template-columns: 1fr 2fr; 
+      gap: 24px; 
+    }
     
-    /* Laborer List */
-    .bookkeeping-laborers-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .bookkeeping-laborers-list-header h2 { margin: 0; font-size: 1.2rem; }
-    .bookkeeping-btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .bookkeeping-btn-primary { background: #111827; color: #fff; }
-    .bookkeeping-btn-primary:hover:not(:disabled) { background: #374151; }
-    .bookkeeping-btn-ghost { background: transparent; border: 1px solid rgba(0,0,0,.15); }
-    .bookkeeping-btn-ghost:hover:not(:disabled) { background: rgba(0,0,0,.05); }
-    .bookkeeping-btn-danger { background: #b91c1c; color: #fff; }
-    .bookkeeping-btn-danger:hover:not(:disabled) { background: #991b1b; }
-    .bookkeeping-btn:disabled { opacity: .6; cursor: not-allowed; }
+    /* Laborer List Items - JS depends on these class names */
+    .bookkeeping-laborer-item { 
+      padding: 12px; 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius-sm); 
+      margin-bottom: 8px; 
+      cursor: pointer; 
+      transition: all 0.2s; 
+      background: var(--panel);
+    }
+    .bookkeeping-laborer-item:hover { 
+      background: var(--brand-light); 
+      border-color: var(--border-brand); 
+    }
+    .bookkeeping-laborer-item.active { 
+      background: var(--brand-light); 
+      border-color: var(--brand); 
+    }
+    .bookkeeping-laborer-item-name { 
+      font-weight: 600; 
+      margin-bottom: 4px; 
+      color: var(--text);
+    }
+    .bookkeeping-laborer-item-type { 
+      font-size: 0.85rem; 
+      color: var(--muted); 
+    }
+    .bookkeeping-laborer-item-archived { 
+      opacity: .5; 
+    }
     
-    .bookkeeping-search { margin-bottom: 16px; }
-    .bookkeeping-search-input { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,.15); border-radius: 8px; box-sizing: border-box; }
+    /* Documents - JS depends on these class names */
+    .bookkeeping-document-item { 
+      background: var(--bg); 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius-sm); 
+      padding: 16px; 
+      margin-bottom: 16px; 
+    }
+    .bookkeeping-document-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: flex-start; 
+      margin-bottom: 12px; 
+    }
+    .bookkeeping-document-title { 
+      font-weight: 600; 
+      margin-bottom: 4px; 
+      color: var(--text);
+    }
+    .bookkeeping-document-status { 
+      font-size: 0.85rem; 
+      padding: 4px 8px; 
+      border-radius: 4px; 
+      display: inline-block; 
+    }
+    .bookkeeping-document-status-uploaded { 
+      background: rgba(16,185,129,.1); 
+      color: #059669; 
+    }
+    .bookkeeping-document-status-missing { 
+      background: rgba(239,68,68,.1); 
+      color: #dc2626; 
+    }
+    .bookkeeping-document-info { 
+      font-size: 0.85rem; 
+      color: var(--muted); 
+      margin-bottom: 12px; 
+    }
     
-    .bookkeeping-laborer-item { padding: 12px; border: 1px solid rgba(0,0,0,.1); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
-    .bookkeeping-laborer-item:hover { background: rgba(0,0,0,.03); border-color: rgba(0,0,0,.2); }
-    .bookkeeping-laborer-item.active { background: rgba(17,24,39,.05); border-color: #111827; }
-    .bookkeeping-laborer-item-name { font-weight: 600; margin-bottom: 4px; }
-    .bookkeeping-laborer-item-type { font-size: 0.85rem; opacity: .7; }
-    .bookkeeping-laborer-item-archived { opacity: .5; }
+    /* Messages - JS depends on these class names */
+    .bookkeeping-message { 
+      padding: 12px; 
+      border-radius: var(--radius-sm); 
+      margin-top: 12px; 
+    }
+    .bookkeeping-message-success { 
+      background: rgba(16,185,129,.1); 
+      color: #059669; 
+    }
+    .bookkeeping-message-error { 
+      background: rgba(239,68,68,.1); 
+      color: #dc2626; 
+    }
     
-    /* Laborer Detail */
-    .bookkeeping-detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-    .bookkeeping-detail-header h2 { margin: 0; font-size: 1.2rem; }
-    .bookkeeping-detail-actions { display: flex; gap: 8px; }
+    /* Empty state - JS depends on this */
+    .bookkeeping-empty-state { 
+      text-align: center; 
+      padding: 40px 20px; 
+      color: var(--muted); 
+    }
     
-    .bookkeeping-form-group { margin-bottom: 16px; }
-    .bookkeeping-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
-    .bookkeeping-input, .bookkeeping-select, .bookkeeping-textarea { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,.15); border-radius: 8px; box-sizing: border-box; }
-    .bookkeeping-input[type="date"] { min-width: 0; max-width: 100%; }
-    .bookkeeping-textarea { min-height: 80px; resize: vertical; }
-    .bookkeeping-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .bookkeeping-form-row .bookkeeping-form-group { min-width: 0; }
+    /* Right-aligned numbers for table */
+    .bookkeeping-num { 
+      text-align: right; 
+    }
     
-    /* Documents Section */
-    .bookkeeping-documents-section { margin-top: 24px; padding-top: 24px; border-top: 2px solid rgba(0,0,0,.1); }
-    .bookkeeping-documents-section h3 { margin: 0 0 16px 0; font-size: 1.1rem; }
-    .bookkeeping-document-item { background: rgba(0,0,0,.02); border: 1px solid rgba(0,0,0,.1); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .bookkeeping-document-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .bookkeeping-document-title { font-weight: 600; margin-bottom: 4px; }
-    .bookkeeping-document-status { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; display: inline-block; }
-    .bookkeeping-document-status-uploaded { background: rgba(16,185,129,.1); color: #059669; }
-    .bookkeeping-document-status-missing { background: rgba(239,68,68,.1); color: #dc2626; }
-    .bookkeeping-document-info { font-size: 0.85rem; opacity: .7; margin-bottom: 12px; }
-    .bookkeeping-document-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .bookkeeping-file-input-wrapper { margin-bottom: 12px; }
-    .bookkeeping-file-input { width: 100%; padding: 8px; border: 1px solid rgba(0,0,0,.15); border-radius: 8px; box-sizing: border-box; }
-    .bookkeeping-upload-progress { margin-top: 8px; font-size: 0.85rem; color: #059669; }
-    .bookkeeping-upload-error { margin-top: 8px; font-size: 0.85rem; color: #dc2626; }
-    
-    /* Payments Section */
-    .bookkeeping-payments-section { margin-top: 24px; padding-top: 24px; border-top: 2px solid rgba(0,0,0,.1); }
-    .bookkeeping-payments-section h3 { margin: 0 0 16px 0; font-size: 1.1rem; }
-    .bookkeeping-payments-form { background: rgba(0,0,0,.02); border: 1px solid rgba(0,0,0,.1); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .bookkeeping-payments-table { width: 100%; border-collapse: collapse; }
-    .bookkeeping-payments-table th, .bookkeeping-payments-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid rgba(0,0,0,.1); }
-    .bookkeeping-payments-table th { background: rgba(0,0,0,.03); font-weight: 600; font-size: 0.9rem; }
-    .bookkeeping-payments-table .bookkeeping-num { text-align: right; }
-    .bookkeeping-empty-state { text-align: center; padding: 40px 20px; opacity: .6; }
-    
-    /* Date Range Filter */
-    .bookkeeping-date-range { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .bookkeeping-date-range input { flex: 1; min-width: 150px; }
-    
-    /* Messages */
-    .bookkeeping-message { padding: 12px; border-radius: 8px; margin-top: 12px; }
-    .bookkeeping-message-success { background: rgba(16,185,129,.1); color: #059669; }
-    .bookkeeping-message-error { background: rgba(239,68,68,.1); color: #dc2626; }
+    /* Danger button for delete actions */
+    .btn.bookkeeping-btn-danger { 
+      background: #dc2626; 
+      color: #fff; 
+      border: none;
+    }
+    .btn.bookkeeping-btn-danger:hover:not(:disabled) { 
+      background: #b91c1c;
+      color: #fff; /* Keep white text on hover, override .btn:hover color */
+    }
     
     /* Responsive */
     @media (max-width: 1024px) {
-      .bookkeeping-main-layout { grid-template-columns: 1fr; }
-      .bookkeeping-laborers-list { margin-bottom: 24px; }
+      .bookkeeping-main-layout { 
+        grid-template-columns: 1fr; 
+      }
+      .bookkeeping-main-layout > .card:first-child { 
+        margin-bottom: 24px; 
+      }
     }
     
     @media (max-width: 640px) {
-      .bookkeeping-page-wrap { padding: 12px; }
-      .bookkeeping-summary-cards { grid-template-columns: 1fr; }
-      .bookkeeping-form-row { grid-template-columns: 1fr; }
-      .bookkeeping-detail-actions { flex-direction: column; }
-      .bookkeeping-detail-actions .bookkeeping-btn { width: 100%; }
-      .bookkeeping-date-range { flex-direction: column; }
-      .bookkeeping-date-range input { width: 100%; }
-      .bookkeeping-payments-table { font-size: 0.85rem; }
-      .bookkeeping-payments-table th, .bookkeeping-payments-table td { padding: 8px; }
+      .bookkeeping-summary-cards { 
+        grid-template-columns: 1fr; 
+      }
+      .bookkeeping-date-range { 
+        flex-direction: column; 
+      }
+      .bookkeeping-date-range input { 
+        width: 100%; 
+      }
+      table { 
+        font-size: 0.85rem; 
+      }
+      table th, table td { 
+        padding: 8px !important; 
+      }
     }
   </style>
 </head>
@@ -138,52 +186,52 @@
   <div id="sidebar"></div>
   <main id="main">
 
-  <div class="page-wrap bookkeeping-page-wrap">
-    <div class="bookkeeping-page-title">
+  <div class="page-wrap">
+    <div class="page-title">
       <div>
         <h1>1099 Bookkeeping</h1>
-        <div class="bookkeeping-muted">Track 1099 laborers and payments</div>
+        <div class="muted">Track 1099 laborers and payments</div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <a href="../employees/employees.html" class="bookkeeping-btn bookkeeping-btn-ghost" style="text-decoration: none; display: inline-flex; align-items: center;" data-i18n="bookkeeping.laborManagement">Labor Management</a>
-        <div class="bookkeeping-muted" id="statusText">Loading…</div>
+        <a href="../employees/employees.html" class="btn ghost" style="text-decoration: none; display: inline-flex; align-items: center;" data-i18n="bookkeeping.laborManagement">Labor Management</a>
+        <div class="muted" id="statusText">Loading…</div>
       </div>
     </div>
 
     <!-- Summary Cards -->
     <div class="bookkeeping-summary-cards">
-      <div class="bookkeeping-summary-card">
-        <div class="bookkeeping-summary-card-label">Total Paid (Date Range)</div>
-        <div class="bookkeeping-summary-card-value" id="summaryTotalPaid">$0.00</div>
+      <div class="card" style="padding: 24px;">
+        <div class="muted" style="font-size: 0.9rem; margin-bottom: 8px;">Total Paid (Date Range)</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);" id="summaryTotalPaid">$0.00</div>
       </div>
-      <div class="bookkeeping-summary-card">
-        <div class="bookkeeping-summary-card-label">Laborers Paid</div>
-        <div class="bookkeeping-summary-card-value" id="summaryLaborersPaid">0</div>
+      <div class="card" style="padding: 24px;">
+        <div class="muted" style="font-size: 0.9rem; margin-bottom: 8px;">Laborers Paid</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);" id="summaryLaborersPaid">0</div>
       </div>
-      <div class="bookkeeping-summary-card">
-        <div class="bookkeeping-summary-card-label">YTD Total Paid</div>
-        <div class="bookkeeping-summary-card-value" id="summaryYtdPaid">$0.00</div>
+      <div class="card" style="padding: 24px;">
+        <div class="muted" style="font-size: 0.9rem; margin-bottom: 8px;">YTD Total Paid</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);" id="summaryYtdPaid">$0.00</div>
       </div>
     </div>
 
     <!-- Date Range Filter -->
-    <div class="bookkeeping-date-range">
-      <input type="date" id="dateRangeFrom" class="bookkeeping-input" />
-      <input type="date" id="dateRangeTo" class="bookkeeping-input" />
-      <button type="button" class="bookkeeping-btn bookkeeping-btn-ghost" id="resetDateRangeBtn">Reset to Current Month</button>
+    <div class="bookkeeping-date-range" style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+      <input type="date" id="dateRangeFrom" style="flex: 1; min-width: 150px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" />
+      <input type="date" id="dateRangeTo" style="flex: 1; min-width: 150px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" />
+      <button type="button" class="btn ghost" id="resetDateRangeBtn">Reset to Current Month</button>
     </div>
 
     <!-- Main Layout: Laborers List + Detail -->
     <div class="bookkeeping-main-layout">
       <!-- Laborers List -->
-      <div class="bookkeeping-laborers-list">
-        <div class="bookkeeping-laborers-list-header">
-          <h2>Laborers</h2>
-          <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="addLaborerBtn">+ Add</button>
+      <div class="card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 class="h2">Laborers</h2>
+          <button type="button" class="btn primary" id="addLaborerBtn">+ Add</button>
         </div>
         
-        <div class="bookkeeping-search">
-          <input type="text" id="laborerSearch" class="bookkeeping-search-input" placeholder="Search laborers..." />
+        <div style="margin-bottom: 16px;">
+          <input type="text" id="laborerSearch" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" placeholder="Search laborers..." />
         </div>
         
         <div id="laborersList">
@@ -192,18 +240,18 @@
       </div>
 
       <!-- Laborer Detail -->
-      <div class="bookkeeping-laborer-detail" id="laborerDetailPanel" style="display: none;">
-        <div class="bookkeeping-detail-header">
-          <h2 id="detailLaborerName">Laborer Details</h2>
-          <div class="bookkeeping-detail-actions">
-            <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="editLaborerBtn" data-i18n="bookkeeping.editLaborer">Edit Laborer</button>
+      <div class="card" id="laborerDetailPanel" style="display: none; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <h2 class="h2" id="detailLaborerName">Laborer Details</h2>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn primary" id="editLaborerBtn" data-i18n="bookkeeping.editLaborer">Edit Laborer</button>
           </div>
         </div>
 
 
         <!-- Documents Section (Read-Only) -->
-        <div class="bookkeeping-documents-section">
-          <h3>Documents</h3>
+        <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
+          <h3 class="h3">Documents</h3>
           
           <!-- W-9 Document Status -->
           <div class="bookkeeping-document-item">
@@ -215,7 +263,7 @@
             </div>
             <div id="w9Info" class="bookkeeping-document-info" style="display: none;"></div>
             <div id="w9OcrStatus" class="bookkeeping-ocr-status" style="display: none; margin-top: 8px; padding: 8px; border-radius: 4px; font-size: 0.85rem;"></div>
-            <div class="bookkeeping-muted" style="font-size: 0.85rem; margin-top: 8px;">Upload W-9 in Labor Management</div>
+            <div class="muted" style="font-size: 0.85rem; margin-top: 8px;">Upload W-9 in Labor Management</div>
           </div>
 
           <!-- COI Document (only for Subcontractors) -->
@@ -227,30 +275,30 @@
               </div>
             </div>
             <div id="coiInfo" class="bookkeeping-document-info" style="display: none;"></div>
-            <div class="bookkeeping-muted" style="font-size: 0.85rem; margin-top: 8px;">Upload COI in Labor Management</div>
+            <div class="muted" style="font-size: 0.85rem; margin-top: 8px;">Upload COI in Labor Management</div>
           </div>
         </div>
 
         <!-- Payments Section -->
-        <div class="bookkeeping-payments-section">
-          <h3>Payments</h3>
+        <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
+          <h3 class="h3">Payments</h3>
           
           <!-- Add Payment Form -->
-          <div class="bookkeeping-payments-form">
-            <div class="bookkeeping-form-row">
-              <div class="bookkeeping-form-group">
-                <label class="bookkeeping-label" for="paymentDate">Date Paid *</label>
-                <input type="date" id="paymentDate" class="bookkeeping-input" required />
+          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 24px; margin-bottom: 16px;">
+            <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="paymentDate" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Date Paid *</label>
+                <input type="date" id="paymentDate" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" required />
               </div>
-              <div class="bookkeeping-form-group">
-                <label class="bookkeeping-label" for="paymentAmount">Amount *</label>
-                <input type="number" id="paymentAmount" class="bookkeeping-input" step="0.01" min="0" placeholder="0.00" required />
+              <div class="form-group">
+                <label for="paymentAmount" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Amount *</label>
+                <input type="number" id="paymentAmount" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" step="0.01" min="0" placeholder="0.00" required />
               </div>
             </div>
-            <div class="bookkeeping-form-row">
-              <div class="bookkeeping-form-group">
-                <label class="bookkeeping-label" for="paymentMethod">Method *</label>
-                <select id="paymentMethod" class="bookkeeping-select" required>
+            <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="paymentMethod" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Method *</label>
+                <select id="paymentMethod" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" required>
                   <option value="">Select method</option>
                   <option value="Cash">Cash</option>
                   <option value="Check">Check</option>
@@ -259,29 +307,29 @@
                   <option value="Other">Other</option>
                 </select>
               </div>
-              <div class="bookkeeping-form-group">
-                <label class="bookkeeping-label" for="paymentMemo">Memo</label>
-                <input type="text" id="paymentMemo" class="bookkeeping-input" placeholder="Optional memo" />
+              <div class="form-group">
+                <label for="paymentMemo" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Memo</label>
+                <input type="text" id="paymentMemo" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" placeholder="Optional memo" />
               </div>
             </div>
-            <button type="button" class="bookkeeping-btn bookkeeping-btn-primary" id="addPaymentBtn">Add Payment</button>
+            <button type="button" class="btn primary" id="addPaymentBtn">Add Payment</button>
           </div>
 
           <!-- Payments Table -->
           <div style="overflow-x: auto;">
-            <table class="bookkeeping-payments-table">
+            <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                   <tr>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Method</th>
-                  <th>Memo</th>
-                  <th class="bookkeeping-num">Actions</th>
+                  <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Date</th>
+                  <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Amount</th>
+                  <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Method</th>
+                  <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Memo</th>
+                  <th style="padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Actions</th>
                   </tr>
                 </thead>
               <tbody id="paymentsTableBody">
                 <tr>
-                  <td colspan="5" class="bookkeeping-empty-state">No payments yet</td>
+                  <td colspan="5" style="text-align: center; padding: 40px 20px; opacity: .6;">No payments yet</td>
                 </tr>
                 </tbody>
               </table>
