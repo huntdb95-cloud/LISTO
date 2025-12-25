@@ -127,12 +127,19 @@
 </div>
 </div>
 
-<!-- Facebook Feed Card -->
+<!-- News & Updates Card (Elfsight Social Feed) -->
 <div class="card pad facebook-feed-card">
 <h2 class="h2" data-i18n="dashboard.facebookFeed">News & Updates</h2>
 <div class="divider"></div>
-<div class="facebook-feed-container" id="facebookFeedContainer">
-<!-- Facebook feed will be rendered via iframe by dashboard.js -->
+<div class="facebook-feed-container" id="newsUpdatesContainer">
+  <!-- Loading placeholder -->
+  <div id="newsUpdatesLoading" class="news-updates-loading">
+    <div style="padding: 40px 20px; text-align: center; color: var(--muted);">
+      <div style="font-size: 0.95rem;">Loading updates...</div>
+    </div>
+  </div>
+  <!-- Elfsight Social Feed widget -->
+  <div class="elfsight-app-aebac189-c6ff-4d3e-b24e-e5f9fa23632a" data-elfsight-app-lazy></div>
 </div>
 </div>
 </div>
@@ -219,11 +226,53 @@
     location.replace('https:' + window.location.href.substring(window.location.protocol.length));
   }
 </script>
-<!-- Facebook feed is loaded via iframe in dashboard.js (no SDK needed) -->
+<!-- Elfsight Social Feed platform script -->
+<script src="https://elfsightcdn.com/platform.js" async></script>
 
 <script src="sidebar.js"></script>
 <script src="scripts.js" type="module"></script>
 <script type="module" src="dashboard.js"></script>
+<!-- Elfsight loading placeholder handler -->
+<script>
+  // Hide loading placeholder once Elfsight content is present
+  (function() {
+    const loadingEl = document.getElementById('newsUpdatesLoading');
+    const widgetEl = document.querySelector('.elfsight-app-aebac189-c6ff-4d3e-b24e-e5f9fa23632a');
+    
+    if (!loadingEl || !widgetEl) return;
+    
+    let checkCount = 0;
+    const maxChecks = 20; // 10 seconds max (500ms * 20)
+    
+    function checkElfsightLoaded() {
+      checkCount++;
+      
+      // Check if Elfsight has injected content (look for iframes or content inside the widget)
+      const hasContent = widgetEl.querySelector('iframe') || 
+                        widgetEl.querySelector('[class*="elfsight"]') ||
+                        widgetEl.children.length > 0 ||
+                        widgetEl.offsetHeight > 100;
+      
+      if (hasContent) {
+        loadingEl.style.display = 'none';
+      } else if (checkCount < maxChecks) {
+        setTimeout(checkElfsightLoaded, 500);
+      } else {
+        // Timeout - hide loading anyway after max checks
+        loadingEl.style.display = 'none';
+      }
+    }
+    
+    // Start checking after DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(checkElfsightLoaded, 1000); // Wait 1s for Elfsight to start loading
+      });
+    } else {
+      setTimeout(checkElfsightLoaded, 1000);
+    }
+  })();
+</script>
 </body>
 </html>
 
