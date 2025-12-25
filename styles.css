@@ -1539,6 +1539,7 @@ input:focus, select:focus, textarea:focus{
   top: 0;
   left: 0;
   right: 0;
+  min-height: 600px !important; /* Match container height to fully cover widget area */
   z-index: 1;
   background: var(--panel, #fff);
 }

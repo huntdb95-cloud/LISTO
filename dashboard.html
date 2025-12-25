@@ -247,11 +247,20 @@
     function checkElfsightLoaded() {
       checkCount++;
       
-      // Check if Elfsight has injected content (look for iframes or content inside the widget)
-      const hasContent = widgetEl.querySelector('iframe') || 
-                        widgetEl.querySelector('[class*="elfsight"]') ||
-                        widgetEl.children.length > 0 ||
-                        widgetEl.offsetHeight > 100;
+      // Check if Elfsight has injected actual content (not just empty divs)
+      // Note: widgetEl has min-height: 600px, so offsetHeight check is unreliable
+      const hasIframe = widgetEl.querySelector('iframe');
+      const hasElfsightContent = widgetEl.querySelector('[class*="elfsight"]:not(.elfsight-app-aebac189-c6ff-4d3e-b24e-e5f9fa23632a)');
+      // Check for meaningful children (not just the widget container itself)
+      const hasRealChildren = Array.from(widgetEl.children).some(child => {
+        // Ignore empty divs or the widget container itself
+        return child.tagName !== 'DIV' || 
+               child.offsetHeight > 50 || 
+               child.querySelector('iframe') ||
+               child.textContent.trim().length > 0;
+      });
+      
+      const hasContent = hasIframe || hasElfsightContent || hasRealChildren;
       
       if (hasContent) {
         loadingEl.style.display = 'none';
