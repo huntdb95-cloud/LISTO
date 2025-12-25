@@ -1021,6 +1021,12 @@ body[data-page="landing"] .lang-switch-mobile {
   .footer-links a:nth-child(n+5) {
     grid-column: span 2;
   }
+  .footer-tagline {
+    text-align: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
 }
 
 /* Extra small mobile: slightly smaller font if needed */
@@ -1940,6 +1946,33 @@ input:focus, select:focus, textarea:focus{
     margin-left: auto;
     margin-right: auto;
     width: auto;
+  }
+  
+  /* Center Remove Logo button below Upload Logo button on mobile */
+  .account-page .logo-buttons-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .account-page #removeLogoBtn {
+    margin-top: 0 !important;
+  }
+  
+  /* Center Language label and toggle section on mobile */
+  .account-page .language-form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .account-page .language-form-group label {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .account-page .language-switch-container {
+    display: flex;
+    justify-content: center;
   }
 }
 
