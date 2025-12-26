@@ -633,6 +633,24 @@ body[data-page="landing"] .lang-switch-mobile {
   flex-wrap: wrap;
 }
 
+/* Desktop-only: Align Complete buttons horizontally across cards */
+@media (min-width: 769px) {
+  /* Ensure dashboard grid cards are equal height */
+  .dashboard-grid {
+    align-items: stretch;
+  }
+  
+  /* Make dashboard cards full height flex columns */
+  .dashboard-card {
+    height: 100%;
+  }
+  
+  /* Pin button actions to bottom of card */
+  .dashboard-card-actions {
+    margin-top: auto;
+  }
+}
+
 .dashboard-card-actions .btn {
   flex: 1 1 auto;
   min-width: 120px;
