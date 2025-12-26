@@ -1266,6 +1266,99 @@ input:focus, select:focus, textarea:focus{
   margin-bottom: 32px;
 }
 
+/* Desktop-only: Reminders banner bar layout */
+@media (min-width: 769px) {
+  .reminders-card {
+    margin-bottom: 24px;
+  }
+  
+  .reminders-card .h2 {
+    margin-bottom: 12px;
+  }
+  
+  .reminders-card .divider {
+    margin-bottom: 16px;
+  }
+  
+  /* Split reminders into two columns */
+  .reminders-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  
+  .reminders-column {
+    min-width: 0;
+  }
+  
+  .reminders-column-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .reminders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .reminder-item {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  .reminder-link {
+    color: var(--brand);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  .reminder-link:hover {
+    color: var(--brand-dark);
+    text-decoration: underline;
+  }
+  
+  .reminder-empty {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  
+  /* Make reminders card skinnier on desktop */
+  .reminders-card {
+    padding: 16px 24px !important;
+  }
+  
+  .reminders-card .h2 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+}
+
+/* Mobile: Keep reminders stacked (unchanged from original) */
+@media (max-width: 768px) {
+  .reminders-split {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .reminders-column-title {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+  
+  .reminder-item {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+}
+
 .account-info-card {
   min-width: 0;
   padding: 24px !important;
@@ -1778,6 +1871,15 @@ input:focus, select:focus, textarea:focus{
 .page-title .muted {
   font-size: 1rem;
   line-height: 1.5;
+}
+
+/* Page title with actions (like Contracts & Jobs spacing) - Bookkeeping page */
+body[data-page="bookkeeping"] .page-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
 /* Account page specific card padding */

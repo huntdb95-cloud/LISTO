@@ -99,84 +99,181 @@ function displayInitials(user, profile) {
   avatarInitials.textContent = initials;
 }
 
-// Load reminders
+// Load reminders - grouped into Labor and Jobs
 async function loadReminders(user) {
   const container = $("remindersContainer");
   if (!container) return;
 
   try {
-    const reminders = [];
+    // Group reminders into Labor and Jobs
+    const laborReminders = [];
+    const jobReminders = [];
 
-    // 1. Unpaid projects reminder
-    const unpaidProjects = await getUnpaidProjects(user.uid);
-    if (unpaidProjects.length > 0) {
-      reminders.push({
-        type: "invoice",
-        title: "Send Invoices",
-        items: unpaidProjects.map(p => ({
-          text: `${p.jobName} (${p.builderName})`,
-          link: "invoice/invoice.html"
-        }))
-      });
-    }
-
-    // 2. Compliance reminders
-    const complianceReminders = await getComplianceReminders(user.uid);
-    if (complianceReminders.length > 0) {
-      reminders.push({
-        type: "compliance",
-        title: "Compliance Renewals",
-        items: complianceReminders
-      });
-    }
-
-    // 3. Employees (non-subcontractors) without W9
+    // LABOR REMINDERS
+    // 1. Employees (non-subcontractors) without W9
     const employeesWithoutW9 = await getEmployeesWithoutW9(user.uid);
-    if (employeesWithoutW9.length > 0) {
-      reminders.push({
-        type: "employees",
-        title: "Employees Missing W-9",
-        items: employeesWithoutW9.map(emp => ({
-          text: emp.name,
-          link: "employees/employees.html"
-        }))
+    employeesWithoutW9.forEach(emp => {
+      laborReminders.push({
+        text: `${emp.name} - Missing W-9`,
+        link: "employees/employees.html"
       });
-    }
+    });
 
-    // 4. Subcontractors missing documents (W9, COI, or Sub Agreement)
+    // 2. Subcontractors missing documents (W9, COI)
     const subcontractorsMissingDocs = await getSubcontractorsMissingDocs(user.uid);
-    if (subcontractorsMissingDocs.length > 0) {
-      reminders.push({
-        type: "subcontractors",
-        title: "Subcontractors Missing Documents",
-        items: subcontractorsMissingDocs.map(sub => ({
-          text: `${sub.name} - Missing: ${sub.missingDocs.join(", ")}`,
+    subcontractorsMissingDocs.forEach(sub => {
+      // Filter out Sub Agreement (that's a job/contract thing, not labor)
+      const laborDocs = sub.missingDocs.filter(doc => doc !== "Sub Agreement");
+      if (laborDocs.length > 0) {
+        laborReminders.push({
+          text: `${sub.name} - Missing: ${laborDocs.join(", ")}`,
           link: sub.link || "employees/employees.html"
-        }))
-      });
-    }
+        });
+      }
+    });
 
-    // Render reminders
-    // NOTE: This uses innerHTML but only affects #remindersContainer, not #facebookFeedContainer
-    if (reminders.length === 0) {
-      container.innerHTML = '<div class="muted">No reminders at this time.</div>';
-    } else {
-      container.innerHTML = reminders.map(reminder => `
-        <div class="reminder-section" style="margin-bottom: 24px;">
-          <h3 class="h3" style="margin-top: 0; margin-bottom: 12px;">${reminder.title}</h3>
-          <ul style="margin: 0; padding-left: 20px;">
-            ${reminder.items.map(item => `
-              <li style="margin-bottom: 8px;">
-                ${item.link ? `<a href="${item.link}" style="color: var(--primary); text-decoration: none;">${item.text}</a>` : item.text}
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-      `).join("");
-    }
+    // 3. Laborers missing W-9 (from laborers collection)
+    const laborersWithoutW9 = await getLaborersWithoutW9(user.uid);
+    laborersWithoutW9.forEach(laborer => {
+      laborReminders.push({
+        text: `${laborer.name} - Missing W-9`,
+        link: "tools/1099.html"
+      });
+    });
+
+    // JOBS REMINDERS
+    // 1. Jobs with past due payments
+    const pastDueJobs = await getPastDueJobs(user.uid);
+    pastDueJobs.forEach(job => {
+      jobReminders.push({
+        text: `${job.builderName} - ${job.jobName} (Past due)`,
+        link: "contracts/contracts.html"
+      });
+    });
+
+    // 2. Subcontractor agreements missing (from contracts)
+    subcontractorsMissingDocs.forEach(sub => {
+      if (sub.missingDocs.includes("Sub Agreement")) {
+        jobReminders.push({
+          text: sub.name,
+          link: sub.link || "contracts/contracts.html"
+        });
+      }
+    });
+
+    // Render reminders in two-column layout (desktop) or stacked (mobile)
+    renderReminders(container, laborReminders, jobReminders);
   } catch (err) {
     console.error("Error loading reminders:", err);
     container.innerHTML = '<div class="form-error">Error loading reminders. Please refresh the page.</div>';
+  }
+}
+
+// Render reminders in Labor/Jobs split layout
+function renderReminders(container, laborReminders, jobReminders) {
+  if (laborReminders.length === 0 && jobReminders.length === 0) {
+    container.innerHTML = '<div class="muted">No reminders at this time.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="reminders-split">
+      <div class="reminders-column reminders-labor">
+        <h3 class="reminders-column-title">Labor</h3>
+        <div class="reminders-list">
+          ${laborReminders.length > 0 
+            ? laborReminders.map(item => `
+                <div class="reminder-item">
+                  ${item.link ? `<a href="${item.link}" class="reminder-link">${escapeHtml(item.text)}</a>` : escapeHtml(item.text)}
+                </div>
+              `).join("")
+            : '<div class="reminder-empty">All caught up</div>'
+          }
+        </div>
+      </div>
+      <div class="reminders-column reminders-jobs">
+        <h3 class="reminders-column-title">Jobs</h3>
+        <div class="reminders-list">
+          ${jobReminders.length > 0 
+            ? jobReminders.map(item => `
+                <div class="reminder-item">
+                  ${item.link ? `<a href="${item.link}" class="reminder-link">${escapeHtml(item.text)}</a>` : escapeHtml(item.text)}
+                </div>
+              `).join("")
+            : '<div class="reminder-empty">All caught up</div>'
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Helper to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Get laborers without W-9
+async function getLaborersWithoutW9(uid) {
+  try {
+    const laborersCol = collection(db, "users", uid, "laborers");
+    const laborersSnap = await getDocs(query(laborersCol, orderBy("displayName", "asc")));
+    const laborersWithoutW9 = [];
+
+    laborersSnap.docs.forEach(doc => {
+      const laborer = doc.data();
+      // Check if W-9 is missing (no w9Url or w9Completed flag)
+      if (!laborer.w9Url && !laborer.w9Completed) {
+        laborersWithoutW9.push({
+          name: laborer.displayName || laborer.name || "Unknown"
+        });
+      }
+    });
+
+    return laborersWithoutW9;
+  } catch (err) {
+    console.error("Error getting laborers without W9:", err);
+    return [];
+  }
+}
+
+// Get jobs with past due payment status
+async function getPastDueJobs(uid) {
+  try {
+    const buildersCol = collection(db, "users", uid, "builders");
+    const buildersSnap = await getDocs(buildersCol);
+    const pastDueJobs = [];
+
+    for (const builderDoc of buildersSnap.docs) {
+      const builder = builderDoc.data();
+      const builderId = builderDoc.id;
+      const builderName = builder.name || "Unknown Builder";
+
+      // Load jobs for this builder
+      const jobsCol = collection(db, "users", uid, "builders", builderId, "jobs");
+      const jobsSnap = await getDocs(query(jobsCol, orderBy("jobName", "asc")));
+
+      jobsSnap.docs.forEach(jobDoc => {
+        const job = jobDoc.data();
+        // Check if payment status is past_due
+        const paymentStatus = job.paymentStatus || "up_to_date";
+        if (paymentStatus === "past_due") {
+          pastDueJobs.push({
+            builderName,
+            jobName: job.jobName || "Unnamed Job",
+            jobId: jobDoc.id,
+            builderId
+          });
+        }
+      });
+    }
+
+    return pastDueJobs;
+  } catch (err) {
+    console.error("Error getting past due jobs:", err);
+    return [];
   }
 }
 
