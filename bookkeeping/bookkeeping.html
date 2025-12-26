@@ -397,13 +397,6 @@
         overflow: hidden;
       }
       
-      /*
-       * PAYMENT FORM - Collapsible on mobile
-       */
-      .bookkeeping-payment-form-header {
-        display: none; /* Hidden on desktop */
-      }
-      
       body[data-page="bookkeeping"] .bookkeeping-payment-form-container {
         transition: max-height 0.3s ease, opacity 0.3s ease;
         overflow: hidden;
@@ -421,6 +414,14 @@
         max-height: 1000px;
         opacity: 1;
       }
+    }
+    
+    /*
+     * PAYMENT FORM - Collapsible on mobile
+     * Hidden by default on desktop, shown on mobile
+     */
+    .bookkeeping-payment-form-header {
+      display: none; /* Hidden on desktop by default */
     }
     
     /* Mobile-only: Show collapsible header */

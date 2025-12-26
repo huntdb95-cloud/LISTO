@@ -314,6 +314,19 @@
             </div>
           </div>
 
+          <!-- Quick Estimate Option -->
+          <div class="card" id="quickEstimateCard">
+            <h2 class="h2" style="margin-top: 0;">Quick Estimate</h2>
+            <div class="divider"></div>
+            <p class="muted" style="margin-top: 16px;">Create an estimate without linking to a builder or job.</p>
+            <button type="button" class="btn primary" id="startQuickEstimateBtn" style="margin-top: 12px;">Start Quick Estimate</button>
+            <div id="quickEstimateActive" style="display: none; margin-top: 16px; padding: 12px; background: var(--brand-light); border-radius: 8px;">
+              <p style="margin: 0; font-weight: 600; color: var(--brand-dark);">✓ Quick Estimate Mode Active</p>
+              <p style="margin: 8px 0 0 0; font-size: 0.9rem; opacity: 0.8;">You can create an estimate without selecting a builder/job. Saving to a job is disabled.</p>
+              <button type="button" class="btn ghost" id="exitQuickEstimateBtn" style="margin-top: 12px;">Exit Quick Estimate</button>
+            </div>
+          </div>
+
           <!-- Estimate Details -->
           <div class="card" id="estimateCard" style="display: none;">
             <h2 class="h2" style="margin-top: 0;">Estimate Details</h2>
