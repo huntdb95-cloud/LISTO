@@ -151,7 +151,25 @@ async function loadReminders(user) {
       });
     });
 
-    // 2. Subcontractor agreements missing (from contracts)
+    // 2. Unpaid projects (invoices not sent)
+    const unpaidProjects = await getUnpaidProjects(user.uid);
+    unpaidProjects.forEach(project => {
+      jobReminders.push({
+        text: `${project.jobName} (${project.builderName}) - Send Invoice`,
+        link: "invoice/invoice.html"
+      });
+    });
+
+    // 3. Compliance reminders (expiring COI, Business License, Workers Comp)
+    const complianceReminders = await getComplianceReminders(user.uid);
+    complianceReminders.forEach(reminder => {
+      jobReminders.push({
+        text: reminder.text,
+        link: reminder.link
+      });
+    });
+
+    // 4. Subcontractor agreements missing (from contracts)
     subcontractorsMissingDocs.forEach(sub => {
       if (sub.missingDocs.includes("Sub Agreement")) {
         jobReminders.push({
