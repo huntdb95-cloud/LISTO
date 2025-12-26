@@ -1365,6 +1365,11 @@ input:focus, select:focus, textarea:focus{
 
 /* Mobile: Keep reminders stacked (unchanged from original) */
 @media (max-width: 768px) {
+  /* Home page: Add spacing between Reminders and Account Information */
+  body[data-page="dashboard"] .reminders-card {
+    margin-bottom: 24px;
+  }
+  
   .reminders-split {
     display: flex;
     flex-direction: column;
@@ -2631,13 +2636,25 @@ body[data-page="bookkeeping"] .page-title {
 /* ===== W-9 Mobile Fixes ===== */
 @media (max-width: 768px) {
   /* CRITICAL: Hard-stop horizontal overflow on W-9 page root */
-  body.page-w9,
-  body.page-w9 html {
+  /* Note: html is the root element, not a child of body, so we target it separately */
+  body.page-w9 {
     overflow-x: hidden !important;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
+  
+  /* Prevent overflow on html element when W-9 page is active */
+  /* Use :has() selector for modern browsers, with fallback */
+  html:has(body.page-w9) {
+    overflow-x: hidden !important;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Fallback for browsers without :has() support - apply to html when body has class */
+  /* This will be handled by JavaScript if needed, but CSS :has() should work for most modern browsers */
   
   /* Prevent overflow on all page containers */
   body.page-w9 .app-layout,
