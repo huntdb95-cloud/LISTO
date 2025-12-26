@@ -2483,13 +2483,59 @@ body[data-page="bookkeeping"] .page-title {
 
 /* Mobile adjustments for settings sections */
 @media (max-width: 768px) {
-  .settings-section-summary {
-    padding: 16px 20px;
-    font-size: 1rem;
+  /* Make Settings page cards wider on mobile */
+  body[data-page="settings"] .page-wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    box-sizing: border-box !important;
   }
   
-  .settings-section-content .card {
+  /* Ensure settings sections use full available width */
+  body[data-page="settings"] .settings-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Make settings section summary wider */
+  body[data-page="settings"] .settings-section-summary {
+    padding: 16px 20px;
+    font-size: 1rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Make settings section content cards wider */
+  body[data-page="settings"] .settings-section-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  body[data-page="settings"] .settings-section-content .card {
     padding: 20px 16px;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure inner content doesn't overflow */
+  body[data-page="settings"] .settings-section-content .card * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Prevent horizontal overflow */
+  body[data-page="settings"] .settings-section-content .card input,
+  body[data-page="settings"] .settings-section-content .card select,
+  body[data-page="settings"] .settings-section-content .card textarea,
+  body[data-page="settings"] .settings-section-content .card button,
+  body[data-page="settings"] .settings-section-content .card .btn {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 
