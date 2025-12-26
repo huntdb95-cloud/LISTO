@@ -3559,6 +3559,29 @@ function initMobileBottomNav() {
   });
 }
 
+// Dynamically set bottom nav height CSS variable on mobile (if nav height changes)
+// This ensures padding-bottom always matches the actual nav height
+function updateBottomNavHeight() {
+  if (window.innerWidth <= 1023) { // Only on mobile/tablet
+    const bottomNav = document.querySelector('.mobile-bottom-nav');
+    if (bottomNav) {
+      const navHeight = bottomNav.offsetHeight;
+      if (navHeight > 0) {
+        document.documentElement.style.setProperty('--bottom-nav-height', `${navHeight}px`);
+      }
+    }
+  }
+}
+
+// Update on load and resize (in case nav height changes)
+if (typeof window !== 'undefined') {
+  updateBottomNavHeight();
+  window.addEventListener('resize', updateBottomNavHeight);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(updateBottomNavHeight, 100); // Small delay for layout recalculation
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();
   initYear();
