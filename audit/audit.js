@@ -991,6 +991,16 @@ function init() {
     }
   }
   
+  if ($("uploadSection")) {
+    const header = $("uploadSection").querySelector(".audit-section-header");
+    if (header) {
+      header.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return; // Don't toggle if clicking Upload button
+        toggleSection("uploadSection");
+      });
+    }
+  }
+  
   // Subcontractors change handler
   if ($("qSubcontractors")) {
     $("qSubcontractors").addEventListener("change", handleSubcontractorsChange);

@@ -45,6 +45,94 @@
     .audit-section.collapsed .audit-section-content { display: none; }
     .audit-section.collapsed .audit-section-header { margin-bottom: 0; }
     
+    /* Mobile fixes for horizontal overflow */
+    @media (max-width: 768px) {
+      /* Prevent horizontal scrolling on audit page */
+      body[data-page="audit"] {
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100%;
+      }
+      
+      body[data-page="audit"] .app-layout,
+      body[data-page="audit"] main,
+      body[data-page="audit"] .page-wrap {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+      
+      body[data-page="audit"] .page-wrap {
+        padding: 16px;
+      }
+      
+      /* Ensure all containers respect viewport width */
+      body[data-page="audit"] .card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 16px;
+      }
+      
+      /* Grid should be single column on mobile */
+      body[data-page="audit"] .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* Ensure all form elements don't overflow */
+      body[data-page="audit"] input,
+      body[data-page="audit"] select,
+      body[data-page="audit"] textarea,
+      body[data-page="audit"] button {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* Fix flex rows to prevent overflow */
+      body[data-page="audit"] .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
+      body[data-page="audit"] .btn-row > * {
+        min-width: 0;
+        flex: 1 1 auto;
+        max-width: 100%;
+      }
+      
+      /* Ensure table doesn't overflow */
+      body[data-page="audit"] table {
+        width: 100%;
+        max-width: 100%;
+        table-layout: auto;
+        box-sizing: border-box;
+      }
+      
+      body[data-page="audit"] th,
+      body[data-page="audit"] td {
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      /* Fix section headers to prevent overflow */
+      body[data-page="audit"] .audit-section-header {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        flex-wrap: wrap;
+      }
+    }
+    
     /* States checkbox grid */
     .states-checkbox-grid {
       display: grid;
@@ -339,10 +427,18 @@
         </div>
       </div>
 
-      <!-- Document Uploads -->
-      <div class="card" style="margin-top: 20px;">
-      <h2 style="margin-top:0;" data-i18n="audit.uploadTitle">4) Upload supporting documents</h2>
-      <p class="muted" data-i18n="audit.uploadDesc">Upload documents like Schedule C, bank statements, payroll summaries, or other supporting documents.</p>
+      <!-- Document Uploads (Collapsible) -->
+      <div class="card audit-section" style="margin-top: 20px;" id="uploadSection">
+        <div class="audit-section-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 16px;">
+          <div>
+            <h2 style="margin:0;" data-i18n="audit.uploadTitle">4) Upload supporting documents</h2>
+            <div id="uploadSummary" class="small muted" style="display: none; margin-top: 4px;"></div>
+          </div>
+          <span class="audit-section-toggle" id="uploadToggle">▼</span>
+        </div>
+        
+        <div class="audit-section-content" id="uploadContent">
+      <p class="muted" data-i18n="audit.uploadDesc" style="margin-bottom: 16px;">Upload documents like Schedule C, bank statements, payroll summaries, or other supporting documents.</p>
 
       <div class="grid">
         <div class="col-6">
@@ -378,6 +474,7 @@
         <h3 style="margin: 10px 0 6px;" data-i18n="audit.uploadedTitle">Uploaded Documents</h3>
         <div id="uploadedList" class="small"></div>
       </div>
+        </div>
       </div>
 
       <!-- Final: Download + Email -->
