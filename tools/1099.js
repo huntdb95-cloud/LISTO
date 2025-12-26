@@ -179,6 +179,12 @@ function renderLaborersList() {
   const container = $("laborersList");
   if (!container) return;
   
+  // Show loading state if laborers are being loaded
+  if (laborers.length === 0 && currentUid) {
+    container.innerHTML = '<div class="muted" style="padding: 20px; text-align: center;">Loading laborers...</div>';
+    return;
+  }
+  
   const searchTerm = ($("laborerSearch")?.value || "").toLowerCase();
   const filtered = laborers.filter(l => {
     if (!searchTerm) return true;
@@ -187,7 +193,8 @@ function renderLaborersList() {
   });
   
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="muted" style="padding: 20px; text-align: center;">No laborers found.</div>';
+    const yearText = selectedTaxYear ? ` for ${selectedTaxYear}` : "";
+    container.innerHTML = `<div class="muted" style="padding: 20px; text-align: center;">No laborers found${yearText}.</div>`;
     return;
   }
   
@@ -849,24 +856,40 @@ async function create1099PDF(laborer, payer, taxYear, box1Amount) {
 /* -----------------------------
    Event Handlers
 ------------------------------ */
+
+// Handle year selection (called both on init and on change)
+function handleYearSelection(year) {
+  selectedTaxYear = year;
+  if (selectedTaxYear) {
+    $("laborerSelectionCard").style.display = "block";
+    loadGeneratedForms();
+    // Re-render laborers list to show updated empty state if needed
+    renderLaborersList();
+    if (selectedLaborerId) {
+      const laborer = laborers.find(l => l.id === selectedLaborerId);
+      if (laborer) renderPaymentSummary(selectedLaborerId);
+    }
+  } else {
+    $("laborerSelectionCard").style.display = "none";
+    $("laborerDetailsCard").style.display = "none";
+  }
+}
+
 function init() {
   // Tax year selector
   const taxYearSelect = $("taxYear");
   if (taxYearSelect) {
     populateTaxYearSelect();
+    
+    // Set initial year from dropdown (current year is selected by default)
+    const initialYear = taxYearSelect.value;
+    if (initialYear) {
+      // Set selectedTaxYear immediately, but defer UI updates until auth is ready
+      selectedTaxYear = initialYear;
+    }
+    
     taxYearSelect.addEventListener("change", (e) => {
-      selectedTaxYear = e.target.value;
-      if (selectedTaxYear) {
-        $("laborerSelectionCard").style.display = "block";
-        loadGeneratedForms();
-        if (selectedLaborerId) {
-          const laborer = laborers.find(l => l.id === selectedLaborerId);
-          if (laborer) renderPaymentSummary(selectedLaborerId);
-        }
-      } else {
-        $("laborerSelectionCard").style.display = "none";
-        $("laborerDetailsCard").style.display = "none";
-      }
+      handleYearSelection(e.target.value);
     });
   }
   
@@ -956,6 +979,14 @@ function init() {
         loadPayments(),
         loadPayerInfo()
       ]);
+      
+      // After data is loaded, initialize year selection UI
+      // This ensures laborers are loaded before showing the selection card
+      const taxYearSelect = $("taxYear");
+      if (taxYearSelect && taxYearSelect.value) {
+        // Use the value that was set during populateTaxYearSelect
+        handleYearSelection(taxYearSelect.value);
+      }
     } else {
       currentUid = null;
       window.location.href = "../login/login.html";

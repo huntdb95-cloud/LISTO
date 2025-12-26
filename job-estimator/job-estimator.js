@@ -25,6 +25,7 @@ let jobs = [];
 let currentEstimateId = null;
 let currentBuilderId = null;
 let currentJobId = null;
+let isQuickEstimateMode = false;
 
 // Initialize
 onAuthStateChanged(auth, async (user) => {
@@ -32,6 +33,8 @@ onAuthStateChanged(auth, async (user) => {
     currentUid = user.uid;
     await loadBuilders();
     setupEventListeners();
+    // Initialize save button state
+    updateSaveButtonForMode();
   } else {
     window.location.href = "../login/login.html";
   }
@@ -41,16 +44,21 @@ onAuthStateChanged(auth, async (user) => {
 async function loadBuilders() {
   if (!currentUid) return;
   
+  const builderSelect = $("builderSelect");
+  if (!builderSelect) return;
+  
+  // Show loading state
+  builderSelect.innerHTML = '<option value="">Loading builders...</option>';
+  builderSelect.disabled = true;
+  
   try {
     const buildersCol = collection(db, "users", currentUid, "builders");
     const buildersSnap = await getDocs(query(buildersCol, orderBy("name")));
     
     builders = buildersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     
-    const builderSelect = $("builderSelect");
-    if (!builderSelect) return;
-    
     builderSelect.innerHTML = '<option value="">-- Select Builder --</option>';
+    builderSelect.disabled = false;
     
     if (builders.length === 0) {
       const emptyState = $("emptyState");
@@ -63,6 +71,19 @@ async function loadBuilders() {
           </p>
         `;
       }
+      
+      // Add disabled option to show message
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "-- No builders found --";
+      option.disabled = true;
+      builderSelect.appendChild(option);
+      
+      const helpOption = document.createElement("option");
+      helpOption.value = "";
+      helpOption.textContent = "Add builders on Contracts & Jobs page";
+      helpOption.disabled = true;
+      builderSelect.appendChild(helpOption);
       return;
     }
     
@@ -77,6 +98,8 @@ async function loadBuilders() {
     });
   } catch (err) {
     console.error("Error loading builders:", err);
+    builderSelect.innerHTML = '<option value="">Error loading builders</option>';
+    builderSelect.disabled = false;
     showMessage("Error loading builders. Please refresh.", true);
   }
 }
@@ -85,10 +108,21 @@ async function loadBuilders() {
 async function loadJobs(builderId) {
   if (!currentUid || !builderId) return;
   
+  const jobSelect = $("jobSelect");
+  if (!jobSelect) return;
+  
+  // Show loading state
+  jobSelect.innerHTML = '<option value="">Loading jobs...</option>';
+  jobSelect.disabled = true;
+  
   try {
     jobs = [];
     const builder = builders.find(b => b.id === builderId);
-    if (!builder) return;
+    if (!builder) {
+      jobSelect.innerHTML = '<option value="">-- Select Builder First --</option>';
+      jobSelect.disabled = true;
+      return;
+    }
     
     // Load jobs directly under builder (new structure)
     const jobsCol = collection(db, "users", currentUid, "builders", builderId, "jobs");
@@ -102,9 +136,7 @@ async function loadJobs(builderId) {
       });
     });
     
-    const jobSelect = $("jobSelect");
     const emptyState = $("emptyState");
-    if (!jobSelect) return;
     
     jobSelect.innerHTML = '<option value="">-- Select Job --</option>';
     jobSelect.disabled = false;
@@ -121,7 +153,7 @@ async function loadJobs(builderId) {
       }
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = "No jobs found";
+      option.textContent = "-- No jobs found for this builder --";
       option.disabled = true;
       jobSelect.appendChild(option);
       return;
@@ -137,6 +169,8 @@ async function loadJobs(builderId) {
     });
   } catch (err) {
     console.error("Error loading jobs:", err);
+    jobSelect.innerHTML = '<option value="">Error loading jobs</option>';
+    jobSelect.disabled = false;
     showMessage("Error loading jobs. Please refresh.", true);
   }
 }
@@ -152,6 +186,11 @@ function setupEventListeners() {
   
   if (builderSelect) {
     builderSelect.addEventListener("change", async (e) => {
+      // If switching from quick estimate to linked, exit quick mode
+      if (isQuickEstimateMode) {
+        exitQuickEstimateMode();
+      }
+      
       const builderId = e.target.value;
       currentBuilderId = builderId;
       currentJobId = null;
@@ -176,6 +215,11 @@ function setupEventListeners() {
   
   if (jobSelect) {
     jobSelect.addEventListener("change", async (e) => {
+      // If switching from quick estimate to linked, exit quick mode
+      if (isQuickEstimateMode) {
+        exitQuickEstimateMode();
+      }
+      
       const jobId = e.target.value;
       currentJobId = jobId;
       currentEstimateId = null;
@@ -204,6 +248,22 @@ function setupEventListeners() {
         $("goToJobContainer").style.display = "none";
         $("goToJobBtnFromActions").style.display = "none";
       }
+    });
+  }
+  
+  // Quick Estimate mode handlers
+  const startQuickEstimateBtn = $("startQuickEstimateBtn");
+  const exitQuickEstimateBtn = $("exitQuickEstimateBtn");
+  
+  if (startQuickEstimateBtn) {
+    startQuickEstimateBtn.addEventListener("click", () => {
+      enterQuickEstimateMode();
+    });
+  }
+  
+  if (exitQuickEstimateBtn) {
+    exitQuickEstimateBtn.addEventListener("click", () => {
+      exitQuickEstimateMode();
     });
   }
   
@@ -443,6 +503,11 @@ function formatCurrency(amount) {
 
 // Get estimate data
 function getEstimateData() {
+  // In Quick Estimate mode, return null (cannot save)
+  if (isQuickEstimateMode) {
+    return null;
+  }
+  
   const job = jobs.find(j => j.id === currentJobId);
   if (!job) return null;
   
@@ -506,8 +571,125 @@ function getCategoryData(category) {
   return items;
 }
 
+// Enter Quick Estimate mode
+function enterQuickEstimateMode() {
+  isQuickEstimateMode = true;
+  currentBuilderId = null;
+  currentJobId = null;
+  currentEstimateId = null;
+  
+  // Clear builder/job selections
+  const builderSelect = $("builderSelect");
+  const jobSelect = $("jobSelect");
+  if (builderSelect) builderSelect.value = "";
+  if (jobSelect) {
+    jobSelect.value = "";
+    jobSelect.disabled = true;
+    jobSelect.innerHTML = '<option value="">-- Select Builder First --</option>';
+  }
+  
+  // Disable builder/job selects
+  if (builderSelect) builderSelect.disabled = true;
+  
+  // Show quick estimate active state
+  const quickEstimateActive = $("quickEstimateActive");
+  const startQuickEstimateBtn = $("startQuickEstimateBtn");
+  if (quickEstimateActive) quickEstimateActive.style.display = "block";
+  if (startQuickEstimateBtn) startQuickEstimateBtn.style.display = "none";
+  
+  // Show estimate card
+  $("estimateCard").style.display = "block";
+  
+  // Set default estimate name
+  const today = new Date();
+  const dateStr = today.toLocaleDateString();
+  $("estimateName").value = `Quick Estimate – ${dateStr}`;
+  
+  // Hide job-related UI
+  $("goToJobContainer").style.display = "none";
+  $("goToJobBtnFromActions").style.display = "none";
+  $("estimatesListCard").style.display = "none";
+  
+  // Update save button
+  updateSaveButtonForMode();
+  
+  // Clear estimate form
+  newEstimate();
+  
+  showMessage("Quick Estimate mode activated. You can calculate estimates without linking to a job.", false);
+}
+
+// Exit Quick Estimate mode
+function exitQuickEstimateMode() {
+  isQuickEstimateMode = false;
+  
+  // Re-enable builder/job selects
+  const builderSelect = $("builderSelect");
+  const jobSelect = $("jobSelect");
+  if (builderSelect) builderSelect.disabled = false;
+  if (jobSelect) {
+    jobSelect.disabled = true;
+    jobSelect.innerHTML = '<option value="">-- Select Builder First --</option>';
+  }
+  
+  // Hide quick estimate active state
+  const quickEstimateActive = $("quickEstimateActive");
+  const startQuickEstimateBtn = $("startQuickEstimateBtn");
+  if (quickEstimateActive) quickEstimateActive.style.display = "none";
+  if (startQuickEstimateBtn) startQuickEstimateBtn.style.display = "block";
+  
+  // Hide estimate card until builder/job selected
+  $("estimateCard").style.display = "none";
+  $("estimatesListCard").style.display = "none";
+  $("goToJobContainer").style.display = "none";
+  $("goToJobBtnFromActions").style.display = "none";
+  
+  // Update save button
+  updateSaveButtonForMode();
+  
+  showMessage("Exited Quick Estimate mode. Select a builder and job to create a linked estimate.", false);
+}
+
+// Update save button based on mode
+function updateSaveButtonForMode() {
+  const saveBtn = $("saveBtn");
+  const saveAsCopyBtn = $("saveAsCopyBtn");
+  
+  if (isQuickEstimateMode) {
+    // In quick estimate mode, disable save buttons
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Save Estimate (Linked Mode Only)";
+      saveBtn.title = "Quick estimates cannot be saved. Select a builder and job to save.";
+    }
+    if (saveAsCopyBtn) {
+      saveAsCopyBtn.disabled = true;
+      saveAsCopyBtn.textContent = "Save as Copy (Linked Mode Only)";
+      saveAsCopyBtn.title = "Quick estimates cannot be saved. Select a builder and job to save.";
+    }
+  } else {
+    // In linked mode, enable save buttons
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save Estimate";
+      saveBtn.title = "";
+    }
+    if (saveAsCopyBtn) {
+      saveAsCopyBtn.disabled = false;
+      saveAsCopyBtn.textContent = "Save as Copy";
+      saveAsCopyBtn.title = "";
+    }
+  }
+}
+
 // Save estimate
 async function saveEstimate(isCopy = false) {
+  // Check if in Quick Estimate mode
+  if (isQuickEstimateMode) {
+    showMessage("Cannot save in Quick Estimate mode. Please select a builder and job, or exit Quick Estimate mode.", true);
+    return;
+  }
+  
   // Check auth state
   if (!currentUid) {
     const user = auth.currentUser;
@@ -944,11 +1126,17 @@ window.deleteEstimate = async function(estimateId, estimateName) {
 function newEstimate() {
   currentEstimateId = null;
   
-  const job = jobs.find(j => j.id === currentJobId);
-  if (job) {
+  if (isQuickEstimateMode) {
     const today = new Date();
     const dateStr = today.toLocaleDateString();
-    $("estimateName").value = `Estimate – ${job.jobName} – ${dateStr}`;
+    $("estimateName").value = `Quick Estimate – ${dateStr}`;
+  } else {
+    const job = jobs.find(j => j.id === currentJobId);
+    if (job) {
+      const today = new Date();
+      const dateStr = today.toLocaleDateString();
+      $("estimateName").value = `Estimate – ${job.jobName} – ${dateStr}`;
+    }
   }
   
   $("estimateNotes").value = "";
