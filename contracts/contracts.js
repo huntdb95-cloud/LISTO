@@ -261,11 +261,16 @@ async function loadAllData() {
       try {
         const jobsCol = collection(db, "users", currentUid, "builders", builder.id, "jobs");
         const jobsSnap = await getDocs(jobsCol);
-        const builderJobs = jobsSnap.docs.map(d => ({
-          id: d.id,
-          builderId: builder.id,
-          ...d.data()
-        }));
+        const builderJobs = jobsSnap.docs.map(d => {
+          const jobData = d.data();
+          return {
+            id: d.id,
+            builderId: builder.id,
+            ...jobData,
+            // Normalize payment status for existing jobs
+            paymentStatus: normalizePaymentStatus(jobData)
+          };
+        });
         allJobs.push(...builderJobs);
         builderJobCounts[builder.id] = builderJobs.length;
       } catch (err) {
@@ -279,15 +284,22 @@ async function loadAllData() {
       ? allJobs.filter(j => j.builderId === selectedBuilderId)
       : [];
     
-    // Sort filtered jobs by due date
+    // Normalize payment status for all jobs
+    jobs = jobs.map(job => ({
+      ...job,
+      paymentStatus: normalizePaymentStatus(job)
+    }));
+    
+    // Sort filtered jobs by payment status (past due first), then by name
     if (selectedBuilderId) {
       jobs.sort((a, b) => {
-        const aDate = a.dueDate?.toDate ? a.dueDate.toDate() : (a.dueDate ? new Date(a.dueDate) : null);
-        const bDate = b.dueDate?.toDate ? b.dueDate.toDate() : (b.dueDate ? new Date(b.dueDate) : null);
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        return aDate - bDate;
+        const aStatus = normalizePaymentStatus(a);
+        const bStatus = normalizePaymentStatus(b);
+        if (aStatus === "past_due" && bStatus !== "past_due") return -1;
+        if (aStatus !== "past_due" && bStatus === "past_due") return 1;
+        const aName = (a.jobName || "").toLowerCase();
+        const bName = (b.jobName || "").toLowerCase();
+        return aName.localeCompare(bName);
       });
     }
     
@@ -307,17 +319,8 @@ function updateSummaryCards() {
   // Calculate global open jobs total from ALL jobs (not filtered by selected builder)
   const openJobs = allJobs.filter(j => !["completed", "paid"].includes(j.status)).length;
   
-  // Calculate global overdue jobs total from ALL jobs
-  const overdueJobs = allJobs.filter(j => {
-    if (["completed", "paid"].includes(j.status)) return false;
-    if (!j.dueDate) return false;
-    const dueDate = j.dueDate?.toDate ? j.dueDate.toDate() : new Date(j.dueDate);
-    const today = new Date();
-    // Normalize both dates to midnight for accurate date-only comparison
-    const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return dueDateOnly < todayOnly;
-  }).length;
+  // Calculate global overdue payment total from ALL jobs
+  const overduePayments = countPastDuePayments(allJobs);
   
   const totalBuilders = builders.length;
   
@@ -326,7 +329,7 @@ function updateSummaryCards() {
   const buildersEl = $("statTotalBuilders");
   
   if (openEl) openEl.textContent = openJobs;
-  if (overdueEl) overdueEl.textContent = overdueJobs;
+  if (overdueEl) overdueEl.textContent = overduePayments;
   if (buildersEl) buildersEl.textContent = totalBuilders;
 }
 
@@ -429,19 +432,11 @@ function renderJobsTable() {
   
   tbody.innerHTML = jobs.map(job => {
     const startDate = formatDate(job.startDate);
-    const dueDateFormatted = formatDate(job.dueDate);
-    // Check if job is overdue (normalize dates to compare date-only, not time)
-    let isOverdue = false;
-    if (job.dueDate && !["completed", "paid"].includes(job.status)) {
-      const dueDateObj = job.dueDate.toDate ? job.dueDate.toDate() : new Date(job.dueDate);
-      const today = new Date();
-      const dueDateOnly = new Date(dueDateObj.getFullYear(), dueDateObj.getMonth(), dueDateObj.getDate());
-      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      isOverdue = dueDateOnly < todayOnly;
-    }
+    const paymentStatus = normalizePaymentStatus(job);
+    const isPastDue = paymentStatus === "past_due";
     
     return `
-      <tr class="${isOverdue ? "contracts-job-overdue" : ""}">
+      <tr class="${isPastDue ? "contracts-job-overdue" : ""}">
         <td><strong>${escapeHtml(job.jobName || "—")}</strong></td>
         <td>${escapeHtml(job.jobAddress || "—")}</td>
         <td>
@@ -450,7 +445,12 @@ function renderJobsTable() {
           </span>
         </td>
         <td>${startDate}</td>
-        <td class="${isOverdue ? "contracts-overdue-text" : ""}">${dueDateFormatted}</td>
+        <td>
+          <span class="payment-status-badge payment-status-badge-${paymentStatusToClass(paymentStatus)}">
+            <span class="payment-status-indicator payment-status-indicator-${paymentStatus === "past_due" ? "red" : "green"}"></span>
+            ${paymentStatus === "past_due" ? "Past due" : "Up to date"}
+          </span>
+        </td>
         <td>
           <div class="contracts-progress-bar">
             <div class="contracts-progress-fill" style="width: ${job.progressPct || 0}%"></div>
@@ -460,8 +460,8 @@ function renderJobsTable() {
         <td>${formatCurrency(job.budget || 0)}</td>
         <td>
           <div class="contracts-actions">
-            <button type="button" class="btn small" onclick="showJobModal('${selectedContractId}', '${job.id}')">Edit</button>
-            <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${selectedContractId}', '${job.id}')">Delete</button>
+            <button type="button" class="btn small" onclick="showJobModal('${job.id}')">Edit</button>
+            <button type="button" class="btn small ghost" onclick="deleteJobConfirm('${job.id}')">Delete</button>
           </div>
         </td>
       </tr>
@@ -526,19 +526,11 @@ function renderJobsSection() {
   // Render desktop table
   tbody.innerHTML = builderJobs.map(job => {
     const startDate = formatDate(job.startDate);
-    const dueDateFormatted = formatDate(job.dueDate);
-    // Check if job is overdue (normalize dates to compare date-only, not time)
-    let isOverdue = false;
-    if (job.dueDate && !["completed", "paid"].includes(job.status)) {
-      const dueDateObj = job.dueDate.toDate ? job.dueDate.toDate() : new Date(job.dueDate);
-      const today = new Date();
-      const dueDateOnly = new Date(dueDateObj.getFullYear(), dueDateObj.getMonth(), dueDateObj.getDate());
-      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      isOverdue = dueDateOnly < todayOnly;
-    }
+    const paymentStatus = normalizePaymentStatus(job);
+    const isPastDue = paymentStatus === "past_due";
     
     return `
-      <tr class="${isOverdue ? "contracts-job-overdue" : ""}">
+      <tr class="${isPastDue ? "contracts-job-overdue" : ""}">
         <td><strong>${escapeHtml(job.jobName || "—")}</strong></td>
         <td>${escapeHtml(job.jobAddress || "—")}</td>
         <td>
@@ -547,7 +539,12 @@ function renderJobsSection() {
           </span>
         </td>
         <td>${startDate}</td>
-        <td class="${isOverdue ? "contracts-overdue-text" : ""}">${dueDateFormatted}</td>
+        <td>
+          <span class="payment-status-badge payment-status-badge-${paymentStatusToClass(paymentStatus)}">
+            <span class="payment-status-indicator payment-status-indicator-${paymentStatus === "past_due" ? "red" : "green"}"></span>
+            ${paymentStatus === "past_due" ? "Past due" : "Up to date"}
+          </span>
+        </td>
         <td>
           <div class="contracts-progress-bar">
             <div class="contracts-progress-fill" style="width: ${job.progressPct || 0}%"></div>
@@ -575,19 +572,11 @@ function renderJobsSection() {
   
   mobileContainer.innerHTML = builderJobs.map(job => {
     const startDate = formatDate(job.startDate);
-    const dueDateFormatted = formatDate(job.dueDate);
-    // Check if job is overdue
-    let isOverdue = false;
-    if (job.dueDate && !["completed", "paid"].includes(job.status)) {
-      const dueDateObj = job.dueDate.toDate ? job.dueDate.toDate() : new Date(job.dueDate);
-      const today = new Date();
-      const dueDateOnly = new Date(dueDateObj.getFullYear(), dueDateObj.getMonth(), dueDateObj.getDate());
-      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      isOverdue = dueDateOnly < todayOnly;
-    }
+    const paymentStatus = normalizePaymentStatus(job);
+    const isPastDue = paymentStatus === "past_due";
     
     return `
-      <div class="contracts-job-card ${isOverdue ? "overdue" : ""}">
+      <div class="contracts-job-card ${isPastDue ? "overdue" : ""}">
         <div class="contracts-job-card-header">
           <h3 class="contracts-job-card-title">${escapeHtml(job.jobName || "—")}</h3>
           <div class="contracts-job-card-status">
@@ -605,8 +594,13 @@ function renderJobsSection() {
           <span class="contracts-job-card-value">${startDate}</span>
         </div>
         <div class="contracts-job-card-field">
-          <span class="contracts-job-card-label">Due Date:</span>
-          <span class="contracts-job-card-value ${isOverdue ? "contracts-overdue-text" : ""}">${dueDateFormatted}</span>
+          <span class="contracts-job-card-label">Payment Status:</span>
+          <span class="contracts-job-card-value">
+            <span class="payment-status-badge payment-status-badge-${paymentStatusToClass(paymentStatus)}">
+              <span class="payment-status-indicator payment-status-indicator-${paymentStatus === "past_due" ? "red" : "green"}"></span>
+              ${paymentStatus === "past_due" ? "Past due" : "Up to date"}
+            </span>
+          </span>
         </div>
         <div class="contracts-job-card-field">
           <span class="contracts-job-card-label">Progress:</span>
@@ -641,13 +635,17 @@ async function selectBuilder(builderId) {
   selectedBuilderId = builderId;
   // Filter jobs from allJobs for selected builder (no need to reload from DB)
   jobs = builderId 
-    ? allJobs.filter(j => j.builderId === builderId).sort((a, b) => {
-        const aDate = a.dueDate?.toDate ? a.dueDate.toDate() : (a.dueDate ? new Date(a.dueDate) : null);
-        const bDate = b.dueDate?.toDate ? b.dueDate.toDate() : (b.dueDate ? new Date(b.dueDate) : null);
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        return aDate - bDate;
+    ? allJobs.filter(j => j.builderId === builderId).map(job => ({
+        ...job,
+        paymentStatus: normalizePaymentStatus(job)
+      })).sort((a, b) => {
+        const aStatus = normalizePaymentStatus(a);
+        const bStatus = normalizePaymentStatus(b);
+        if (aStatus === "past_due" && bStatus !== "past_due") return -1;
+        if (aStatus !== "past_due" && bStatus === "past_due") return 1;
+        const aName = (a.jobName || "").toLowerCase();
+        const bName = (b.jobName || "").toLowerCase();
+        return aName.localeCompare(bName);
       })
     : [];
   
@@ -815,7 +813,7 @@ async function saveJob(e) {
     const jobAddress = $("jobAddress")?.value.trim() || null;
     const status = $("jobStatus")?.value || "not-started";
     const startDate = $("jobStartDate")?.value || null;
-    const dueDate = $("jobDueDate")?.value || null;
+    const paymentStatus = $("jobPaymentStatus")?.value || "up_to_date";
     const budget = parseFloat($("jobBudget")?.value || 0) || 0;
     const progressPct = parseInt($("jobProgressPct")?.value || 0) || 0;
     const priority = $("jobPriority")?.value || "normal";
@@ -831,12 +829,15 @@ async function saveJob(e) {
       return;
     }
     
+    // Validate payment status
+    const validPaymentStatus = paymentStatus === "past_due" ? "past_due" : "up_to_date";
+    
     const jobData = {
       jobName,
       jobAddress,
       status,
       startDate: startDate ? new Date(startDate) : null,
-      dueDate: dueDate ? new Date(dueDate) : null,
+      paymentStatus: validPaymentStatus,
       budget,
       actualCost: 0,
       changeOrdersTotal: 0,
@@ -986,18 +987,26 @@ function showJobModal(jobId = null) {
   if (builderInput) builderInput.value = selectedBuilderId;
   
   if (jobId) {
-    const job = jobs.find(j => j.id === jobId);
+    const job = jobs.find(j => j.id === jobId) || allJobs.find(j => j.id === jobId);
     if (job) {
       if ($("jobName")) $("jobName").value = job.jobName || "";
       if ($("jobAddress")) $("jobAddress").value = job.jobAddress || "";
       if ($("jobStatus")) $("jobStatus").value = job.status || "not-started";
       if ($("jobStartDate")) $("jobStartDate").value = formatDateInput(job.startDate);
-      if ($("jobDueDate")) $("jobDueDate").value = formatDateInput(job.dueDate);
+      const paymentStatus = normalizePaymentStatus(job);
+      if (window.updatePaymentStatusToggle) {
+        window.updatePaymentStatusToggle(paymentStatus);
+      }
       if ($("jobBudget")) $("jobBudget").value = job.budget || "";
       if ($("jobProgressPct")) $("jobProgressPct").value = job.progressPct || "";
       if ($("jobPriority")) $("jobPriority").value = job.priority || "normal";
       if ($("jobNotes")) $("jobNotes").value = job.notes || "";
       if (builderInput) builderInput.value = job.builderId || selectedBuilderId;
+    }
+  } else {
+    // New job - set default payment status
+    if (window.updatePaymentStatusToggle) {
+      window.updatePaymentStatusToggle("up_to_date");
     }
   }
   
@@ -1031,6 +1040,26 @@ function switchTab(tabName) {
 }
 
 // ========== HELPER FUNCTIONS ==========
+
+// Normalize payment status - default to "up_to_date" if missing
+function normalizePaymentStatus(job) {
+  if (!job) return "up_to_date";
+  const status = job.paymentStatus;
+  if (status === "up_to_date" || status === "past_due") {
+    return status;
+  }
+  return "up_to_date";
+}
+
+// Count jobs with past due payment status
+function countPastDuePayments(jobs) {
+  return jobs.filter(j => normalizePaymentStatus(j) === "past_due").length;
+}
+
+// Convert payment status to CSS class name (underscores to hyphens)
+function paymentStatusToClass(status) {
+  return status.replace(/_/g, "-");
+}
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat("en-US", {
@@ -1196,6 +1225,39 @@ function init() {
   
   if (builderForm) builderForm.addEventListener("submit", saveBuilder);
   if (jobForm) jobForm.addEventListener("submit", saveJob);
+  
+  // Payment status toggle buttons
+  const paymentStatusUpToDate = $("paymentStatusUpToDate");
+  const paymentStatusPastDue = $("paymentStatusPastDue");
+  const paymentStatusHidden = $("jobPaymentStatus");
+  
+  // Make updatePaymentStatusToggle available globally for use in showJobModal
+  window.updatePaymentStatusToggle = function(status) {
+    if (paymentStatusHidden) paymentStatusHidden.value = status;
+    if (paymentStatusUpToDate && paymentStatusPastDue) {
+      if (status === "past_due") {
+        paymentStatusUpToDate.classList.remove("active");
+        paymentStatusPastDue.classList.add("active");
+      } else {
+        paymentStatusUpToDate.classList.add("active");
+        paymentStatusPastDue.classList.remove("active");
+      }
+    }
+  };
+  
+  if (paymentStatusUpToDate) {
+    paymentStatusUpToDate.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.updatePaymentStatusToggle("up_to_date");
+    });
+  }
+  
+  if (paymentStatusPastDue) {
+    paymentStatusPastDue.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.updatePaymentStatusToggle("past_due");
+    });
+  }
   
   // Search and filters
   const searchInput = $("contractsSearch");

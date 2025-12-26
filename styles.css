@@ -4445,6 +4445,87 @@ input:focus, select:focus, textarea:focus{
   color: #059669;
 }
 
+/* Payment Status Toggle */
+.payment-status-toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.payment-status-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-status-btn:hover {
+  border-color: var(--brand);
+  background: rgba(77, 167, 99, 0.05);
+}
+
+.payment-status-btn.active {
+  border-color: var(--brand);
+  background: rgba(77, 167, 99, 0.1);
+}
+
+.payment-status-btn[data-status="past_due"].active {
+  border-color: var(--danger);
+  background: rgba(228, 77, 77, 0.1);
+}
+
+.payment-status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.payment-status-indicator-green {
+  background: #10b981;
+}
+
+.payment-status-indicator-red {
+  background: #e44d4d;
+}
+
+/* Payment Status Badge */
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.payment-status-badge-up-to-date {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.payment-status-badge-past-due {
+  background: rgba(228, 77, 77, 0.15);
+  color: #c53030;
+}
+
+.payment-status-badge .payment-status-indicator {
+  width: 8px;
+  height: 8px;
+}
+
 /* Tabs */
 .contracts-detail-tabs {
   display: flex;
@@ -4599,6 +4680,20 @@ input:focus, select:focus, textarea:focus{
   padding: 12px;
   border-bottom: 1px solid var(--border);
   color: var(--text);
+}
+
+.contracts-jobs-table td:first-child {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contracts-jobs-table td:nth-child(2) {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .contracts-jobs-table tbody tr:hover {

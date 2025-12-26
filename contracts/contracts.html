@@ -55,7 +55,7 @@
 <div class="contracts-stat-card-value" id="statOpenJobs">0</div>
 </div>
 <div class="contracts-stat-card">
-<div class="contracts-stat-card-label">Overdue Jobs</div>
+<div class="contracts-stat-card-label">Overdue Payment</div>
 <div class="contracts-stat-card-value contracts-stat-card-value-warning" id="statOverdueJobs">0</div>
 </div>
 <div class="contracts-stat-card">
@@ -114,7 +114,7 @@
 <th>Address</th>
 <th>Status</th>
 <th>Start Date</th>
-<th>Due Date</th>
+<th>Payment Status</th>
 <th>Progress</th>
 <th>Budget</th>
 <th>Actions</th>
@@ -218,15 +218,23 @@
 </select>
 </div>
 </div>
-<div class="form-grid">
 <div class="form-group">
 <label for="jobStartDate">Start Date</label>
 <input type="date" id="jobStartDate" />
 </div>
 <div class="form-group">
-<label for="jobDueDate">Due Date</label>
-<input type="date" id="jobDueDate" />
+<label for="jobPaymentStatus">Payment Status *</label>
+<div class="payment-status-toggle">
+<button type="button" class="payment-status-btn" data-status="up_to_date" id="paymentStatusUpToDate">
+<span class="payment-status-indicator payment-status-indicator-green"></span>
+Up to date
+</button>
+<button type="button" class="payment-status-btn" data-status="past_due" id="paymentStatusPastDue">
+<span class="payment-status-indicator payment-status-indicator-red"></span>
+Past due
+</button>
 </div>
+<input type="hidden" id="jobPaymentStatus" value="up_to_date" />
 </div>
 <div class="form-grid">
 <div class="form-group">

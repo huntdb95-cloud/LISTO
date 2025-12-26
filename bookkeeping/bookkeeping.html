@@ -345,6 +345,124 @@
         text-overflow: ellipsis;
         max-width: 120px;
       }
+      
+      /*
+       * LABOR MANAGEMENT BUTTON - Full width on mobile (match New Builder button)
+       */
+      body[data-page="bookkeeping"] .page-title > div:last-child {
+        width: 100%;
+      }
+      
+      body[data-page="bookkeeping"] .page-title > div:last-child > a.btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      
+      /*
+       * PAYMENT FORM - Fix Date Paid input overflow
+       * Ensure grid-2 becomes single column on mobile and inputs don't overflow
+       */
+      body[data-page="bookkeeping"] #paymentFormContainer .grid-2 {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
+      body[data-page="bookkeeping"] #paymentFormContainer .grid-2 .form-group {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      
+      body[data-page="bookkeeping"] #paymentFormContainer .grid-2 input,
+      body[data-page="bookkeeping"] #paymentFormContainer .grid-2 select {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        min-width: 0;
+      }
+      
+      /* Ensure payment form container doesn't overflow */
+      body[data-page="bookkeeping"] #paymentFormContainer {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      
+      /*
+       * PAYMENT FORM - Collapsible on mobile
+       */
+      .bookkeeping-payment-form-header {
+        display: none; /* Hidden on desktop */
+      }
+      
+      body[data-page="bookkeeping"] .bookkeeping-payment-form-container {
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+        overflow: hidden;
+      }
+      
+      body[data-page="bookkeeping"] .bookkeeping-payment-form-container.collapsed {
+        max-height: 0;
+        opacity: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+      }
+      
+      body[data-page="bookkeeping"] .bookkeeping-payment-form-container:not(.collapsed) {
+        max-height: 1000px;
+        opacity: 1;
+      }
+    }
+    
+    /* Mobile-only: Show collapsible header */
+    @media (max-width: 768px) {
+      .bookkeeping-payment-form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 8px;
+        cursor: pointer;
+        user-select: none;
+      }
+      
+      .bookkeeping-payment-form-header:hover {
+        background: var(--panel);
+      }
+      
+      .bookkeeping-payment-form-header h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+      
+      .bookkeeping-payment-form-chevron {
+        width: 20px;
+        height: 20px;
+        transition: transform 0.3s ease;
+        color: var(--muted);
+      }
+      
+      .bookkeeping-payment-form-header[aria-expanded="false"] .bookkeeping-payment-form-chevron {
+        transform: rotate(-90deg);
+      }
+      
+      .bookkeeping-payment-form-header[aria-expanded="true"] .bookkeeping-payment-form-chevron {
+        transform: rotate(0deg);
+      }
     }
   </style>
 </head>
@@ -468,8 +586,16 @@
         <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
           <h3 class="h3">Payments</h3>
           
+          <!-- Add Payment Form Header (Mobile Only) -->
+          <button type="button" class="bookkeeping-payment-form-header" id="paymentFormToggle" aria-expanded="true" aria-controls="paymentFormContainer">
+            <h4>Add Payment</h4>
+            <svg class="bookkeeping-payment-form-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          
           <!-- Add Payment Form -->
-          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 24px; margin-bottom: 16px;">
+          <div id="paymentFormContainer" class="bookkeeping-payment-form-container" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 24px; margin-bottom: 16px;">
             <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
               <div class="form-group">
                 <label for="paymentDate" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Date Paid *</label>

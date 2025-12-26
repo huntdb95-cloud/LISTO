@@ -813,6 +813,61 @@ function init() {
     addPaymentBtn.addEventListener("click", addPayment);
   }
 
+  // Payment form collapse/expand toggle (mobile only)
+  const paymentFormToggle = $("paymentFormToggle");
+  const paymentFormContainer = $("paymentFormContainer");
+  if (paymentFormToggle && paymentFormContainer) {
+    // Check if we're on mobile (window width <= 768px)
+    function isMobile() {
+      return window.innerWidth <= 768;
+    }
+    
+    // Set initial state: collapsed on mobile, expanded on desktop
+    function updateFormState() {
+      if (isMobile()) {
+        // On mobile, check localStorage for user preference, default to collapsed
+        const userPreference = localStorage.getItem("bookkeeping_payment_form_collapsed");
+        const shouldCollapse = userPreference === null ? true : userPreference === "true";
+        
+        if (shouldCollapse) {
+          paymentFormContainer.classList.add("collapsed");
+          paymentFormToggle.setAttribute("aria-expanded", "false");
+        } else {
+          paymentFormContainer.classList.remove("collapsed");
+          paymentFormToggle.setAttribute("aria-expanded", "true");
+        }
+      } else {
+        // On desktop, always expanded
+        paymentFormContainer.classList.remove("collapsed");
+        paymentFormToggle.setAttribute("aria-expanded", "true");
+      }
+    }
+    
+    // Initial state
+    updateFormState();
+    
+    // Update on resize
+    let resizeTimeout;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateFormState, 100);
+    });
+    
+    // Toggle on click
+    paymentFormToggle.addEventListener("click", () => {
+      const isCollapsed = paymentFormContainer.classList.contains("collapsed");
+      if (isCollapsed) {
+        paymentFormContainer.classList.remove("collapsed");
+        paymentFormToggle.setAttribute("aria-expanded", "true");
+        localStorage.setItem("bookkeeping_payment_form_collapsed", "false");
+      } else {
+        paymentFormContainer.classList.add("collapsed");
+        paymentFormToggle.setAttribute("aria-expanded", "false");
+        localStorage.setItem("bookkeeping_payment_form_collapsed", "true");
+      }
+    });
+  }
+
   const dateRangeFromInput = $("dateRangeFrom");
   const dateRangeToInput = $("dateRangeTo");
   if (dateRangeFromInput) dateRangeFromInput.addEventListener("change", updateDateRange);
