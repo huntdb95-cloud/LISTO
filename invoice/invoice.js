@@ -94,7 +94,7 @@ function setSendResult(text, kind = "") {
 }
 
 function setBusy(isBusy) {
-  const ids = ["btnNew", "btnSave", "btnPdf", "btnSendEmail", "btnAddItem", "btnLoad", "btnDelete"];
+  const ids = ["btnSave", "btnPdf", "btnSendEmail", "btnAddItem", "btnLoad", "btnDelete"];
   ids.forEach((id) => {
     const b = el(id);
     if (b) b.disabled = !!isBusy;
@@ -488,30 +488,28 @@ function invoicesCol() {
   return collection(db, "users", state.uid, "invoices");
 }
 
-function contractsCol() {
+function buildersCol() {
   if (!state.uid) throw new Error("Not authenticated.");
-  return collection(db, "users", state.uid, "contracts");
+  return collection(db, "users", state.uid, "builders");
 }
 
-async function loadContracts() {
+async function loadBuilders() {
   if (!state.uid) return [];
   try {
-    const q = query(contractsCol(), orderBy("builderName"));
+    const q = query(buildersCol(), orderBy("name"));
     const snap = await getDocs(q);
-    // Filter for active contracts (isActive !== false)
-    return snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(c => c.isActive !== false);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (err) {
-    console.error("Error loading contracts:", err);
+    console.error("Error loading builders:", err);
     return [];
   }
 }
 
-async function loadJobs(contractId) {
-  if (!state.uid || !contractId) return [];
+async function loadJobs(builderId) {
+  if (!state.uid || !builderId) return [];
   try {
-    const jobsCol = collection(db, "users", state.uid, "contracts", contractId, "jobs");
+    // Jobs are stored directly under builders: users/{uid}/builders/{builderId}/jobs
+    const jobsCol = collection(db, "users", state.uid, "builders", builderId, "jobs");
     const q = query(jobsCol, orderBy("jobName"));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -526,70 +524,126 @@ async function refreshBuilderSelect() {
   const jobSelect = el("selectJob");
   if (!select) return;
   
-  const contracts = await loadContracts();
-  select.innerHTML = '<option value="">— Select a builder —</option>';
+  // Show loading state
+  select.innerHTML = '<option value="">Loading builders...</option>';
+  select.disabled = true;
   
-  // Only access jobSelect if it exists
-  if (jobSelect) {
-    jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
-    jobSelect.style.display = "none";
+  try {
+    const builders = await loadBuilders();
+    
+    select.innerHTML = '<option value="">— Select a builder —</option>';
+    select.disabled = false;
+    
+    // Only access jobSelect if it exists
+    if (jobSelect) {
+      jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+      jobSelect.style.display = "none";
+    }
+    
+    if (builders.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "— No builders found —";
+      opt.disabled = true;
+      select.appendChild(opt);
+      
+      const helpOpt = document.createElement("option");
+      helpOpt.value = "";
+      helpOpt.textContent = "Add builders on Contracts & Jobs page";
+      helpOpt.disabled = true;
+      select.appendChild(helpOpt);
+    } else {
+      builders.forEach(builder => {
+        const opt = document.createElement("option");
+        opt.value = builder.id;
+        opt.textContent = builder.name || "Unnamed Builder";
+        select.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("Error refreshing builder select:", err);
+    select.innerHTML = '<option value="">Error loading builders</option>';
+    select.disabled = false;
   }
-  
-  contracts.forEach(contract => {
-    const opt = document.createElement("option");
-    opt.value = contract.id;
-    opt.textContent = contract.builderName || "Unnamed Builder";
-    select.appendChild(opt);
-  });
 }
 
-async function refreshJobSelect(contractId) {
+async function refreshJobSelect(builderId) {
   const jobSelect = el("selectJob");
   if (!jobSelect) return;
   
-  if (!contractId) {
+  if (!builderId) {
     jobSelect.style.display = "none";
     jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
     return;
   }
   
-  const jobs = await loadJobs(contractId);
-  jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+  // Show loading state
   jobSelect.style.display = "block";
-  
-  jobs.forEach(job => {
-    const opt = document.createElement("option");
-    opt.value = job.id;
-    opt.textContent = job.jobName || "Unnamed Job";
-    opt.dataset.address = job.address || "";
-    opt.dataset.description = job.description || "";
-    jobSelect.appendChild(opt);
-  });
-}
-
-async function fillCustomerFromBuilder(contractId, jobId = null) {
-  if (!contractId) return;
+  jobSelect.innerHTML = '<option value="">Loading jobs...</option>';
+  jobSelect.disabled = true;
   
   try {
-    const contractRef = doc(db, "users", state.uid, "contracts", contractId);
-    const contractSnap = await getDoc(contractRef);
+    const jobs = await loadJobs(builderId);
+    jobSelect.innerHTML = '<option value="">— Select a job (optional) —</option>';
+    jobSelect.disabled = false;
     
-    if (!contractSnap.exists()) return;
+    if (jobs.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "— No jobs found —";
+      opt.disabled = true;
+      jobSelect.appendChild(opt);
+    } else {
+      jobs.forEach(job => {
+        const opt = document.createElement("option");
+        opt.value = job.id;
+        opt.textContent = job.jobName || "Unnamed Job";
+        opt.dataset.address = job.jobAddress || "";
+        opt.dataset.description = job.notes || "";
+        jobSelect.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("Error refreshing job select:", err);
+    jobSelect.innerHTML = '<option value="">Error loading jobs</option>';
+    jobSelect.disabled = false;
+  }
+}
+
+async function fillCustomerFromBuilder(builderId, jobId = null) {
+  if (!builderId) return;
+  
+  try {
+    const builderRef = doc(db, "users", state.uid, "builders", builderId);
+    const builderSnap = await getDoc(builderRef);
     
-    const contract = contractSnap.data();
+    if (!builderSnap.exists()) return;
+    
+    const builder = builderSnap.data();
     
     // Fill customer name with builder name
-    el("toName").value = contract.builderName || "";
+    el("toName").value = builder.name || "";
+    
+    // Fill customer email/phone/address if available
+    if (builder.email && el("toEmail") && !el("toEmail").value) {
+      el("toEmail").value = builder.email;
+    }
+    if (builder.phone && el("toPhone") && !el("toPhone").value) {
+      el("toPhone").value = builder.phone;
+    }
+    if (builder.address && el("toAddress") && !el("toAddress").value) {
+      el("toAddress").value = builder.address;
+    }
     
     // If job is selected, fill project name and address
     if (jobId) {
-      const jobRef = doc(db, "users", state.uid, "contracts", contractId, "jobs", jobId);
+      const jobRef = doc(db, "users", state.uid, "builders", builderId, "jobs", jobId);
       const jobSnap = await getDoc(jobRef);
       
       if (jobSnap.exists()) {
         const job = jobSnap.data();
-        el("projectName").value = job.jobName || "";
-        el("toAddress").value = job.address || "";
+        if (el("projectName")) el("projectName").value = job.jobName || "";
+        if (job.jobAddress && el("toAddress")) el("toAddress").value = job.jobAddress;
       }
     }
   } catch (err) {
@@ -642,6 +696,10 @@ async function saveInvoice() {
   setStatus("Saved", "ok");
   await refreshSavedInvoices();
   el("savedInvoicesSelect").value = ref.id;
+
+  // Auto-clear form after successful save (optional - user can still load saved invoice)
+  // Uncomment the next line if you want auto-clear after save:
+  // setTimeout(() => newInvoice(), 2000);
 
   return ref.id;
 }
@@ -744,7 +802,7 @@ function downloadPdf() {
     head: [["Description", "Qty", "Unit Price", "Line Total"]],
     body: tableRows.length ? tableRows : [["(no items)", "", "", ""]],
     styles: { fontSize: 9 },
-    headStyles: { fillColor: [17, 24, 39] },
+    headStyles: { fillColor: [77, 167, 99] }, // Brand green: #4DA763
     columnStyles: {
       1: { halign: "right" },
       2: { halign: "right" },
@@ -851,6 +909,11 @@ async function sendInvoiceEmail() {
       } else if (state.currentInvoiceId) {
         el("savedInvoicesSelect").value = state.currentInvoiceId;
       }
+      
+      // Auto-clear form after successful send
+      setTimeout(() => {
+        newInvoice();
+      }, 2000);
     } else {
       setStatus("Send failed", "err");
       setSendResult("Send failed (no ok response).", "err");
@@ -877,6 +940,15 @@ function newInvoice() {
     notes: "Thank you for your business.",
     paymentInstructions: ""
   });
+
+  // Clear builder/job selections
+  const selectBuilder = el("selectBuilder");
+  const selectJob = el("selectJob");
+  if (selectBuilder) selectBuilder.value = "";
+  if (selectJob) {
+    selectJob.value = "";
+    selectJob.style.display = "none";
+  }
 
   setSendResult("");
   setStatus("Not saved", "");
@@ -929,21 +1001,6 @@ function addListeners() {
     console.error("Send Email button not found: #btnSendEmail");
   }
 
-  const btnNew = el("btnNew");
-  if (btnNew) {
-    btnNew.addEventListener("click", () => {
-      newInvoice();
-      const selectBuilder = el("selectBuilder");
-      const selectJob = el("selectJob");
-      if (selectBuilder) selectBuilder.value = "";
-      if (selectJob) {
-        selectJob.value = "";
-        selectJob.style.display = "none";
-      }
-    });
-  } else {
-    console.error("New button not found: #btnNew");
-  }
 
   const btnLoad = el("btnLoad");
   if (btnLoad) {
@@ -963,9 +1020,9 @@ function addListeners() {
   const selectBuilder = el("selectBuilder");
   if (selectBuilder) {
     selectBuilder.addEventListener("change", async (e) => {
-      const contractId = e.target.value;
-      await refreshJobSelect(contractId);
-      await fillCustomerFromBuilder(contractId);
+      const builderId = e.target.value;
+      await refreshJobSelect(builderId);
+      await fillCustomerFromBuilder(builderId);
     });
   } else {
     console.error("Builder select not found: #selectBuilder");
@@ -974,9 +1031,9 @@ function addListeners() {
   const selectJob = el("selectJob");
   if (selectJob) {
     selectJob.addEventListener("change", async (e) => {
-      const contractId = el("selectBuilder")?.value || "";
+      const builderId = el("selectBuilder")?.value || "";
       const jobId = e.target.value;
-      await fillCustomerFromBuilder(contractId, jobId);
+      await fillCustomerFromBuilder(builderId, jobId);
       
       // Also fill project name and address from job
       if (jobId && e.target.selectedOptions[0]) {

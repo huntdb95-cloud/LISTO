@@ -36,6 +36,12 @@ html, body { height: 100%; }
   --warn: #F2B84B;
 
   --container: 1100px;
+  
+  /* Mobile bottom navigation height */
+  /* Note: If nav height changes dynamically, update via JS:
+     document.documentElement.style.setProperty('--bottom-nav-height', `${navElement.offsetHeight}px`);
+     The default 60px matches .mobile-bottom-nav-items height */
+  --bottom-nav-height: 60px;
 }
 
 body {
@@ -3197,15 +3203,26 @@ input:focus, select:focus, textarea:focus{
     display: none !important;
   }
   
-  /* Add padding to body on mobile for landing page bottom nav */
-  body[data-page="landing"] {
-    padding-bottom: 70px;
+  /* Global fix: Add bottom padding to main content to prevent cutoff by bottom nav */
+  /* This ensures all pages have enough space so content is never hidden behind the nav */
+  .app-layout > main {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
   }
   
-  /* Add padding to main content on mobile for bottom nav */
+  /* Also apply to page-wrap containers for pages that use them directly */
+  .page-wrap {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Update existing page-specific fixes to use the CSS variable for consistency */
+  /* These pages may have had custom padding, now standardized */
+  body[data-page="landing"] {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+  
   body[data-page="1099"] main,
   body[data-page="job-estimator"] main {
-    padding-bottom: 80px;
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
   }
   
   /* Payer Info Collapsible Styles */

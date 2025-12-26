@@ -19,52 +19,56 @@
   <style>
     /* Invoice page scoped styles */
     .invoice-page-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
-    .invoice-card { background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px; }
+    .invoice-card { background: rgba(255,255,255,.92); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
     .invoice-grid { display: grid; gap: 12px; }
     .invoice-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .invoice-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .invoice-row { display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
     .invoice-label { display:block; font-size: 0.9rem; opacity: .85; margin-bottom: 6px; }
-    .invoice-input, .invoice-textarea, .invoice-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.15); background: #fff; box-sizing: border-box; }
+    .invoice-input, .invoice-textarea, .invoice-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; box-sizing: border-box; }
+    .invoice-input:focus, .invoice-textarea:focus, .invoice-select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-light); }
     .invoice-textarea { min-height: 90px; resize: vertical; }
     
     /* Line Items Table - Desktop */
     .invoice-items-table-wrapper { overflow-x: auto; }
     .invoice-items-table { width:100%; border-collapse: collapse; }
-    .invoice-items-table th, .invoice-items-table td { border-bottom: 1px solid rgba(0,0,0,.1); padding: 12px 10px; vertical-align: top; }
-    .invoice-items-table th { text-align:left; font-size: .9rem; opacity: .8; font-weight: 600; background: rgba(0,0,0,.02); }
-    .invoice-items-table td input { width: 100%; padding: 8px 10px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+    .invoice-items-table th, .invoice-items-table td { border-bottom: 1px solid var(--border); padding: 12px 10px; vertical-align: top; }
+    .invoice-items-table th { text-align:left; font-size: .9rem; opacity: .8; font-weight: 600; background: var(--bg); }
+    .invoice-items-table td input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+    .invoice-items-table td input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-light); }
     .invoice-num { text-align: right; white-space: nowrap; }
     
     /* Line Items Cards - Mobile */
     .invoice-items-cards { display: none; }
-    .invoice-item-card { background: #fff; border: 1px solid rgba(0,0,0,.1); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .invoice-item-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
     .invoice-item-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 12px; }
     .invoice-item-card-desc { flex: 1; min-width: 0; }
-    .invoice-item-card-desc input { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+    .invoice-item-card-desc input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+    .invoice-item-card-desc input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-light); }
     .invoice-item-card-remove { flex-shrink: 0; }
     .invoice-item-card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .invoice-item-card-field { display: flex; flex-direction: column; gap: 6px; }
     .invoice-item-card-field label { font-size: 0.85rem; opacity: .7; font-weight: 500; }
-    .invoice-item-card-field input { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
-    .invoice-item-card-total { border-top: 2px solid rgba(0,0,0,.1); padding-top: 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .invoice-item-card-field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+    .invoice-item-card-field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-light); }
+    .invoice-item-card-total { border-top: 2px solid var(--border); padding-top: 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
     .invoice-item-card-total-label { font-weight: 600; font-size: 0.95rem; }
     .invoice-item-card-total-value { font-weight: 700; font-size: 1.1rem; color: #111827; }
     
     .invoice-btn {
       border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer;
-      background: #111827; color: #fff; font-weight: 600; font-size: 0.95rem;
+      background: var(--brand); color: #fff; font-weight: 600; font-size: 0.95rem;
       transition: background 0.2s ease;
     }
-    .invoice-btn:hover:not(:disabled) { background: #374151; }
+    .invoice-btn:hover:not(:disabled) { background: var(--brand-dark); }
     .invoice-btn.secondary, 
-    .invoice-card .btn.secondary { background: #374151; }
+    .invoice-card .btn.secondary { background: var(--brand-dark); }
     .invoice-btn.secondary:hover:not(:disabled),
-    .invoice-card .btn.secondary:hover:not(:disabled) { background: #4b5563; }
+    .invoice-card .btn.secondary:hover:not(:disabled) { background: var(--brand); }
     .invoice-btn.ghost,
-    .invoice-card .btn.ghost { background: transparent; color: #111827; border: 1px solid rgba(0,0,0,.15); }
+    .invoice-card .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
     .invoice-btn.ghost:hover:not(:disabled),
-    .invoice-card .btn.ghost:hover:not(:disabled) { background: rgba(0,0,0,.05); }
+    .invoice-card .btn.ghost:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand); }
     .invoice-btn.danger,
     .invoice-card .btn.danger,
     #itemsTable .invoice-btn.danger { background: #b91c1c; color: #fff; }
@@ -79,11 +83,11 @@
     .invoice-adjustments { flex: 1; min-width: 280px; }
     .invoice-totals { flex: 0 0 auto; min-width: 280px; max-width: 100%; }
     .invoice-totals .line { display:flex; justify-content: space-between; padding: 8px 0; font-size: 0.95rem; }
-    .invoice-totals .grand { font-weight: 800; font-size: 1.2rem; border-top: 2px solid rgba(0,0,0,.15); padding-top: 12px; margin-top: 8px; }
+    .invoice-totals .grand { font-weight: 800; font-size: 1.2rem; border-top: 2px solid var(--brand); padding-top: 12px; margin-top: 8px; color: var(--brand-dark); }
     .invoice-topbar { display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
     .invoice-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .invoice-pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(17,24,39,.08); font-size: 0.9rem; }
-    .invoice-pill.ok { background: rgba(16,185,129,.14); color: #059669; }
+    .invoice-pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: var(--bg); font-size: 0.9rem; }
+    .invoice-pill.ok { background: var(--brand-light); color: var(--brand-dark); }
     .invoice-pill.warn { background: rgba(245,158,11,.18); color: #d97706; }
     .invoice-pill.err { background: rgba(239,68,68,.18); color: #dc2626; }
     
@@ -112,6 +116,32 @@
       .invoice-item-card-fields { grid-template-columns: 1fr; }
       .invoice-topbar-actions { flex-direction: column; }
       .invoice-topbar-actions .invoice-btn { width: 100%; }
+      
+      /* Bottom actions on mobile */
+      .invoice-bottom-actions-row {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .invoice-bottom-actions-row .invoice-btn {
+        width: 100%;
+      }
+    }
+    
+    /* Bottom actions styling */
+    .invoice-bottom-actions-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 640px) {
+      .invoice-bottom-actions-row {
+        flex-direction: column;
+      }
+      .invoice-bottom-actions-row .invoice-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -143,18 +173,11 @@
         <h1 style="margin:0 0 6px 0;" data-i18n="invoice.title">Invoice Builder</h1>
         <div class="invoice-muted" data-i18n="invoice.pageDescription">Create, save, export, and send invoices (PDF attached via SendGrid).</div>
       </div>
-
-      <div class="invoice-topbar-actions">
-        <button class="invoice-btn ghost" id="btnNew" data-i18n="invoice.new">New</button>
-        <button class="invoice-btn secondary" id="btnSave" data-i18n="invoice.save">Save</button>
-        <button class="invoice-btn" id="btnPdf" data-i18n="invoice.downloadPdf">Download PDF</button>
-        <button class="invoice-btn" id="btnSendEmail" data-i18n="invoice.sendEmail">Send Invoice</button>
-      </div>
     </div>
 
     <div style="height:12px;"></div>
 
-    <div class="card invoice-card invoice-grid invoice-grid-2" style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px;">
+    <div class="card invoice-card invoice-grid invoice-grid-2">
       <div>
         <h3 style="margin:0 0 10px 0;" data-i18n="invoice.yourCompany">Your Company</h3>
         <div class="invoice-grid">
@@ -211,7 +234,7 @@
 
     <div style="height:12px;"></div>
 
-    <div class="card invoice-card invoice-grid invoice-grid-3" style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px;">
+    <div class="card invoice-card invoice-grid invoice-grid-3">
       <div>
         <label class="invoice-label" data-i18n="invoice.invoiceNumber">Invoice #</label>
         <input class="invoice-input" id="invoiceNumber" placeholder="INV-1001" />
@@ -235,7 +258,7 @@
 
     <div style="height:12px;"></div>
 
-    <div class="card invoice-card" style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 16px;">
+    <div class="card invoice-card">
       <div class="invoice-row" style="justify-content: space-between; margin-bottom: 16px;">
         <h3 style="margin:0;" data-i18n="invoice.lineItems">Line Items</h3>
         <button type="button" class="invoice-btn ghost" id="btnAddItem" data-i18n="invoice.addItem">+ Add Item</button>
@@ -320,6 +343,15 @@
         <div class="invoice-muted" style="margin-top:8px;" data-i18n="invoice.sendNote">
           "Send Invoice" emails a PDF attachment through your Firebase backend + SendGrid.
         </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons at Bottom -->
+    <div class="invoice-bottom-actions" style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
+      <div class="invoice-bottom-actions-row">
+        <button class="invoice-btn secondary" id="btnSave" data-i18n="invoice.save">Save</button>
+        <button class="invoice-btn" id="btnPdf" data-i18n="invoice.downloadPdf">Download PDF</button>
+        <button class="invoice-btn" id="btnSendEmail" data-i18n="invoice.sendEmail">Send Invoice</button>
       </div>
     </div>
   </div>
