@@ -137,6 +137,117 @@
       color: #fff; /* Keep white text on hover, override .btn:hover color */
     }
     
+    /* Mobile Payment Edit Modal */
+    .bookkeeping-payment-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10000;
+      display: none;
+    }
+    
+    .bookkeeping-payment-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    
+    .bookkeeping-payment-modal-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--panel);
+      border-radius: 16px 16px 0 0;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .bookkeeping-payment-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+    }
+    
+    .bookkeeping-payment-modal-header .h3 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+    
+    .bookkeeping-payment-modal-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .bookkeeping-payment-modal-close:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+    
+    .bookkeeping-payment-modal-body {
+      padding: 20px;
+    }
+    
+    .bookkeeping-payment-modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    
+    /* Mobile: Hide memo and actions columns in table header */
+    @media (max-width: 768px) {
+      .bookkeeping-memo-header,
+      .bookkeeping-actions-header {
+        display: none;
+      }
+      
+      /* Make payment rows tappable on mobile */
+      .bookkeeping-payment-row-mobile {
+        transition: background-color 0.2s;
+      }
+      
+      .bookkeeping-payment-row-mobile:active {
+        background-color: var(--bg);
+      }
+    }
+    
+    /* Desktop: Fix Amount and Method column alignment */
+    @media (min-width: 769px) {
+      #paymentsTable tbody td:nth-child(2),
+      #paymentsTable tbody td:nth-child(3) {
+        display: table-cell;
+        vertical-align: top;
+      }
+      
+      #paymentsTable thead th:nth-child(2),
+      #paymentsTable thead th:nth-child(3) {
+        display: table-cell;
+      }
+    }
+    
     /* Responsive */
     @media (max-width: 1024px) {
       .bookkeeping-main-layout { 
@@ -629,14 +740,14 @@
 
           <!-- Payments Table -->
           <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
+            <table id="paymentsTable" style="width: 100%; border-collapse: collapse;">
+                <thead id="paymentsTableHead">
                   <tr>
                   <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Date</th>
                   <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Amount</th>
                   <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Method</th>
-                  <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Memo</th>
-                  <th style="padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Actions</th>
+                  <th class="bookkeeping-memo-header" style="padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Memo</th>
+                  <th class="bookkeeping-actions-header" style="padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 0.9rem;">Actions</th>
                   </tr>
                 </thead>
               <tbody id="paymentsTableBody">
@@ -654,6 +765,50 @@
   </div>
   
   </main>
+</div>
+
+<!-- Mobile Payment Edit Modal -->
+<div id="paymentEditModal" class="bookkeeping-payment-modal" style="display: none;">
+  <div class="bookkeeping-payment-modal-overlay"></div>
+  <div class="bookkeeping-payment-modal-content">
+    <div class="bookkeeping-payment-modal-header">
+      <h3 class="h3">Edit Payment</h3>
+      <button type="button" class="bookkeeping-payment-modal-close" id="paymentEditModalClose" aria-label="Close">×</button>
+    </div>
+    <div class="bookkeeping-payment-modal-body">
+      <form id="paymentEditForm">
+        <input type="hidden" id="editPaymentId" />
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="editPaymentDate" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Date Paid *</label>
+          <input type="date" id="editPaymentDate" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" required />
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="editPaymentAmount" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Amount *</label>
+          <input type="number" id="editPaymentAmount" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" step="0.01" min="0" placeholder="0.00" required />
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="editPaymentMethod" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Method *</label>
+          <select id="editPaymentMethod" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box;" required>
+            <option value="">Select method</option>
+            <option value="Cash">Cash</option>
+            <option value="Check">Check</option>
+            <option value="Zelle">Zelle</option>
+            <option value="ACH">ACH</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label for="editPaymentMemo" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">Memo</label>
+          <textarea id="editPaymentMemo" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box; min-height: 80px; resize: vertical;" placeholder="Optional memo"></textarea>
+        </div>
+        <div class="bookkeeping-payment-modal-actions">
+          <button type="button" class="btn bookkeeping-btn-danger" id="editPaymentDeleteBtn" style="flex: 1; margin-right: 8px;">Delete Payment</button>
+          <button type="button" class="btn ghost" id="editPaymentCancelBtn" style="flex: 1; margin-right: 8px;">Cancel</button>
+          <button type="submit" class="btn primary" id="editPaymentSaveBtn" style="flex: 1;">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Mobile Bottom Navigation -->

@@ -208,6 +208,37 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Format date to MM/DD/YY (mobile display format)
+function formatDateMobile(dateStr) {
+  if (!dateStr) return "";
+  
+  try {
+    // Handle ISO date string (YYYY-MM-DD)
+    if (dateStr.includes("-")) {
+      const [year, month, day] = dateStr.split("-");
+      const yearShort = year.slice(-2);
+      return `${month}/${day}/${yearShort}`;
+    }
+    
+    // Handle Date object or timestamp
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const year = String(date.getFullYear()).slice(-2);
+    return `${month}/${day}/${year}`;
+  } catch (err) {
+    console.warn("Error formatting date:", err);
+    return dateStr;
+  }
+}
+
+// Check if current viewport is mobile
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
 /* -----------------------------
    Select Laborer
 ------------------------------ */
@@ -714,7 +745,8 @@ function renderPayments() {
   if (!selectedLaborerId) return;
 
   const tbody = $("paymentsTableBody");
-  if (!tbody) return;
+  const thead = $("paymentsTableHead");
+  if (!tbody || !thead) return;
 
   const laborerPayments = payments
     .filter(p => p.laborerId === selectedLaborerId)
@@ -725,26 +757,173 @@ function renderPayments() {
     })
     .sort((a, b) => new Date(b.datePaid) - new Date(a.datePaid));
 
+  const mobile = isMobile();
+  const colspan = mobile ? 3 : 5; // 3 columns on mobile (Date+Method, Amount, Chevron), 5 on desktop
+
   if (laborerPayments.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="bookkeeping-empty-state">No payments in date range</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${colspan}" class="bookkeeping-empty-state">No payments in date range</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = laborerPayments.map(p => `
-    <tr>
-      <td>${escapeHtml(p.datePaid || "")}</td>
-      <td class="bookkeeping-num">${money(p.amount || 0)}</td>
-      <td>${escapeHtml(p.method || "")}</td>
-      <td>${escapeHtml(p.memo || "")}</td>
-      <td class="bookkeeping-num">
-        <button type="button" class="btn bookkeeping-btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="window.deletePayment('${p.id}')">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+  if (mobile) {
+    // Mobile: tappable rows, formatted dates, no memo column
+    tbody.innerHTML = laborerPayments.map(p => `
+      <tr class="bookkeeping-payment-row-mobile" data-payment-id="${p.id}" style="cursor: pointer;">
+        <td style="padding: 12px; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(formatDateMobile(p.datePaid))}</div>
+          <div style="font-size: 0.9rem; color: var(--muted);">${escapeHtml(p.method || "")}</div>
+        </td>
+        <td class="bookkeeping-num" style="padding: 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">
+          <div style="font-weight: 600; font-size: 1.1rem;">${money(p.amount || 0)}</div>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.5;">
+            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </td>
+      </tr>
+    `).join("");
+    
+    // Add click handlers for mobile rows
+    tbody.querySelectorAll(".bookkeeping-payment-row-mobile").forEach(row => {
+      row.addEventListener("click", (e) => {
+        const paymentId = row.dataset.paymentId;
+        openEditPaymentModal(paymentId);
+      });
+    });
+  } else {
+    // Desktop: full table with all columns, proper alignment
+    tbody.innerHTML = laborerPayments.map(p => `
+      <tr>
+        <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.datePaid || "")}</td>
+        <td class="bookkeeping-num" style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">${money(p.amount || 0)}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.method || "")}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.memo || "")}</td>
+        <td class="bookkeeping-num" style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">
+          <button type="button" class="btn bookkeeping-btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="window.deletePayment('${p.id}')">Delete</button>
+        </td>
+      </tr>
+    `).join("");
+  }
 }
 
 // Make deletePayment available globally for onclick handlers
 window.deletePayment = deletePayment;
+
+// Open edit payment modal (mobile only)
+function openEditPaymentModal(paymentId) {
+  if (!isMobile()) return; // Only on mobile
+  
+  const payment = payments.find(p => p.id === paymentId);
+  if (!payment) {
+    showMessage("Payment not found", true);
+    return;
+  }
+
+  // Populate form
+  $("editPaymentId").value = payment.id;
+  $("editPaymentDate").value = payment.datePaid || "";
+  $("editPaymentAmount").value = payment.amount || "";
+  $("editPaymentMethod").value = payment.method || "";
+  $("editPaymentMemo").value = payment.memo || "";
+
+  // Show modal
+  const modal = $("paymentEditModal");
+  if (modal) {
+    modal.style.display = "block";
+    document.body.style.overflow = "hidden"; // Prevent background scrolling
+  }
+}
+
+// Close edit payment modal
+function closeEditPaymentModal() {
+  const modal = $("paymentEditModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = ""; // Restore scrolling
+  }
+  
+  // Clear form
+  $("editPaymentId").value = "";
+  $("editPaymentDate").value = "";
+  $("editPaymentAmount").value = "";
+  $("editPaymentMethod").value = "";
+  $("editPaymentMemo").value = "";
+}
+
+// Update payment
+async function updatePayment() {
+  if (!currentUid || !selectedLaborerId) {
+    showMessage("Please select a laborer first", true);
+    return;
+  }
+
+  const paymentId = $("editPaymentId")?.value;
+  if (!paymentId) {
+    showMessage("Payment ID missing", true);
+    return;
+  }
+
+  const datePaid = $("editPaymentDate")?.value;
+  const amount = parseFloat($("editPaymentAmount")?.value || 0);
+  const method = $("editPaymentMethod")?.value || "";
+  const memo = ($("editPaymentMemo")?.value || "").trim() || null;
+
+  if (!datePaid) {
+    showMessage("Payment date is required", true);
+    return;
+  }
+  if (!amount || amount <= 0) {
+    showMessage("Payment amount must be greater than 0", true);
+    return;
+  }
+  if (!method) {
+    showMessage("Payment method is required", true);
+    return;
+  }
+
+  try {
+    const paymentRef = doc(db, "users", currentUid, "payments", paymentId);
+    await updateDoc(paymentRef, {
+      datePaid,
+      amount,
+      method,
+      memo,
+      updatedAt: serverTimestamp()
+    });
+
+    await loadPayments();
+    closeEditPaymentModal();
+    showMessage("Payment updated successfully");
+  } catch (err) {
+    console.error("Error updating payment:", err);
+    showMessage("Error updating payment: " + (err.message || "Unknown error"), true);
+  }
+}
+
+// Delete payment from modal
+async function deletePaymentFromModal() {
+  const paymentId = $("editPaymentId")?.value;
+  if (!paymentId) {
+    showMessage("Payment ID missing", true);
+    return;
+  }
+
+  if (!confirm("Are you sure you want to delete this payment?")) {
+    return;
+  }
+
+  try {
+    const paymentRef = doc(db, "users", currentUid, "payments", paymentId);
+    await deleteDoc(paymentRef);
+    await loadPayments();
+    closeEditPaymentModal();
+    showMessage("Payment deleted successfully");
+  } catch (err) {
+    console.error("Error deleting payment:", err);
+    showMessage("Error deleting payment: " + (err.message || "Unknown error"), true);
+  }
+}
 
 /* -----------------------------
    Summaries
