@@ -2491,13 +2491,27 @@ body[data-page="bookkeeping"] .page-title {
     padding-left: 12px !important;
     padding-right: 12px !important;
     box-sizing: border-box !important;
+    display: block !important;
   }
   
-  /* Ensure settings sections use full available width */
-  body[data-page="settings"] .settings-section {
+  /* Ensure direct children of page-wrap maintain full width */
+  body[data-page="settings"] .page-wrap > * {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+  }
+  
+  /* Ensure settings sections use full available width */
+  /* Force details element to be block-level and full width */
+  body[data-page="settings"] .settings-section {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+    flex: 1 1 100% !important;
+    flex-basis: 100% !important;
+    align-self: stretch !important;
   }
   
   /* Make settings section summary wider - ensure consistent width when collapsed */
@@ -2510,6 +2524,8 @@ body[data-page="bookkeeping"] .page-title {
     box-sizing: border-box !important;
     display: flex !important;
     flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    flex-basis: 100% !important;
   }
   
   /* Ensure summary maintains width even when details is not open */
@@ -2517,6 +2533,15 @@ body[data-page="bookkeeping"] .page-title {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 100% !important;
+    flex-basis: 100% !important;
+  }
+  
+  /* Ensure collapsed details elements maintain full width */
+  body[data-page="settings"] .settings-section:not([open]) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    display: block !important;
   }
   
   /* Make settings section content cards wider */
