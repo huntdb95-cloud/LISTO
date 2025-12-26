@@ -4003,6 +4003,59 @@ input:focus, select:focus, textarea:focus{
   box-sizing: border-box;
 }
 
+/* PDF Preview Modal Styles */
+.pdf-preview-container {
+  width: 100%;
+  background: #e5e5e5;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 80vh;
+}
+
+.pdf-preview-container iframe {
+  width: 100%;
+  max-width: 8.5in;
+  height: 11in;
+  aspect-ratio: 8.5 / 11;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  background: white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .pdf-preview-container {
+    padding: 12px;
+    background: #f0f0f0;
+  }
+  
+  .pdf-preview-container iframe {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 70vh;
+    aspect-ratio: 8.5 / 11;
+  }
+  
+  .modal-content.modal-large {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+  
+  .modal-overlay {
+    padding: 0;
+  }
+  
+  .modal-body {
+    padding: 0 !important;
+  }
+}
+
 .modal-body input:focus,
 .modal-body select:focus,
 .modal-body textarea:focus {
@@ -5308,6 +5361,11 @@ input:focus, select:focus, textarea:focus{
   min-width: 0;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  writing-mode: horizontal-tb;
+  transform: none;
+  white-space: normal;
+  line-height: 1.5;
+  display: inline-block;
 }
 
 .signature-container {

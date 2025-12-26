@@ -1615,11 +1615,27 @@ async function updatePrequalUI(data, userId = null) {
       const pdfUrl = agreementData?.pdfUrl;
       
       if (agreementViewBtn && pdfUrl) {
-        agreementViewBtn.href = pdfUrl;
-        agreementViewBtn.target = "_blank";
-        agreementViewBtn.rel = "noopener";
+        // Set up modal preview instead of direct link
+        agreementViewBtn.href = "#";
+        // Store PDF URL on button for handler access
+        agreementViewBtn.dataset.pdfUrl = pdfUrl;
+        // Only add listener once (check data attribute)
+        if (!agreementViewBtn.dataset.modalSetup) {
+          agreementViewBtn.dataset.modalSetup = "true";
+          agreementViewBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const url = agreementViewBtn.dataset.pdfUrl;
+            if (url) {
+              showAgreementPdfModal(url);
+            }
+          });
+        } else {
+          // Update stored URL if listener already exists
+          agreementViewBtn.dataset.pdfUrl = pdfUrl;
+        }
       }
       if (settingsAgreementViewBtn && pdfUrl) {
+        // Settings page can still open in new tab
         settingsAgreementViewBtn.href = pdfUrl;
         settingsAgreementViewBtn.target = "_blank";
         settingsAgreementViewBtn.rel = "noopener";
@@ -1924,6 +1940,54 @@ async function generateAgreementPDF(data) {
   addText(`Builder Name: ${data.builderName}`, fontSize);
 
   return doc;
+}
+
+// Show agreement PDF in modal preview
+function showAgreementPdfModal(pdfUrl) {
+  const modal = document.getElementById("agreementPdfModal");
+  const frame = document.getElementById("agreementPdfFrame");
+  const closeBtn = document.getElementById("closeAgreementPdfModal");
+  
+  if (!modal || !frame) {
+    console.error("Agreement PDF modal elements not found");
+    // Fallback to opening in new tab
+    window.open(pdfUrl, "_blank", "noopener");
+    return;
+  }
+  
+  // Set PDF URL in iframe
+  frame.src = pdfUrl;
+  
+  // Show modal
+  modal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  
+  // Close handlers
+  const closeModal = () => {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+    frame.src = ""; // Clear iframe to stop loading
+  };
+  
+  if (closeBtn) {
+    closeBtn.onclick = closeModal;
+  }
+  
+  // Close on overlay click
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  };
+  
+  // Close on Escape key
+  const handleEscape = (e) => {
+    if (e.key === "Escape" && modal.style.display === "flex") {
+      closeModal();
+      document.removeEventListener("keydown", handleEscape);
+    }
+  };
+  document.addEventListener("keydown", handleEscape);
 }
 
 async function saveAgreement(user, data) {
