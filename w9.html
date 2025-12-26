@@ -55,16 +55,16 @@
 <form class="form-grid" id="w9Form">
 <!-- Lines 1 & 2 -->
 <label class="field">
-<span class="field-label">1) Name (as shown on your income tax return)</span>
+<span class="field-label">1) Name (Legal Entity Name)</span>
 <input autocomplete="name" id="w9_name1" required="" type="text"/>
 </label>
 <label class="field">
-<span class="field-label">2) Business name / disregarded entity name (if different)</span>
+<span class="field-label">2) Business Name (if different from Name)</span>
 <input id="w9_name2" type="text"/>
 </label>
 <!-- Tax classification -->
 <fieldset class="fieldset">
-<legend class="field-label">3a) Federal tax classification (select one)</legend>
+<legend class="field-label"><span class="field-label-number">3a)</span> Legal Entity/Business Type</legend>
 <div class="radio-grid">
 <label class="radio">
 <input name="taxClass" required="" type="radio" value="individual"/>
@@ -127,10 +127,6 @@
 <input autocomplete="postal-code" id="w9_cityStateZip" type="text"/>
 </label>
 <label class="field">
-<span class="field-label">Requester’s name and address (optional)</span>
-<input id="w9_requester" type="text"/>
-</label>
-<label class="field">
 <span class="field-label">7) Account number(s) (optional)</span>
 <input id="w9_accounts" type="text"/>
 </label>
@@ -153,17 +149,19 @@
 <span class="muted small">Tip: You can type numbers only; formatting can be added later.</span>
 </label>
 </fieldset>
-<!-- Signature -->
-<div class="grid-2 tight">
-<label class="field">
-<span class="field-label">Signature of U.S. person</span>
-<input id="w9_signature" placeholder="Type full name" type="text"/>
-</label>
+<!-- Date and Signature -->
 <label class="field">
 <span class="field-label">Date</span>
 <input id="w9_date" type="date"/>
 </label>
+<label class="field">
+<span class="field-label">Signature of U.S. person</span>
+<div style="border: 1px solid var(--border); border-radius: var(--radius-sm); background: white; position: relative;">
+<canvas id="w9_signatureCanvas" style="display: block; width: 100%; height: 150px; cursor: crosshair; touch-action: none;"></canvas>
+<button type="button" id="w9_clearSignatureBtn" class="btn ghost small" style="position: absolute; top: 8px; right: 8px; z-index: 10;">Clear Signature</button>
 </div>
+<input type="hidden" id="w9_signature"/>
+</label>
 <div class="row">
 <button class="btn primary" id="w9SaveBtn" type="submit">Save W-9</button>
 <button class="btn" id="w9RefreshBtn" type="button">Refresh Preview</button>
@@ -203,7 +201,6 @@
 <div class="w9-txt" data-bind="fatca" style="--x: 738; --y: 347; --w: 120;"></div>
 <div class="w9-txt" data-bind="address" style="--x: 110; --y: 448; --w: 520;"></div>
 <div class="w9-txt" data-bind="cityStateZip" style="--x: 110; --y: 502; --w: 520;"></div>
-<div class="w9-txt" data-bind="requester" style="--x: 660; --y: 448; --w: 240;"></div>
 <div class="w9-txt" data-bind="accounts" style="--x: 110; --y: 558; --w: 760;"></div>
 <!-- TIN boxes (we’ll show the string; later you can split into boxes) -->
 <div class="w9-txt" data-bind="tin" style="--x: 690; --y: 628; --w: 210; --size: 16;"></div>

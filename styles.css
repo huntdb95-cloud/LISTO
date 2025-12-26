@@ -1127,6 +1127,7 @@ body[data-page="landing"] .lang-switch-mobile {
 
 .field{ display: grid; gap: 6px; }
 .field-label{ color: var(--muted); font-weight: 650; font-size: 0.95rem; }
+.field-label-number{ display: inline-block; min-width: 2.5em; }
 
 input, select, textarea{
   width: 100%;

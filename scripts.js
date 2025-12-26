@@ -2596,7 +2596,6 @@ function collectW9FormData() {
     fatca: (document.getElementById("w9_fatca")?.value || "").trim(),
     address: (document.getElementById("w9_address")?.value || "").trim(),
     cityStateZip: (document.getElementById("w9_cityStateZip")?.value || "").trim(),
-    requester: (document.getElementById("w9_requester")?.value || "").trim(),
     accounts: (document.getElementById("w9_accounts")?.value || "").trim(),
     tinType,
     tin: (document.getElementById("w9_tin")?.value || "").trim(),
@@ -2618,11 +2617,24 @@ function fillW9Form(data) {
   setVal("w9_fatca", data.fatca);
   setVal("w9_address", data.address);
   setVal("w9_cityStateZip", data.cityStateZip);
-  setVal("w9_requester", data.requester);
   setVal("w9_accounts", data.accounts);
   setVal("w9_tin", data.tin);
-  setVal("w9_signature", data.signature);
   setVal("w9_date", data.date);
+
+  // Load signature into canvas if available
+  if (data.signature) {
+    setVal("w9_signature", data.signature);
+    const canvas = document.getElementById("w9_signatureCanvas");
+    if (canvas && data.signature.startsWith("data:image")) {
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = data.signature;
+    }
+  }
 
   if (data.taxClass) {
     const r = document.querySelector(`input[name="taxClass"][value="${data.taxClass}"]`);
@@ -2637,7 +2649,12 @@ function fillW9Form(data) {
 function updateW9Preview(data) {
   document.querySelectorAll(".w9-txt[data-bind]").forEach(el => {
     const key = el.getAttribute("data-bind");
-    el.textContent = data?.[key] ?? "";
+    if (key === "signature" && data?.signature && data.signature.startsWith("data:image")) {
+      // Display signature as image
+      el.innerHTML = `<img src="${data.signature}" alt="Signature" style="max-width: 100%; height: auto; display: block;" />`;
+    } else {
+      el.textContent = data?.[key] ?? "";
+    }
   });
 
   const selected = data.taxClass || "";
@@ -2669,6 +2686,176 @@ async function saveW9(user, w9Data) {
   }, { merge: true });
 }
 
+// Initialize W-9 signature canvas
+function initW9SignatureCanvas() {
+  const canvas = document.getElementById("w9_signatureCanvas");
+  const clearBtn = document.getElementById("w9_clearSignatureBtn");
+  const hiddenInput = document.getElementById("w9_signature");
+  if (!canvas || !hiddenInput) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "#000000"; // Black ink
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Set canvas size based on container width (responsive)
+  function resizeCanvas() {
+    const container = canvas.parentElement;
+    if (container) {
+      const containerWidth = container.clientWidth;
+      const aspectRatio = 3; // 3:1 aspect ratio (wider for signature)
+      const newWidth = containerWidth;
+      const newHeight = Math.max(150, newWidth / aspectRatio);
+      
+      // Only resize if dimensions actually changed
+      if (canvas.width !== newWidth || canvas.height !== newHeight) {
+        const currentSignature = hiddenInput.value;
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        
+        // Restore drawing context settings after resize
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        
+        // Redraw signature if it exists
+        if (currentSignature && currentSignature.startsWith("data:image")) {
+          const img = new Image();
+          img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          };
+          img.src = currentSignature;
+        }
+      }
+    }
+  }
+
+  // Initial resize
+  resizeCanvas();
+  
+  // Resize on window resize
+  let resizeTimeout;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(resizeCanvas, 300);
+  });
+
+  canvas.style.touchAction = "none";
+
+  let isDrawing = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  function getCoordinates(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    let clientX, clientY;
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  function startDrawing(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    isDrawing = true;
+    const coords = getCoordinates(e);
+    lastX = coords.x;
+    lastY = coords.y;
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const coords = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+    
+    lastX = coords.x;
+    lastY = coords.y;
+    
+    // Update signature data
+    updateSignatureData();
+  }
+
+  function stopDrawing(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    isDrawing = false;
+    updateSignatureData();
+  }
+
+  function updateSignatureData() {
+    try {
+      hiddenInput.value = canvas.toDataURL("image/png");
+      // Trigger preview update
+      const form = document.getElementById("w9Form");
+      if (form) {
+        const handler = () => updateW9Preview(collectW9FormData());
+        handler();
+      }
+    } catch (err) {
+      console.warn("Failed to update signature data:", err);
+    }
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hiddenInput.value = "";
+    updateSignatureData();
+  }
+
+  // Use pointer events (preferred) - works for both mouse and touch
+  if (window.PointerEvent) {
+    canvas.addEventListener("pointerdown", startDrawing);
+    canvas.addEventListener("pointermove", draw);
+    canvas.addEventListener("pointerup", stopDrawing);
+    canvas.addEventListener("pointercancel", stopDrawing);
+    canvas.addEventListener("pointerleave", stopDrawing);
+  } else {
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      canvas.addEventListener("touchstart", startDrawing, { passive: false });
+      canvas.addEventListener("touchmove", draw, { passive: false });
+      canvas.addEventListener("touchend", stopDrawing, { passive: false });
+      canvas.addEventListener("touchcancel", stopDrawing, { passive: false });
+    } else {
+      canvas.addEventListener("mousedown", startDrawing);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", stopDrawing);
+      canvas.addEventListener("mouseleave", stopDrawing);
+    }
+  }
+
+  // Clear button
+  if (clearBtn) {
+    clearBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearCanvas();
+    });
+  }
+
+  return { clearCanvas, updateSignatureData };
+}
+
 function attachW9LivePreview() {
   const form = document.getElementById("w9Form");
   if (!form) return;
@@ -2691,6 +2878,9 @@ async function initW9Page(user) {
   const otherWrap = document.getElementById("otherTypeWrap");
   if (llcWrap) llcWrap.style.display = "none";
   if (otherWrap) otherWrap.style.display = "none";
+
+  // Initialize signature canvas
+  initW9SignatureCanvas();
 
   const existing = await loadW9(user);
   if (existing) {
