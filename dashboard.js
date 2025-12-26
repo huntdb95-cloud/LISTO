@@ -150,7 +150,7 @@ async function loadReminders(user) {
     const pastDueJobs = await getPastDueJobs(user.uid);
     pastDueJobs.forEach(job => {
       jobReminders.push({
-        text: `${job.builderName} - ${job.jobName} (Past due)`,
+        text: `${job.builderName} - ${job.jobName} - Past Due`,
         link: "contracts/contracts.html",
         type: "past-due-payment",
         jobId: job.jobId,
