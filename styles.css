@@ -1290,6 +1290,11 @@ input:focus, select:focus, textarea:focus{
     margin-bottom: 24px;
   }
   
+  /* Home page: Add extra spacing below Reminders bar */
+  body[data-page="dashboard"] .reminders-card {
+    margin-bottom: 40px;
+  }
+  
   .reminders-card .h2 {
     margin-bottom: 12px;
   }
@@ -1506,6 +1511,13 @@ input:focus, select:focus, textarea:focus{
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
+  }
+  
+  /* Home page: Center Edit Account button horizontally (logo already centered) */
+  body[data-page="dashboard"] .account-info-card .account-info-content-wrapper > div:last-of-type {
+    display: flex;
+    justify-content: center;
+    width: 100%;
   }
   
   .account-info-card .grid-2 {
