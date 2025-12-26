@@ -151,7 +151,13 @@ async function loadReminders(user) {
     pastDueJobs.forEach(job => {
       jobReminders.push({
         text: `${job.builderName} - ${job.jobName} (Past due)`,
-        link: "contracts/contracts.html"
+        link: "contracts/contracts.html",
+        type: "past-due-payment",
+        jobId: job.jobId,
+        builderId: job.builderId,
+        builderName: job.builderName,
+        builderEmail: job.builderEmail,
+        jobName: job.jobName
       });
     });
 
@@ -217,17 +223,47 @@ function renderReminders(container, laborReminders, jobReminders) {
         <h3 class="reminders-column-title">Jobs</h3>
         <div class="reminders-list">
           ${jobReminders.length > 0 
-            ? jobReminders.map(item => `
-                <div class="reminder-item">
-                  ${item.link ? `<a href="${item.link}" class="reminder-link">${escapeHtml(item.text)}</a>` : escapeHtml(item.text)}
-                </div>
-              `).join("")
+            ? jobReminders.map(item => {
+                // Handle past-due payment reminders with email functionality
+                if (item.type === "past-due-payment") {
+                  return `
+                    <div class="reminder-item">
+                      <a href="#" class="reminder-link" data-reminder-type="past-due-payment" 
+                         data-job-id="${escapeHtml(item.jobId)}" 
+                         data-builder-id="${escapeHtml(item.builderId)}"
+                         data-builder-name="${escapeHtml(item.builderName)}"
+                         data-builder-email="${escapeHtml(item.builderEmail || '')}"
+                         data-job-name="${escapeHtml(item.jobName)}">${escapeHtml(item.text)}</a>
+                    </div>
+                  `;
+                }
+                // Regular reminder links
+                return `
+                  <div class="reminder-item">
+                    ${item.link ? `<a href="${item.link}" class="reminder-link">${escapeHtml(item.text)}</a>` : escapeHtml(item.text)}
+                  </div>
+                `;
+              }).join("")
             : '<div class="reminder-empty">All caught up</div>'
           }
         </div>
       </div>
     </div>
   `;
+  
+  // Add click handlers for past-due payment reminders
+  container.querySelectorAll('[data-reminder-type="past-due-payment"]').forEach(link => {
+    link.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const jobId = link.dataset.jobId;
+      const builderId = link.dataset.builderId;
+      const builderName = link.dataset.builderName;
+      const builderEmail = link.dataset.builderEmail;
+      const jobName = link.dataset.jobName;
+      
+      await handlePastDuePaymentClick(jobId, builderId, builderName, builderEmail, jobName);
+    });
+  });
 }
 
 // Helper to escape HTML
@@ -274,6 +310,7 @@ async function getPastDueJobs(uid) {
       const builder = builderDoc.data();
       const builderId = builderDoc.id;
       const builderName = builder.name || "Unknown Builder";
+      const builderEmail = builder.email || null;
 
       // Load jobs for this builder
       const jobsCol = collection(db, "users", uid, "builders", builderId, "jobs");
@@ -286,6 +323,7 @@ async function getPastDueJobs(uid) {
         if (paymentStatus === "past_due") {
           pastDueJobs.push({
             builderName,
+            builderEmail,
             jobName: job.jobName || "Unnamed Job",
             jobId: jobDoc.id,
             builderId
@@ -479,4 +517,113 @@ function formatReminderDate(yyyyMmDd) {
   const [y, m, d] = yyyyMmDd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
   return date.toLocaleDateString();
+}
+
+// Handle past-due payment reminder click - open email draft
+async function handlePastDuePaymentClick(jobId, builderId, builderName, builderEmail, jobName) {
+  try {
+    // Validate required data
+    if (!jobId || !builderId || !jobName) {
+      showMessage("Error: Missing job information. Please try again.", true);
+      return;
+    }
+
+    // Get current user for profile data
+    const user = auth.currentUser;
+    if (!user) {
+      showMessage("Please log in to send emails.", true);
+      return;
+    }
+
+    // Load user profile data
+    const profileRef = doc(db, "users", user.uid, "private", "profile");
+    const profileSnap = await getDoc(profileRef);
+    const profile = profileSnap.exists() ? profileSnap.data() : {};
+
+    // Also try to load from users/{uid} for phone/email
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.exists() ? userSnap.data() : {};
+
+    // Get customer info for email signature
+    const customerName = profile.name || user.displayName || "Customer";
+    const customerPhone = userData.phoneNumber || profile.phone || "";
+    const customerEmail = user.email || userData.email || "";
+
+    // Build email subject
+    const subject = `Past-Due Payment for ${jobName}`;
+
+    // Build email body template
+    const builderNameGreeting = builderName && builderName !== "Unknown Builder" ? builderName : "there";
+    const body = `Hi ${builderNameGreeting},
+
+I hope you're doing well. I'm writing to follow up regarding the payment for the ${jobName} project, which is currently past due according to our records.
+
+As of today, we have not yet received payment for this job. If payment has already been sent, or if there is any discrepancy, issue, or detail that we may be unaware of, please reply to this email with an explanation so we can review and resolve it promptly.
+
+If payment is still outstanding, we would appreciate your attention to this matter at your earliest convenience. Please let us know if you need another copy of the invoice or any additional information.
+
+Thank you for your time and cooperation. We look forward to getting this resolved quickly.
+
+Best regards,
+${customerName}${customerPhone ? `\n${customerPhone}` : ""}${customerEmail ? `\n${customerEmail}` : ""}`;
+
+    // Build mailto: URL
+    let mailtoUrl = "mailto:";
+    if (builderEmail && builderEmail.trim()) {
+      mailtoUrl += encodeURIComponent(builderEmail.trim());
+    }
+    
+    mailtoUrl += `?subject=${encodeURIComponent(subject)}`;
+    mailtoUrl += `&body=${encodeURIComponent(body)}`;
+
+    // Open email client
+    window.location.href = mailtoUrl;
+
+    // Show confirmation message
+    showMessage("Draft email opened in your mail app.", false);
+
+    // If builder email is missing, show additional message
+    if (!builderEmail || !builderEmail.trim()) {
+      setTimeout(() => {
+        showMessage("Builder email not found—please add it in the Builder profile.", true);
+      }, 2000);
+    }
+  } catch (err) {
+    console.error("Error opening email draft:", err);
+    showMessage("Error opening email. Please try again.", true);
+  }
+}
+
+// Show message to user (reusable helper)
+function showMessage(text, isError = false) {
+  // Try to find an existing message container or create one
+  let messageEl = document.getElementById("reminderMessage");
+  if (!messageEl) {
+    messageEl = document.createElement("div");
+    messageEl.id = "reminderMessage";
+    messageEl.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: ${isError ? "#fee" : "#efe"};
+      color: ${isError ? "#c33" : "#3c3"};
+      border: 1px solid ${isError ? "#fcc" : "#cfc"};
+      z-index: 10000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      max-width: 300px;
+      font-size: 0.9rem;
+    `;
+    document.body.appendChild(messageEl);
+  }
+
+  messageEl.textContent = text;
+  messageEl.style.display = "block";
+
+  // Auto-hide after 5 seconds (or 7 seconds for errors)
+  setTimeout(() => {
+    messageEl.style.display = "none";
+  }, isError ? 7000 : 5000);
 }
