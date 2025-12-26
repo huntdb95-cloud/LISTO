@@ -208,8 +208,8 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Format date to MM/DD/YY (mobile display format)
-function formatDateMobile(dateStr) {
+// Format date to MM/DD/YY (display format for mobile and desktop)
+function formatDateShort(dateStr) {
   if (!dateStr) return "";
   
   try {
@@ -233,6 +233,9 @@ function formatDateMobile(dateStr) {
     return dateStr;
   }
 }
+
+// Alias for backward compatibility
+const formatDateMobile = formatDateShort;
 
 // Check if current viewport is mobile
 function isMobile() {
@@ -742,11 +745,18 @@ async function deletePayment(paymentId) {
 }
 
 function renderPayments() {
-  if (!selectedLaborerId) return;
-
   const tbody = $("paymentsTableBody");
   const thead = $("paymentsTableHead");
   if (!tbody || !thead) return;
+  
+  const mobile = isMobile();
+  const colspan = mobile ? 3 : 5; // 3 columns on mobile (Date, Amount, Method), 5 on desktop
+  
+  // Handle empty state (no laborer selected or no payments)
+  if (!selectedLaborerId) {
+    tbody.innerHTML = `<tr><td colspan="${colspan}" class="bookkeeping-empty-state">No payments yet</td></tr>`;
+    return;
+  }
 
   const laborerPayments = payments
     .filter(p => p.laborerId === selectedLaborerId)
@@ -757,29 +767,23 @@ function renderPayments() {
     })
     .sort((a, b) => new Date(b.datePaid) - new Date(a.datePaid));
 
-  const mobile = isMobile();
-  const colspan = mobile ? 3 : 5; // 3 columns on mobile (Date+Method, Amount, Chevron), 5 on desktop
-
   if (laborerPayments.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="bookkeeping-empty-state">No payments in date range</td></tr>`;
     return;
   }
 
   if (mobile) {
-    // Mobile: tappable rows, formatted dates, no memo column
+    // Mobile: tappable rows, formatted dates, consistent typography, 3-column layout
     tbody.innerHTML = laborerPayments.map(p => `
       <tr class="bookkeeping-payment-row-mobile" data-payment-id="${p.id}" style="cursor: pointer;">
-        <td style="padding: 12px; border-bottom: 1px solid var(--border);">
-          <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(formatDateMobile(p.datePaid))}</div>
-          <div style="font-size: 0.9rem; color: var(--muted);">${escapeHtml(p.method || "")}</div>
+        <td class="bookkeeping-payment-cell bookkeeping-payment-date" style="padding: 12px; border-bottom: 1px solid var(--border);">
+          ${escapeHtml(formatDateShort(p.datePaid))}
         </td>
-        <td class="bookkeeping-num" style="padding: 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">
-          <div style="font-weight: 600; font-size: 1.1rem;">${money(p.amount || 0)}</div>
+        <td class="bookkeeping-payment-cell bookkeeping-payment-amount bookkeeping-num" style="padding: 12px; border-bottom: 1px solid var(--border); text-align: right;">
+          ${money(p.amount || 0)}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.5;">
-            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <td class="bookkeeping-payment-cell bookkeeping-payment-method" style="padding: 12px; border-bottom: 1px solid var(--border);">
+          ${escapeHtml(p.method || "")}
         </td>
       </tr>
     `).join("");
@@ -792,12 +796,12 @@ function renderPayments() {
       });
     });
   } else {
-    // Desktop: full table with all columns, proper alignment
+    // Desktop: full table with all columns, proper alignment, formatted dates
     tbody.innerHTML = laborerPayments.map(p => `
       <tr>
-        <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.datePaid || "")}</td>
-        <td class="bookkeeping-num" style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">${money(p.amount || 0)}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.method || "")}</td>
+        <td class="bookkeeping-payment-date-desktop" style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(formatDateShort(p.datePaid || ""))}</td>
+        <td class="bookkeeping-num bookkeeping-payment-amount-desktop" style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">${money(p.amount || 0)}</td>
+        <td class="bookkeeping-payment-method-desktop" style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.method || "")}</td>
         <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;">${escapeHtml(p.memo || "")}</td>
         <td class="bookkeeping-num" style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top;">
           <button type="button" class="btn bookkeeping-btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="window.deletePayment('${p.id}')">Delete</button>

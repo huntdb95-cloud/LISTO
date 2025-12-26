@@ -232,19 +232,123 @@
       .bookkeeping-payment-row-mobile:active {
         background-color: var(--bg);
       }
+      
+      /* Mobile Payment History: Consistent grid layout for header and rows */
+      #paymentsTable {
+        display: table;
+        width: 100%;
+      }
+      
+      #paymentsTableHead tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        width: 100%;
+      }
+      
+      #paymentsTableHead th {
+        display: block;
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+        font-weight: 600;
+        font-size: 0.9rem;
+        box-sizing: border-box;
+      }
+      
+      #paymentsTableHead th:nth-child(2) {
+        text-align: right;
+      }
+      
+      #paymentsTableBody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        width: 100%;
+      }
+      
+      #paymentsTableBody td {
+        display: block;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        box-sizing: border-box;
+      }
+      
+      /* Standardize typography for all payment row values */
+      .bookkeeping-payment-cell {
+        font-size: 0.95rem !important;
+        font-weight: 400 !important;
+        line-height: 1.5 !important;
+        color: var(--text) !important;
+      }
+      
+      /* Ensure proper alignment */
+      .bookkeeping-payment-date {
+        text-align: left;
+      }
+      
+      .bookkeeping-payment-amount {
+        text-align: right;
+      }
+      
+      .bookkeeping-payment-method {
+        text-align: left;
+      }
+      
+      /* Empty state should span all 3 columns */
+      #paymentsTableBody tr td.bookkeeping-empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.6;
+      }
     }
     
     /* Desktop: Fix Amount and Method column alignment */
     @media (min-width: 769px) {
-      #paymentsTable tbody td:nth-child(2),
+      /* Ensure table uses proper table layout for alignment */
+      #paymentsTable {
+        table-layout: fixed;
+        width: 100%;
+      }
+      
+      /* Set consistent column widths to ensure alignment */
+      #paymentsTable thead th:nth-child(1),
+      #paymentsTable tbody td:nth-child(1) {
+        width: 15%;
+      }
+      
+      #paymentsTable thead th:nth-child(2),
+      #paymentsTable tbody td:nth-child(2) {
+        width: 15%;
+        text-align: right;
+      }
+      
+      #paymentsTable thead th:nth-child(3),
       #paymentsTable tbody td:nth-child(3) {
+        width: 15%;
+      }
+      
+      #paymentsTable thead th:nth-child(4),
+      #paymentsTable tbody td:nth-child(4) {
+        width: 35%;
+      }
+      
+      #paymentsTable thead th:nth-child(5),
+      #paymentsTable tbody td:nth-child(5) {
+        width: 20%;
+        text-align: right;
+      }
+      
+      /* Ensure all cells display as table cells */
+      #paymentsTable tbody td,
+      #paymentsTable thead th {
         display: table-cell;
         vertical-align: top;
       }
       
-      #paymentsTable thead th:nth-child(2),
-      #paymentsTable thead th:nth-child(3) {
-        display: table-cell;
+      /* Ensure Amount header is right-aligned to match values */
+      #paymentsTable thead th:nth-child(2) {
+        text-align: right;
       }
     }
     
@@ -752,7 +856,7 @@
                 </thead>
               <tbody id="paymentsTableBody">
                 <tr>
-                  <td colspan="5" style="text-align: center; padding: 40px 20px; opacity: .6;">No payments yet</td>
+                  <td colspan="5" class="bookkeeping-empty-state" style="text-align: center; padding: 40px 20px; opacity: .6;">No payments yet</td>
                 </tr>
                 </tbody>
               </table>
