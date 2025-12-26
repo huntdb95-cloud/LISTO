@@ -2500,13 +2500,23 @@ body[data-page="bookkeeping"] .page-title {
     box-sizing: border-box !important;
   }
   
-  /* Make settings section summary wider */
+  /* Make settings section summary wider - ensure consistent width when collapsed */
   body[data-page="settings"] .settings-section-summary {
     padding: 16px 20px;
     font-size: 1rem;
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 100% !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Ensure summary maintains width even when details is not open */
+  body[data-page="settings"] .settings-section:not([open]) .settings-section-summary {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
   }
   
   /* Make settings section content cards wider */
@@ -2535,6 +2545,51 @@ body[data-page="bookkeeping"] .page-title {
   body[data-page="settings"] .settings-section-content .card textarea,
   body[data-page="settings"] .settings-section-content .card button,
   body[data-page="settings"] .settings-section-content .card .btn {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Fix: Keep dashboard card action buttons consistent width on mobile */
+  /* Ensure the actions container maintains full width */
+  body[data-page="settings"] .dashboard-card-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Force buttons to maintain consistent width - equal flex when side by side */
+  body[data-page="settings"] .dashboard-card-actions .btn {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    flex-shrink: 1 !important;
+    flex-grow: 1 !important;
+  }
+  
+  /* When buttons wrap, each should take full width */
+  @media (max-width: 480px) {
+    body[data-page="settings"] .dashboard-card-actions .btn {
+      flex: 1 1 100% !important;
+      min-width: 100% !important;
+    }
+  }
+  
+  /* Ensure buttons don't shrink based on parent container width changes */
+  body[data-page="settings"] .dashboard-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure dashboard grid maintains consistent width */
+  body[data-page="settings"] .dashboard-grid {
+    width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
@@ -3840,48 +3895,51 @@ body[data-page="bookkeeping"] .page-title {
     padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
   }
   
-  /* Payer Info Collapsible Styles */
-  .payer-info-form {
-    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
-    overflow: hidden;
-    max-height: 2000px; /* Large enough for form content */
-  }
-  
-  .payer-info-form.collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin: 0;
-    padding: 0;
-  }
-  
-  .payer-info-summary {
-    display: block !important;
-  }
-  
-  /* Payer Info Header Button Styles */
-  .payer-info-header {
-    transition: background-color 0.2s ease;
-  }
-  
-  .payer-info-header:hover {
-    background-color: var(--panel);
-  }
-  
-  .payer-info-header:focus {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
-  }
-  
-  .payer-info-chevron {
-    transition: transform 0.3s ease;
-  }
-  
-  .payer-info-header[aria-expanded="false"] .payer-info-chevron {
-    transform: rotate(180deg);
-  }
-  
   .mobile-only {
     display: block;
+  }
+}
+
+/* Payer Info Collapsible Styles - Apply to all screen sizes */
+.payer-info-form {
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+  overflow: hidden;
+  max-height: 2000px; /* Large enough for form content */
+}
+
+.payer-info-form.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Payer Info Header Button Styles - Apply to all screen sizes */
+.payer-info-header {
+  transition: background-color 0.2s ease;
+}
+
+.payer-info-header:hover {
+  background-color: var(--panel);
+}
+
+.payer-info-header:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.payer-info-chevron {
+  transition: transform 0.3s ease;
+}
+
+.payer-info-header[aria-expanded="false"] .payer-info-chevron {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 1023px) {
+  /* Mobile-specific: Always show summary when collapsed (JS controls display) */
+  .payer-info-summary {
+    display: block !important;
   }
 }
 
@@ -3890,8 +3948,8 @@ body[data-page="bookkeeping"] .page-title {
     display: none !important;
   }
   
-  /* Allow collapsing on desktop - removed forced visibility rules */
-  /* .payer-info-form and .payer-info-summary now respect collapsed state on all devices */
+  /* Desktop: Summary display is controlled by JavaScript, CSS just ensures collapsed form is hidden */
+  /* The collapsed class on .payer-info-form will hide the form on desktop */
 }
 
 /* Mobile Bottom Navigation for Landing Page (mobile only) */
