@@ -53,16 +53,16 @@
 
           <!-- Payer Information Setup -->
           <div class="card pad" id="payerInfoCard" style="margin-bottom: 24px; display: none;">
-            <!-- Payer Info Header (always visible) -->
-            <div class="payer-info-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <!-- Payer Info Header (clickable, always visible) -->
+            <button type="button" class="payer-info-header" id="payerInfoHeaderBtn" aria-expanded="true" aria-controls="payerInfoForm" style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; margin: 0 0 16px 0; background: none; border: none; cursor: pointer; text-align: left;">
               <h2 class="h2" style="margin: 0;" data-i18n="1099.payerInfo">Payer Information</h2>
-              <button type="button" class="btn ghost small mobile-only" id="togglePayerInfoBtn" style="display: none;" aria-label="Toggle payer information">
-                <span id="togglePayerInfoText">Edit</span>
-              </button>
-            </div>
+              <svg class="payer-info-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; margin-left: 12px; transition: transform 0.3s ease;">
+                <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
             
-            <!-- Payer Info Summary (mobile collapsed view) -->
-            <div class="payer-info-summary mobile-only" id="payerInfoSummary" style="display: none; padding: 12px; background: var(--bg); border-radius: var(--radius); margin-bottom: 16px; cursor: pointer;" role="button" tabindex="0" aria-label="Click to edit payer information">
+            <!-- Payer Info Summary (collapsed view) -->
+            <div class="payer-info-summary" id="payerInfoSummary" style="display: none; padding: 12px; background: var(--bg); border-radius: var(--radius); margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
                 <div style="flex: 1; min-width: 0;">
                   <div style="font-weight: 600; margin-bottom: 4px;" id="payerSummaryName">—</div>
@@ -71,7 +71,7 @@
               </div>
             </div>
             
-            <!-- Payer Info Form (collapsible on mobile) -->
+            <!-- Payer Info Form (collapsible) -->
             <div class="payer-info-form" id="payerInfoForm">
               <p class="muted small" style="margin-bottom: 16px;" data-i18n="1099.payerInfoDesc">
                 Your business information will appear on the 1099-NEC form as the payer. This information is stored securely and can be updated anytime.
@@ -111,7 +111,6 @@
               </div>
               <div class="btn-row" style="margin-top: 16px;">
                 <button type="button" class="btn primary" id="savePayerInfoBtn" data-i18n="1099.savePayerInfo">Save Payer Information</button>
-                <button type="button" class="btn ghost mobile-only" id="collapsePayerInfoBtn" style="display: none;" data-i18n="1099.collapse">Collapse</button>
               </div>
             </div>
           </div>
