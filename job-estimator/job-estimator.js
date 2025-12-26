@@ -638,6 +638,10 @@ function exitQuickEstimateMode() {
   if (quickEstimateActive) quickEstimateActive.style.display = "none";
   if (startQuickEstimateBtn) startQuickEstimateBtn.style.display = "block";
   
+  // Clear estimate form data to prevent contamination
+  currentEstimateId = null;
+  newEstimate();
+  
   // Hide estimate card until builder/job selected
   $("estimateCard").style.display = "none";
   $("estimatesListCard").style.display = "none";
