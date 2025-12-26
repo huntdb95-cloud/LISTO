@@ -2358,6 +2358,51 @@ body[data-page="bookkeeping"] .page-title {
     grid-column: 1 / -1;
     margin-top: 32px;
   }
+  
+  /* Desktop-only: Center all account form buttons */
+  .account-page .account-form-button {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+  }
+  
+  /* Desktop-only: Center Language section (label and slider) */
+  /* Target the form-section that contains the language form */
+  .account-page .form-section:has(#languageForm) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .account-page .form-section:has(#languageForm) h3 {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .account-page .form-section:has(#languageForm) #languageForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .account-page .form-section:has(#languageForm) .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .account-page .form-section:has(#languageForm) .form-group label {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  
+  .account-page .form-section:has(#languageForm) .lang-switch {
+    display: inline-flex;
+    margin: 0 auto;
+  }
 }
 
 @media (max-width: 900px) {
@@ -2611,6 +2656,7 @@ body[data-page="bookkeeping"] .page-title {
   .account-form-button {
     width: auto;
     margin-left: auto;
+    margin-right: auto;
     display: block;
   }
 }
@@ -2947,15 +2993,28 @@ body[data-page="bookkeeping"] .page-title {
     box-sizing: border-box !important;
     min-width: 0 !important;
     flex-shrink: 1 !important;
+    writing-mode: horizontal-tb !important; /* Force horizontal layout */
+    text-orientation: mixed !important; /* Ensure normal text orientation */
+    flex-direction: row !important; /* Ensure horizontal flex direction */
   }
   
   /* Ensure radio button labels wrap and don't overflow */
   body.page-w9 .radio span {
     white-space: normal !important;
     word-wrap: break-word !important;
-    overflow-wrap: anywhere !important;
+    overflow-wrap: break-word !important; /* Changed from 'anywhere' to 'break-word' to prevent vertical text */
     min-width: 0 !important;
-    flex: 1 !important;
+    flex: 1 1 auto !important; /* Allow flex item to grow and shrink naturally */
+    writing-mode: horizontal-tb !important; /* Force horizontal text */
+    text-orientation: mixed !important; /* Ensure normal text orientation */
+    max-width: 100% !important; /* Respect container width */
+  }
+  
+  /* Ensure radio input doesn't cause layout issues */
+  body.page-w9 .radio input[type="radio"] {
+    flex-shrink: 0 !important;
+    width: auto !important;
+    min-width: auto !important;
   }
   
   /* Fix TIN SSN/EIN grid-2.tight to wrap on mobile */
@@ -2971,6 +3030,19 @@ body[data-page="bookkeeping"] .page-title {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+    display: block !important; /* Ensure proper block layout */
+  }
+  
+  /* Ensure fieldset legend doesn't constrain width */
+  body.page-w9 .fieldset legend {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
   }
   
   /* Force all images, canvases, and media to respect container */
