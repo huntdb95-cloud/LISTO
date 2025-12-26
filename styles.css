@@ -1952,6 +1952,69 @@ body[data-page="bookkeeping"] .page-title {
   }
 }
 
+/* Desktop-only: Standardize all Tools pages to match Contracts/Bookkeeping width */
+@media (min-width: 769px) {
+  /* Invoice Builder */
+  body[data-page="invoice"] .invoice-page-wrap {
+    max-width: 1400px !important;
+    padding: 24px 20px !important;
+  }
+  
+  /* Job Cost Estimator */
+  body[data-page="job-estimator"] .job-estimator-page {
+    max-width: 1400px !important;
+    padding: 24px 20px !important;
+  }
+  
+  /* 1099-NEC Generator */
+  body[data-page="1099"] .container {
+    max-width: 1400px !important;
+    padding: 0 20px !important;
+  }
+  
+  /* Audit Help */
+  body[data-page="audit"] .page-wrap {
+    max-width: 1400px !important;
+    padding: 24px 20px !important;
+  }
+  
+  /* Contract Scanner/Translator */
+  body[data-page="document-translator"] .page-wrap {
+    max-width: 1400px !important;
+    padding: 24px 20px !important;
+  }
+  
+  /* Pre-Qualification Dashboard */
+  body[data-page="prequal"] .container {
+    max-width: 1400px !important;
+    padding: 0 20px !important;
+  }
+  
+  /* W-9 Page */
+  body[data-page="w9"] .container,
+  body.page-w9 .container {
+    max-width: 1400px !important;
+    padding: 0 20px !important;
+  }
+}
+
+/* Desktop-only: Align Compile Packet card with What Pre-Qualified Means card on Pre-Qualification page */
+@media (min-width: 769px) {
+  /* Ensure both standalone info cards (What Pre-Qualified Means + Compile Packet) align perfectly */
+  body[data-page="prequal"] .card.pad.mt {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  /* Ensure consistent spacing between cards */
+  body[data-page="prequal"] .card.pad.mt + .card.pad.mt {
+    margin-top: 24px;
+  }
+}
+
 /* Account page specific card padding */
 .account-page .card,
 .page-wrap .card {

@@ -129,3 +129,5 @@ Implemented a hybrid responsive approach:
 - Both views maintain the same state, ensuring data consistency
 
 
+
+
