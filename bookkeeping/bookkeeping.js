@@ -1085,6 +1085,48 @@ function init() {
     resetDateRangeBtn.addEventListener("click", resetDateRange);
   }
   
+  // Payment edit modal event listeners (mobile only)
+  const paymentEditModalClose = $("paymentEditModalClose");
+  if (paymentEditModalClose) {
+    paymentEditModalClose.addEventListener("click", closeEditPaymentModal);
+  }
+  
+  const paymentEditCancelBtn = $("editPaymentCancelBtn");
+  if (paymentEditCancelBtn) {
+    paymentEditCancelBtn.addEventListener("click", closeEditPaymentModal);
+  }
+  
+  const paymentEditForm = $("paymentEditForm");
+  if (paymentEditForm) {
+    paymentEditForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      updatePayment();
+    });
+  }
+  
+  const paymentEditDeleteBtn = $("editPaymentDeleteBtn");
+  if (paymentEditDeleteBtn) {
+    paymentEditDeleteBtn.addEventListener("click", () => {
+      deletePaymentFromModal();
+    });
+  }
+  
+  // Close modal when clicking overlay
+  const paymentEditModal = $("paymentEditModal");
+  if (paymentEditModal) {
+    const overlay = paymentEditModal.querySelector(".bookkeeping-payment-modal-overlay");
+    if (overlay) {
+      overlay.addEventListener("click", closeEditPaymentModal);
+    }
+  }
+  
+  // Close modal on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && paymentEditModal && paymentEditModal.style.display === "block") {
+      closeEditPaymentModal();
+    }
+  });
+  
   // Auth state listener
   onAuthStateChanged(auth, async (user) => {
     try {
