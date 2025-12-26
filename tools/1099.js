@@ -37,6 +37,7 @@ let selectedLaborerId = null;
 let selectedTaxYear = null;
 let payerInfo = null;
 let generatedForms = [];
+let isLoadingLaborers = false;
 
 /* -----------------------------
    Firestore Collections
@@ -66,13 +67,18 @@ function taxForms1099Col(taxYear) {
 ------------------------------ */
 async function loadLaborers() {
   if (!currentUid) return;
+  isLoadingLaborers = true;
+  renderLaborersList(); // Show loading state
   try {
     const q = query(laborersCol(), orderBy("displayName", "asc"));
     const snap = await getDocs(q);
     laborers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    isLoadingLaborers = false;
     renderLaborersList();
   } catch (err) {
     console.error("Error loading laborers:", err);
+    isLoadingLaborers = false;
+    renderLaborersList();
     showMessage("Error loading laborers", true);
   }
 }
@@ -179,8 +185,8 @@ function renderLaborersList() {
   const container = $("laborersList");
   if (!container) return;
   
-  // Show loading state if laborers are being loaded
-  if (laborers.length === 0 && currentUid) {
+  // Show loading state only while actually loading
+  if (isLoadingLaborers) {
     container.innerHTML = '<div class="muted" style="padding: 20px; text-align: center;">Loading laborers...</div>';
     return;
   }
