@@ -80,6 +80,8 @@ let payments = []; // { id, laborerId, datePaid, amount, method, memo, createdAt
 let selectedLaborerId = null;
 let dateRangeFrom = monthStartISO();
 let dateRangeTo = todayISO();
+let pendingLaborerId = null; // Store laborerId from URL params to open after load
+let pendingFocus = null; // Store focus parameter from URL (e.g., "w9")
 
 /* -----------------------------
    Firestore Collections
@@ -133,6 +135,11 @@ async function loadLaborers() {
         if (laborer) {
           renderLaborerDetail(laborer);
         }
+      }
+      
+      // Handle pending laborer selection from URL params (URL params take precedence)
+      if (pendingLaborerId) {
+        handlePendingLaborerSelection();
       }
     }, (err) => {
       console.error("Error in laborers listener:", err);
@@ -204,7 +211,7 @@ function escapeHtml(text) {
 /* -----------------------------
    Select Laborer
 ------------------------------ */
-function selectLaborer(laborerId) {
+function selectLaborer(laborerId, focusSection = null) {
   selectedLaborerId = laborerId;
   const laborer = laborers.find(l => l.id === laborerId);
   
@@ -218,6 +225,23 @@ function selectLaborer(laborerId) {
   renderLaborerDetail(laborer);
   renderPayments();
   $("laborerDetailPanel").style.display = "block";
+  
+  // Scroll detail panel into view (especially important on mobile)
+  const detailPanel = $("laborerDetailPanel");
+  if (detailPanel) {
+    detailPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  
+  // Handle focus section (e.g., "w9")
+  if (focusSection === "w9") {
+    // Scroll to W-9 section after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      const w9Section = $("w9Status")?.closest(".bookkeeping-document-item");
+      if (w9Section) {
+        w9Section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }, 300);
+  }
 }
 
 function renderLaborerDetail(laborer) {
@@ -937,6 +961,50 @@ function init() {
       await loadLaborers();
     }
   });
+  
+  // Parse URL parameters for deep-linking
+  parseUrlParams();
+}
+
+// Parse URL parameters for deep-linking to specific laborer
+function parseUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const laborerId = urlParams.get("laborerId");
+  const focus = urlParams.get("focus");
+  
+  if (laborerId) {
+    pendingLaborerId = laborerId;
+    pendingFocus = focus;
+  }
+}
+
+// Handle pending laborer selection from URL params
+function handlePendingLaborerSelection() {
+  if (!pendingLaborerId) return;
+  
+  const laborer = laborers.find(l => l.id === pendingLaborerId);
+  
+  if (laborer) {
+    // Laborer found - select it
+    selectLaborer(pendingLaborerId, pendingFocus);
+    // Clear pending state
+    pendingLaborerId = null;
+    pendingFocus = null;
+    
+    // Clean up URL (remove params) without reloading page
+    if (window.history && window.history.replaceState) {
+      const url = new URL(window.location);
+      url.searchParams.delete("laborerId");
+      url.searchParams.delete("focus");
+      window.history.replaceState({}, "", url);
+    }
+  } else {
+    // Laborer not found - show message
+    showMessage("Laborer not found. The laborer may have been removed.", true);
+    // Clear pending state
+    pendingLaborerId = null;
+    pendingFocus = null;
+  }
 }
 
 // Start initialization
