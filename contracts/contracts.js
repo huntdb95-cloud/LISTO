@@ -505,9 +505,16 @@ function renderJobsSection() {
         <td colspan="8" class="contracts-empty-state">Select a builder to view jobs.</td>
       </tr>
     `;
-    // Clear mobile cards
-    const mobileContainer = container.querySelector(".contracts-jobs-mobile");
-    if (mobileContainer) mobileContainer.innerHTML = "";
+    // Show mobile placeholder when no builder is selected
+    let mobileContainer = container.querySelector(".contracts-jobs-mobile");
+    if (!mobileContainer) {
+      mobileContainer = document.createElement("div");
+      mobileContainer.className = "contracts-jobs-mobile";
+      container.appendChild(mobileContainer);
+    }
+    mobileContainer.innerHTML = `
+      <div class="contracts-empty-state">Select a builder to view jobs.</div>
+    `;
     return;
   }
   
@@ -517,9 +524,16 @@ function renderJobsSection() {
         <td colspan="8" class="contracts-empty-state">No jobs found for this builder.</td>
       </tr>
     `;
-    // Clear mobile cards
-    const mobileContainer = container.querySelector(".contracts-jobs-mobile");
-    if (mobileContainer) mobileContainer.innerHTML = "";
+    // Show mobile empty state when builder selected but no jobs
+    let mobileContainer = container.querySelector(".contracts-jobs-mobile");
+    if (!mobileContainer) {
+      mobileContainer = document.createElement("div");
+      mobileContainer.className = "contracts-jobs-mobile";
+      container.appendChild(mobileContainer);
+    }
+    mobileContainer.innerHTML = `
+      <div class="contracts-empty-state">No jobs found for this builder.</div>
+    `;
     return;
   }
   
