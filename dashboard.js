@@ -135,9 +135,13 @@ async function loadReminders(user) {
     // 3. Laborers missing W-9 (from laborers collection)
     const laborersWithoutW9 = await getLaborersWithoutW9(user.uid);
     laborersWithoutW9.forEach(laborer => {
+      // Build deep-link URL with laborer ID and focus on W-9
+      const link = laborer.id 
+        ? `bookkeeping/bookkeeping.html?laborerId=${encodeURIComponent(laborer.id)}&focus=w9`
+        : "bookkeeping/bookkeeping.html";
       laborReminders.push({
         text: `${laborer.name} - Missing W-9`,
-        link: "tools/1099.html"
+        link: link
       });
     });
 
@@ -242,9 +246,11 @@ async function getLaborersWithoutW9(uid) {
 
     laborersSnap.docs.forEach(doc => {
       const laborer = doc.data();
-      // Check if W-9 is missing (no w9Url or w9Completed flag)
-      if (!laborer.w9Url && !laborer.w9Completed) {
+      // Check if W-9 is missing (no documents.w9 or w9Url or w9Completed flag)
+      const hasW9 = laborer.documents?.w9?.downloadURL || laborer.w9Url || laborer.w9Completed;
+      if (!hasW9) {
         laborersWithoutW9.push({
+          id: doc.id, // Include laborer ID for deep-linking
           name: laborer.displayName || laborer.name || "Unknown"
         });
       }
