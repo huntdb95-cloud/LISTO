@@ -193,7 +193,7 @@ const I18N = {
     "prequal.itemBusinessLicense": "Business License",
     "prequal.itemBusinessLicenseDesc": "Upload your business license if applicable.",
     "prequal.itemWorkersComp": "Work Comp Exemption",
-    "prequal.itemWorkersCompDesc": "Upload your Workers Compensation exemption",
+    "prequal.itemWorkersCompDesc": "Upload your Work Comp Exemption.",
     "prequal.uploadFile": "Upload File",
     "prequal.uploadBtn": "Upload",
     "prequal.currentFile": "Current File:",
