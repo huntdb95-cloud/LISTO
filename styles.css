@@ -1998,6 +1998,52 @@ body[data-page="bookkeeping"] .page-title {
   }
 }
 
+/* Desktop-only: Fix header consistency on 1099-NEC Generator and Pre-Qualification pages */
+@media (min-width: 769px) {
+  /* Ensure header-inner has standard padding, height, and width (override container class) */
+  body[data-page="1099"] .site-header .header-inner.container,
+  body[data-page="prequal"] .site-header .header-inner.container {
+    padding: 18px 20px !important;
+    align-items: center !important;
+    display: grid !important;
+    grid-template-columns: 260px 1fr auto !important;
+    gap: 18px !important;
+    max-width: 1120px !important;
+    width: min(1120px, calc(100% - 40px)) !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure brand logo has standard size */
+  body[data-page="1099"] .site-header .brand-logo,
+  body[data-page="prequal"] .site-header .brand-logo {
+    height: 84px !important;
+    width: auto !important;
+    display: block !important;
+    max-height: 84px !important;
+    object-fit: contain !important;
+  }
+  
+  /* Ensure brand container is properly centered */
+  body[data-page="1099"] .site-header .header-inner > .brand,
+  body[data-page="prequal"] .site-header .header-inner > .brand {
+    grid-column: 2 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: auto !important;
+  }
+  
+  /* Ensure header-left has standard styling */
+  body[data-page="1099"] .site-header .header-left,
+  body[data-page="prequal"] .site-header .header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding-left: 14px !important;
+  }
+}
+
 /* Desktop-only: Align Compile Packet card with What Pre-Qualified Means card on Pre-Qualification page */
 @media (min-width: 769px) {
   /* Ensure both standalone info cards (What Pre-Qualified Means + Compile Packet) align perfectly */
