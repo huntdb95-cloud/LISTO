@@ -1955,6 +1955,12 @@ function showAgreementPdfModal(pdfUrl) {
     return;
   }
   
+  // Remove any existing escape handler to prevent duplicates
+  if (modal._escapeHandler) {
+    document.removeEventListener("keydown", modal._escapeHandler);
+    modal._escapeHandler = null;
+  }
+  
   // Set PDF URL in iframe
   frame.src = pdfUrl;
   
@@ -1962,12 +1968,29 @@ function showAgreementPdfModal(pdfUrl) {
   modal.style.display = "flex";
   document.body.style.overflow = "hidden";
   
-  // Close handlers
+  // Close handlers - define closeModal first so it can be referenced
   const closeModal = () => {
     modal.style.display = "none";
     document.body.style.overflow = "";
     frame.src = ""; // Clear iframe to stop loading
+    
+    // Always remove escape handler when modal closes
+    if (modal._escapeHandler) {
+      document.removeEventListener("keydown", modal._escapeHandler);
+      modal._escapeHandler = null;
+    }
   };
+  
+  // Close handler for Escape key
+  const handleEscape = (e) => {
+    if (e.key === "Escape" && modal.style.display === "flex") {
+      closeModal();
+    }
+  };
+  
+  // Store handler reference on modal for cleanup
+  modal._escapeHandler = handleEscape;
+  document.addEventListener("keydown", handleEscape);
   
   if (closeBtn) {
     closeBtn.onclick = closeModal;
@@ -1979,15 +2002,6 @@ function showAgreementPdfModal(pdfUrl) {
       closeModal();
     }
   };
-  
-  // Close on Escape key
-  const handleEscape = (e) => {
-    if (e.key === "Escape" && modal.style.display === "flex") {
-      closeModal();
-      document.removeEventListener("keydown", handleEscape);
-    }
-  };
-  document.addEventListener("keydown", handleEscape);
 }
 
 async function saveAgreement(user, data) {
