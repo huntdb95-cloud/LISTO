@@ -219,9 +219,18 @@
     
     /* Mobile: Hide memo and actions columns in table header */
     @media (max-width: 768px) {
+      /* Hide Memo and Actions headers */
       .bookkeeping-memo-header,
-      .bookkeeping-actions-header {
-        display: none;
+      .bookkeeping-actions-header,
+      #paymentsTableHead th:nth-child(4),
+      #paymentsTableHead th:nth-child(5) {
+        display: none !important;
+      }
+      
+      /* Hide Memo and Actions cells in table body */
+      #paymentsTableBody td:nth-child(4),
+      #paymentsTableBody td:nth-child(5) {
+        display: none !important;
       }
       
       /* Make payment rows tappable on mobile */
