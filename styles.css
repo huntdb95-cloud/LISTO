@@ -3518,27 +3518,54 @@ body[data-page="bookkeeping"] .page-title {
 .sidebar-arrow {
   margin-left: auto;
   font-size: 0.7rem;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   flex-shrink: 0;
-  /* Green box with white arrow */
-  background-color: var(--brand);
-  color: white;
+  /* Green box with white arrow - override any blue styling */
+  background-color: var(--brand) !important;
+  background: var(--brand) !important;
+  color: white !important;
   width: 20px;
   height: 20px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   opacity: 1;
+  /* Remove any blue borders, box-shadows, or outlines */
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Remove any pseudo-elements that might have blue */
+.sidebar-arrow::before,
+.sidebar-arrow::after {
+  display: none !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
 .sidebar-menu-item-submenu.is-open .sidebar-arrow {
   transform: rotate(90deg);
-  background-color: var(--brand-dark);
+  background-color: var(--brand-dark) !important;
+  background: var(--brand-dark) !important;
+  color: white !important;
 }
 
 .sidebar-submenu-toggle:hover .sidebar-arrow {
-  background-color: var(--brand-dark);
+  background-color: var(--brand-dark) !important;
+  background: var(--brand-dark) !important;
+  color: white !important;
+}
+
+.sidebar-submenu-toggle:focus .sidebar-arrow,
+.sidebar-submenu-toggle:focus-visible .sidebar-arrow {
+  background-color: var(--brand-dark) !important;
+  background: var(--brand-dark) !important;
+  color: white !important;
+  /* Keep focus outline but ensure background stays green */
+  outline: 2px solid var(--brand) !important;
+  outline-offset: 2px !important;
 }
 
 /* Submenu */
