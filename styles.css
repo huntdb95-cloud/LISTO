@@ -1518,7 +1518,34 @@ input:focus, select:focus, textarea:focus{
     margin-bottom: 16px;
   }
   
-  /* Home page: Center Edit Account button horizontally (logo already centered) */
+  /* Home page: Center logo and Edit Account button */
+  body[data-page="dashboard"] .account-info-card .account-info-content-wrapper {
+    align-items: center;
+  }
+  
+  /* Center the account-info-grid container */
+  body[data-page="dashboard"] .account-info-card .account-info-grid {
+    align-items: center;
+    width: 100%;
+  }
+  
+  /* Center the logo section */
+  body[data-page="dashboard"] .account-info-card .account-info-logo-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  /* Center the profile picture container */
+  body[data-page="dashboard"] .account-info-card .account-info-logo-section .profile-picture-container {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  /* Home page: Center Edit Account button horizontally */
   body[data-page="dashboard"] .account-info-card .account-info-content-wrapper > div:last-of-type {
     display: flex;
     justify-content: center;
