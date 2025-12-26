@@ -1912,6 +1912,14 @@ body[data-page="bookkeeping"] .page-title {
   flex-wrap: wrap;
 }
 
+/* Desktop-only: Make Bookkeeping page wider to match Contracts page */
+@media (min-width: 769px) {
+  body[data-page="bookkeeping"] .page-wrap {
+    max-width: 1400px;
+    padding: 24px 20px;
+  }
+}
+
 /* Account page specific card padding */
 .account-page .card,
 .page-wrap .card {
@@ -2617,96 +2625,112 @@ body[data-page="bookkeeping"] .page-title {
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
+  /* Mobile will override with responsive sizing */
 }
 
 /* ===== W-9 Mobile Fixes ===== */
 @media (max-width: 768px) {
-  /* Prevent horizontal overflow on W-9 page */
-  body.page-w9 {
-    overflow-x: hidden;
-  }
-  
-  body.page-w9 .container,
-  body.page-w9 .section,
-  body.page-w9 main {
+  /* CRITICAL: Hard-stop horizontal overflow on W-9 page root */
+  body.page-w9,
+  body.page-w9 html {
+    overflow-x: hidden !important;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
   
+  /* Prevent overflow on all page containers */
+  body.page-w9 .app-layout,
+  body.page-w9 .page-wrap,
+  body.page-w9 .container,
+  body.page-w9 .section,
+  body.page-w9 main,
+  body.page-w9 #main {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  
   /* Stack form and preview vertically on mobile */
   body.page-w9 .grid-2 {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: 24px;
+    width: 100%;
+    max-width: 100%;
   }
   
   /* Ensure all form inputs fit */
   body.page-w9 .card,
   body.page-w9 .form-grid,
   body.page-w9 .field,
+  body.page-w9 .fieldset,
   body.page-w9 input,
   body.page-w9 select,
   body.page-w9 textarea,
   body.page-w9 button,
   body.page-w9 .btn {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   /* Fix nested grid-2 inside form */
   body.page-w9 .grid-2.tight {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 16px;
   }
   
-  /* Make W-9 preview responsive */
+  /* Make W-9 preview responsive - NO horizontal scroll */
   body.page-w9 .w9-stage {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
     overflow-y: visible;
     padding: 8px;
     box-sizing: border-box;
-    -webkit-overflow-scrolling: touch;
   }
   
   body.page-w9 .w9-sheet {
     /* Scale down from 816px to fit screen, maintaining aspect ratio */
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    aspect-ratio: 816 / 1056; /* Maintain 8.5x11 aspect ratio (816px:1056px) */
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    aspect-ratio: 816 / 1056; /* Maintain 8.5x11 aspect ratio */
     margin: 0 auto;
     box-sizing: border-box;
-    /* Use transform scale to maintain precise positioning */
     transform-origin: top center;
   }
   
   /* Scale W-9 background image */
   body.page-w9 .w9-bg {
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
     object-fit: contain;
   }
   
-  /* Scale overlay elements proportionally using container width */
-  /* Since w9-sheet scales to 100% width and maintains aspect ratio, */
-  /* both x and y positions scale by the same ratio (width / 816) */
+  /* Scale overlay elements proportionally - use correct base dimensions */
+  /* Since w9-sheet maintains aspect ratio, both dimensions scale by width ratio */
   body.page-w9 .w9-txt {
-    /* Use percentage-based calculation: (original-px / original-dimension) * 100% */
-    /* For width-based scaling, use 816 as base for both x and y since aspect ratio is maintained */
-    left: calc((var(--x) / 816) * 100%);
-    top: calc((var(--y) / 816) * 100%);
-    width: calc((var(--w, 200) / 816) * 100%);
-    /* Font size scales with viewport, clamped for readability */
-    font-size: clamp(10px, calc((var(--size, 14) / 816) * 100vw), var(--size, 14px));
+    left: calc((var(--x) / 816) * 100%) !important;
+    top: calc((var(--y) / 816) * 100%) !important;
+    width: calc((var(--w, 200) / 816) * 100%) !important;
+    max-width: 100% !important;
+    /* Font size scales proportionally with container width */
+    font-size: clamp(8px, calc((var(--size, 14) / 816) * 100vw), 14px) !important;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   body.page-w9 .w9-check {
-    left: calc((var(--x) / 816) * 100%);
-    top: calc((var(--y) / 816) * 100%);
-    width: calc((12 / 816) * 100%);
-    height: calc((12 / 816) * 100%);
+    left: calc((var(--x) / 816) * 100%) !important;
+    top: calc((var(--y) / 816) * 100%) !important;
+    width: calc((12 / 816) * 100%) !important;
+    height: calc((12 / 816) * 100%) !important;
+    max-width: 100% !important;
   }
   
   /* Ensure labels wrap properly */
@@ -2714,42 +2738,66 @@ body[data-page="bookkeeping"] .page-title {
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
+    white-space: normal;
   }
   
   /* Fix flex children to prevent overflow */
   body.page-w9 .row,
   body.page-w9 .row-between {
-    flex-wrap: wrap;
-    min-width: 0;
+    flex-wrap: wrap !important;
+    min-width: 0 !important;
+    width: 100%;
+    max-width: 100%;
   }
   
   body.page-w9 .row > *,
   body.page-w9 .row-between > * {
-    min-width: 0;
+    min-width: 0 !important;
     flex-shrink: 1;
+    max-width: 100%;
   }
   
   /* Ensure radio grid wraps on mobile */
   body.page-w9 .radio-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   
   /* Ensure fieldset content doesn't overflow */
   body.page-w9 .fieldset {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   
-  /* Fix any remaining overflow issues */
+  /* Force all images, canvases, and media to respect container */
+  body.page-w9 img,
+  body.page-w9 canvas,
+  body.page-w9 iframe,
+  body.page-w9 embed,
+  body.page-w9 object,
+  body.page-w9 video {
+    max-width: 100% !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Prevent any element from exceeding viewport */
   body.page-w9 * {
     max-width: 100%;
+    box-sizing: border-box;
   }
   
   /* Allow specific elements to shrink below content size */
   body.page-w9 .row-between,
   body.page-w9 .row {
-    min-width: 0;
+    min-width: 0 !important;
+  }
+  
+  /* Ensure section-head doesn't overflow */
+  body.page-w9 .section-head {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 .w9-bg{
@@ -2817,72 +2865,9 @@ body[data-page="bookkeeping"] .page-title {
 }
 .grid-2.tight{ gap: 10px; }
 
-/* ===== W-9 Mobile Responsive Styles ===== */
-@media (max-width: 768px) {
-  /* Single column layout on mobile */
-  body[data-page="w9"] .grid-2 {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  
-  /* Full-width inputs on mobile */
-  body[data-page="w9"] .field input,
-  body[data-page="w9"] .fieldset input,
-  body[data-page="w9"] .field textarea {
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  /* Stack grid-2 tight on mobile */
-  body[data-page="w9"] .grid-2.tight {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  /* Full-width buttons on mobile */
-  body[data-page="w9"] .row {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  body[data-page="w9"] .row .btn {
-    width: 100%;
-  }
-  
-  /* W-9 preview card adjustments - allow horizontal scroll for the sheet */
-  body[data-page="w9"] .w9-stage {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 12px;
-  }
-  
-  /* Keep sheet at original size but allow scrolling on mobile */
-  /* The sheet stays at 816px width, and users can scroll horizontally to see it */
-  body[data-page="w9"] .w9-sheet {
-    min-width: 816px;
-  }
-  
-  /* Adjust radio grid to single column on mobile */
-  body[data-page="w9"] .radio-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  /* Better spacing for form sections */
-  body[data-page="w9"] .card.pad {
-    padding: 20px 16px;
-  }
-  
-  /* Row-between adjustments on mobile */
-  body[data-page="w9"] .row-between {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-  
-  body[data-page="w9"] .row-between .btn {
-    align-self: flex-start;
-  }
-}
+/* ===== W-9 Mobile Responsive Styles (consolidated with body.page-w9 rules above) ===== */
+/* Note: Most mobile rules are now in the body.page-w9 section above for consistency */
+/* This section kept for any data-page="w9" specific overrides if needed */
 
 /* ===== Agreement helpers ===== */
 .legal { color: var(--text); }
@@ -3509,6 +3494,28 @@ body[data-page="bookkeeping"] .page-title {
     display: block !important;
   }
   
+  /* Payer Info Header Button Styles */
+  .payer-info-header {
+    transition: background-color 0.2s ease;
+  }
+  
+  .payer-info-header:hover {
+    background-color: var(--panel);
+  }
+  
+  .payer-info-header:focus {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  
+  .payer-info-chevron {
+    transition: transform 0.3s ease;
+  }
+  
+  .payer-info-header[aria-expanded="false"] .payer-info-chevron {
+    transform: rotate(180deg);
+  }
+  
   .mobile-only {
     display: block;
   }
@@ -3519,15 +3526,8 @@ body[data-page="bookkeeping"] .page-title {
     display: none !important;
   }
   
-  .payer-info-form {
-    display: block !important;
-    max-height: none !important;
-    opacity: 1 !important;
-  }
-  
-  .payer-info-summary {
-    display: none !important;
-  }
+  /* Allow collapsing on desktop - removed forced visibility rules */
+  /* .payer-info-form and .payer-info-summary now respect collapsed state on all devices */
 }
 
 /* Mobile Bottom Navigation for Landing Page (mobile only) */

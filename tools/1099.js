@@ -134,15 +134,12 @@ async function loadPayerInfo() {
     populatePayerForm();
     $("payerInfoCard").style.display = "block";
     
-    // On mobile, collapse payer info if it exists
-    if (isMobile() && payerInfo && payerInfo.businessName) {
+    // Collapse payer info if it exists (works on all devices)
+    if (payerInfo && payerInfo.businessName) {
       collapsePayerInfo();
     } else {
-      // On desktop or if no payer info, ensure form is visible
-      const form = $("payerInfoForm");
-      if (form) form.classList.remove("collapsed");
-      const summary = $("payerInfoSummary");
-      if (summary && !isMobile()) summary.style.display = "none";
+      // If no payer info, ensure form is visible
+      expandPayerInfo();
     }
   } catch (err) {
     console.error("Error loading payer info:", err);
@@ -471,39 +468,31 @@ function isMobile() {
 function expandPayerInfo() {
   const form = $("payerInfoForm");
   const summary = $("payerInfoSummary");
-  const toggleBtn = $("togglePayerInfoBtn");
-  const toggleText = $("togglePayerInfoText");
-  const collapseBtn = $("collapsePayerInfoBtn");
+  const headerBtn = $("payerInfoHeaderBtn");
+  const chevron = headerBtn?.querySelector(".payer-info-chevron");
   
-  if (!form) return;
+  if (!form || !headerBtn) return;
   
   form.classList.remove("collapsed");
-  if (summary && isMobile()) summary.style.display = "none";
-  if (toggleBtn && isMobile()) toggleBtn.style.display = "none";
-  if (collapseBtn && isMobile()) collapseBtn.style.display = "inline-flex";
+  if (summary) summary.style.display = "none";
+  headerBtn.setAttribute("aria-expanded", "true");
+  if (chevron) chevron.style.transform = "rotate(0deg)";
 }
 
 function collapsePayerInfo() {
   const form = $("payerInfoForm");
   const summary = $("payerInfoSummary");
-  const toggleBtn = $("togglePayerInfoBtn");
-  const toggleText = $("togglePayerInfoText");
-  const collapseBtn = $("collapsePayerInfoBtn");
+  const headerBtn = $("payerInfoHeaderBtn");
+  const chevron = headerBtn?.querySelector(".payer-info-chevron");
   
-  if (!form) return;
-  
-  // Only collapse on mobile
-  if (!isMobile()) return;
+  if (!form || !headerBtn) return;
   
   form.classList.add("collapsed");
   if (summary && payerInfo && payerInfo.businessName) {
     summary.style.display = "block";
   }
-  if (toggleBtn) {
-    toggleBtn.style.display = "inline-flex";
-    if (toggleText) toggleText.textContent = "Edit";
-  }
-  if (collapseBtn) collapseBtn.style.display = "none";
+  headerBtn.setAttribute("aria-expanded", "false");
+  if (chevron) chevron.style.transform = "rotate(180deg)";
 }
 
 function togglePayerInfo() {
@@ -588,12 +577,10 @@ async function savePayerInfo() {
     updatePayerSummary();
     showMessage("Payer information saved successfully!", false);
     
-    // On mobile, collapse payer info after saving
-    if (isMobile()) {
-      setTimeout(() => {
-        collapsePayerInfo();
-      }, 500); // Small delay to show success message
-    }
+    // Collapse payer info after saving (works on all devices)
+    setTimeout(() => {
+      collapsePayerInfo();
+    }, 500); // Small delay to show success message
     
     if (btn) btn.disabled = false;
   } catch (err) {
@@ -921,54 +908,27 @@ function init() {
     savePayerBtn.addEventListener("click", savePayerInfo);
   }
   
-  // Toggle payer info (mobile)
-  const togglePayerBtn = $("togglePayerInfoBtn");
-  if (togglePayerBtn) {
-    togglePayerBtn.addEventListener("click", togglePayerInfo);
-  }
-  
-  const collapsePayerBtn = $("collapsePayerInfoBtn");
-  if (collapsePayerBtn) {
-    collapsePayerBtn.addEventListener("click", collapsePayerInfo);
+  // Toggle payer info (header button - works on all devices)
+  const payerInfoHeaderBtn = $("payerInfoHeaderBtn");
+  if (payerInfoHeaderBtn) {
+    payerInfoHeaderBtn.addEventListener("click", togglePayerInfo);
   }
   
   // Make summary clickable to expand
   const payerSummary = $("payerInfoSummary");
   if (payerSummary) {
     payerSummary.addEventListener("click", () => {
-      if (isMobile() && payerSummary.style.display !== "none") {
+      if (payerSummary.style.display !== "none") {
         expandPayerInfo();
       }
     });
     payerSummary.addEventListener("keydown", (e) => {
-      if ((e.key === "Enter" || e.key === " ") && isMobile() && payerSummary.style.display !== "none") {
+      if ((e.key === "Enter" || e.key === " ") && payerSummary.style.display !== "none") {
         e.preventDefault();
         expandPayerInfo();
       }
     });
   }
-  
-  // Handle window resize to show/hide mobile controls
-  let resizeTimeout;
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-      if (!isMobile()) {
-        // On desktop, ensure form is always visible
-        const form = $("payerInfoForm");
-        if (form) form.classList.remove("collapsed");
-        const summary = $("payerInfoSummary");
-        if (summary) summary.style.display = "none";
-        const toggleBtn = $("togglePayerInfoBtn");
-        if (toggleBtn) toggleBtn.style.display = "none";
-        const collapseBtn = $("collapsePayerInfoBtn");
-        if (collapseBtn) collapseBtn.style.display = "none";
-      } else if (payerInfo && payerInfo.businessName) {
-        // On mobile, collapse if payer info exists
-        collapsePayerInfo();
-      }
-    }, 100);
-  });
   
   // Generate 1099
   const generateBtn = $("generate1099Btn");
