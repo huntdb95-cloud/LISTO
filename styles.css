@@ -2126,17 +2126,29 @@ body[data-page="bookkeeping"] .page-title {
     width: 25%; /* Each column gets equal 25% width */
   }
   
-  /* Ensure Amount column is right-aligned */
-  body[data-page="1099"] #paymentsTable thead th:nth-child(2),
-  body[data-page="1099"] #paymentsTable tbody td:nth-child(2) {
-    text-align: right;
-  }
-  
-  /* Ensure all cells display as table cells */
-  body[data-page="1099"] #paymentsTable tbody td,
-  body[data-page="1099"] #paymentsTable thead th {
+  /* Ensure all cells have consistent padding and alignment */
+  body[data-page="1099"] #paymentsTable thead th,
+  body[data-page="1099"] #paymentsTable tbody td {
+    padding: 10px 12px !important;
     display: table-cell;
     vertical-align: top;
+    box-sizing: border-box;
+  }
+  
+  /* Left-align Date, Method, and Memo columns (headers and cells) */
+  body[data-page="1099"] #paymentsTable thead th:nth-child(1),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(1),
+  body[data-page="1099"] #paymentsTable thead th:nth-child(3),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(3),
+  body[data-page="1099"] #paymentsTable thead th:nth-child(4),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(4) {
+    text-align: left !important;
+  }
+  
+  /* Right-align Amount column (header and cells) */
+  body[data-page="1099"] #paymentsTable thead th:nth-child(2),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(2) {
+    text-align: right !important;
   }
 }
 
