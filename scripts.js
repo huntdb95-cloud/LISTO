@@ -1615,24 +1615,10 @@ async function updatePrequalUI(data, userId = null) {
       const pdfUrl = agreementData?.pdfUrl;
       
       if (agreementViewBtn && pdfUrl) {
-        // Set up modal preview instead of direct link
-        agreementViewBtn.href = "#";
-        // Store PDF URL on button for handler access
-        agreementViewBtn.dataset.pdfUrl = pdfUrl;
-        // Only add listener once (check data attribute)
-        if (!agreementViewBtn.dataset.modalSetup) {
-          agreementViewBtn.dataset.modalSetup = "true";
-          agreementViewBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            const url = agreementViewBtn.dataset.pdfUrl;
-            if (url) {
-              showAgreementPdfModal(url);
-            }
-          });
-        } else {
-          // Update stored URL if listener already exists
-          agreementViewBtn.dataset.pdfUrl = pdfUrl;
-        }
+        // Open PDF in new tab (same as Agreement page) to ensure all pages are visible
+        agreementViewBtn.href = pdfUrl;
+        agreementViewBtn.target = "_blank";
+        agreementViewBtn.rel = "noopener noreferrer";
       }
       if (settingsAgreementViewBtn && pdfUrl) {
         // Settings page can still open in new tab
