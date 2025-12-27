@@ -255,7 +255,6 @@ async function loadPayrollSummary() {
     // Aggregate by worker and payment type
     const summary = {};
     let grandTotal = 0;
-    let grandCount = 0;
     
     entries.forEach(entry => {
       const key = `${entry.employeeName || "Unknown"}|${entry.method || "Unknown"}`;
@@ -270,7 +269,6 @@ async function loadPayrollSummary() {
       summary[key].total += Number(entry.amount || 0);
       summary[key].count += 1;
       grandTotal += Number(entry.amount || 0);
-      grandCount += 1;
     });
     
     payrollData = Object.values(summary);
@@ -281,7 +279,7 @@ async function loadPayrollSummary() {
     
     if (payrollData.length === 0) {
       const tr = document.createElement("tr");
-      tr.innerHTML = '<td colspan="4" class="muted">No payroll entries found in this period.</td>';
+      tr.innerHTML = '<td colspan="3" class="muted">No payroll entries found in this period.</td>';
       tbody.appendChild(tr);
     } else {
       payrollData.forEach(row => {
@@ -290,14 +288,12 @@ async function loadPayrollSummary() {
           <td>${row.worker}</td>
           <td>${row.paymentType}</td>
           <td>${money(row.total)}</td>
-          <td>${row.count}</td>
         `;
         tbody.appendChild(tr);
       });
     }
     
     $("grandTotal").innerHTML = `<b>${money(grandTotal)}</b>`;
-    $("grandCount").innerHTML = `<b>${grandCount}</b>`;
     
     setMsg("payrollStatus", `Loaded ${entries.length} entries, ${payrollData.length} unique worker/method combinations.`);
     
@@ -767,23 +763,20 @@ function generatePDF() {
     const tableRows = payrollData.map(row => [
       row.worker,
       row.paymentType,
-      money(row.total),
-      String(row.count)
+      money(row.total)
     ]);
     
     const grandTotal = payrollData.reduce((sum, row) => sum + row.total, 0);
-    const grandCount = payrollData.reduce((sum, row) => sum + row.count, 0);
-    tableRows.push(["TOTAL", "", money(grandTotal), String(grandCount)]);
+    tableRows.push(["TOTAL", "", money(grandTotal)]);
     
     docPdf.autoTable({
       startY: y,
-      head: [["Worker", "Payment Type", "Total Paid", "# Payments"]],
+      head: [["Name", "Method", "Total Paid"]],
       body: tableRows,
       styles: { fontSize: 9 },
       headStyles: { fillColor: [17, 24, 39] },
       columnStyles: {
-        2: { halign: "right" },
-        3: { halign: "right" }
+        2: { halign: "right" }
       }
     });
     
