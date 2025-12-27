@@ -4112,8 +4112,10 @@ if (typeof window !== 'undefined') {
 // Load footer script on all pages (footer.js handles auth page exclusion)
 // Determine correct path to footer.js based on current page location
 (function() {
-  const pathParts = window.location.pathname.split('/').filter(p => p);
-  const depth = pathParts.length - 1; // Subtract 1 because last part is the HTML file
+  // pathname format: /path/to/file.html or /file.html
+  // Split and filter out empty strings and HTML files, then count directories
+  const pathParts = window.location.pathname.split('/').filter(p => p && !p.endsWith('.html'));
+  const depth = pathParts.length; // Count only directories, excluding HTML file
   const footerPath = depth > 0 ? '../'.repeat(depth) + 'footer.js' : 'footer.js';
   
   const footerScript = document.createElement('script');

@@ -62,8 +62,8 @@ service firebase.storage {
 
     // ========== Document Translator ==========
     
-    // Document Translator uploads: uploads/{uid}/contract-scanner/*
-    match /uploads/{userId}/contract-scanner/{fileName} {
+    // Document Translator uploads: users/{uid}/translator/*
+    match /users/{userId}/translator/{fileName} {
       allow read: if isOwnerPath(userId);
       
       allow write: if isOwnerPath(userId)

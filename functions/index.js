@@ -546,7 +546,465 @@ async function updateOcrStatus(userId, laborerId, status, error) {
 }
 
 /**
- * Document Translator: processDocument
+ * Document Translator: processDocumentForTranslation
+ * Uses Google Cloud Vision OCR for images and PDFs
+ * Uses Google Cloud Translation API to translate text
+ * Simplified interface: no Firestore jobs required
+ */
+exports.processDocumentForTranslation = functions.https.onCall(async (data, context) => {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+  
+  // Log request
+  if (DEBUG_MODE) {
+    console.log(JSON.stringify({
+      requestId,
+      timestamp: new Date().toISOString(),
+      operation: "processDocumentForTranslation_start",
+      environment: ENVIRONMENT,
+      storagePath: data.storagePath,
+      targetLanguage: data.targetLanguage,
+      mimeType: data.mimeType,
+    }));
+  }
+  
+  // Check authentication
+  if (!context.auth) {
+    logError(requestId, "processDocumentForTranslation_auth", new Error("Unauthenticated"));
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Please sign in to use this feature.",
+      createErrorResponse(requestId, "UNAUTHENTICATED", "Please sign in to use this feature.")
+    );
+  }
+  
+  const userId = context.auth.uid;
+  
+  // Validate input
+  if (!data.storagePath || !data.mimeType) {
+    logError(requestId, "processDocumentForTranslation_validation", new Error("Missing required fields"));
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Storage path and MIME type are required",
+      createErrorResponse(requestId, "BAD_REQUEST", "Storage path and MIME type are required")
+    );
+  }
+  
+  // Validate storage path: must start with users/{uid}/translator/
+  const expectedPathPrefix = `users/${userId}/translator/`;
+  if (!data.storagePath.startsWith(expectedPathPrefix)) {
+    logError(requestId, "processDocumentForTranslation_validation", new Error("Invalid storage path"));
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Invalid storage path. Files must be in users/{uid}/translator/",
+      createErrorResponse(requestId, "PERMISSION_DENIED", "Invalid storage path.")
+    );
+  }
+  
+  // Determine file type from MIME type
+  const isPdf = data.mimeType === "application/pdf" || data.storagePath.toLowerCase().endsWith(".pdf");
+  const fileType = isPdf ? "pdf" : "image";
+  const targetLanguage = data.targetLanguage || "es";
+  
+  // Get Storage client and file reference
+  const storage = getStorageClient();
+  const bucket = storage.bucket();
+  const file = bucket.file(data.storagePath);
+  
+  // Check if file exists
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new functions.https.HttpsError(
+      "not-found",
+      "File not found in storage",
+      createErrorResponse(requestId, "FILE_NOT_FOUND", "File not found in storage.")
+    );
+  }
+  
+  // Get file metadata for page count (PDFs)
+  let pageCount = null;
+  if (isPdf) {
+    try {
+      const [metadata] = await file.getMetadata();
+      // For PDFs, we'll determine page count from OCR results
+      pageCount = null; // Will be set after OCR
+    } catch (err) {
+      console.warn("Could not get file metadata:", err);
+    }
+  }
+  
+  // Perform OCR using Google Cloud Vision
+  let extractedText = "";
+  let sourceLanguage = "en"; // Default to English
+  
+  try {
+    const vision = getVisionClient();
+    
+    if (fileType === "image") {
+      // For images: use documentTextDetection (better for forms/documents)
+      const gcsUri = `gs://${bucket.name}/${data.storagePath}`;
+      
+      const [result] = await vision.documentTextDetection(gcsUri);
+      
+      if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
+        extractedText = result.fullTextAnnotation.text;
+      } else if (result.textAnnotations && result.textAnnotations.length > 0) {
+        extractedText = result.textAnnotations[0].description || "";
+      }
+      
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new Error("No text detected in image");
+      }
+      
+      extractedText = extractedText.trim();
+      
+      if (DEBUG_MODE) {
+        console.log(JSON.stringify({
+          requestId,
+          operation: "ocr_image_completed",
+          textLength: extractedText.length,
+          textPreview: extractedText.substring(0, 200),
+        }));
+      }
+    } else if (fileType === "pdf") {
+      // For PDFs: use asyncBatchAnnotateFiles
+      const gcsSourceUri = `gs://${bucket.name}/${data.storagePath}`;
+      const gcsDestinationUri = `gs://${bucket.name}/ocr-output/${userId}/${requestId}/`;
+      
+      const inputConfig = {
+        mimeType: "application/pdf",
+        gcsSource: {
+          uri: gcsSourceUri,
+        },
+      };
+      
+      const outputConfig = {
+        gcsDestination: {
+          uri: gcsDestinationUri,
+        },
+        batchSize: 2, // Process 2 pages at a time
+      };
+      
+      const request = {
+        requests: [
+          {
+            inputConfig: inputConfig,
+            features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+            outputConfig: outputConfig,
+          },
+        ],
+      };
+      
+      // Start async batch operation
+      const [operation] = await vision.asyncBatchAnnotateFiles(request);
+      const operationName = operation.name;
+      
+      if (DEBUG_MODE) {
+        console.log(JSON.stringify({
+          requestId,
+          operation: "ocr_pdf_started",
+          operationName,
+        }));
+      }
+      
+      // Poll for completion (max 5 minutes)
+      const maxWaitTime = 5 * 60 * 1000; // 5 minutes
+      const pollInterval = 10000; // 10 seconds
+      const startPollTime = Date.now();
+      
+      let completed = false;
+      while (!completed && (Date.now() - startPollTime) < maxWaitTime) {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        
+        // Check if output files exist in the destination bucket
+        const outputPrefix = `ocr-output/${userId}/${requestId}/`;
+        const [files] = await bucket.getFiles({ prefix: outputPrefix });
+        
+        // If we have JSON output files, the operation is likely complete
+        const hasJsonFiles = files.some(f => f.name.endsWith(".json"));
+        if (hasJsonFiles) {
+          // Wait a bit more to ensure all files are written
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          completed = true;
+        }
+      }
+      
+      if (!completed) {
+        throw new Error("OCR operation timed out. PDF processing may take longer for large files.");
+      }
+      
+      // Read results from output bucket
+      const outputPrefix = `ocr-output/${userId}/${requestId}/`;
+      const [files] = await bucket.getFiles({ prefix: outputPrefix });
+      
+      // Sort files by name (page order)
+      files.sort((a, b) => {
+        const aNum = parseInt(a.name.match(/-(\d+)-output/)?.[1] || "0");
+        const bNum = parseInt(b.name.match(/-(\d+)-output/)?.[1] || "0");
+        return aNum - bNum;
+      });
+      
+      // Extract text from each output file
+      const pageTexts = [];
+      for (const outputFile of files) {
+        if (outputFile.name.endsWith(".json")) {
+          const [fileBuffer] = await outputFile.download();
+          const jsonData = JSON.parse(fileBuffer.toString());
+          
+          // Extract text from response
+          if (jsonData.responses && jsonData.responses.length > 0) {
+            for (const response of jsonData.responses) {
+              if (response.fullTextAnnotation && response.fullTextAnnotation.text) {
+                pageTexts.push(response.fullTextAnnotation.text);
+              } else if (response.textAnnotations && response.textAnnotations.length > 0) {
+                pageTexts.push(response.textAnnotations[0].description || "");
+              }
+            }
+          }
+        }
+      }
+      
+      extractedText = pageTexts.join("\n\n");
+      pageCount = pageTexts.length;
+      
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new Error("No text detected in PDF");
+      }
+      
+      extractedText = extractedText.trim();
+      
+      if (DEBUG_MODE) {
+        console.log(JSON.stringify({
+          requestId,
+          operation: "ocr_pdf_completed",
+          textLength: extractedText.length,
+          pagesProcessed: pageTexts.length,
+          textPreview: extractedText.substring(0, 200),
+        }));
+      }
+    }
+  } catch (error) {
+    let errorCode = "OCR_FAILED";
+    let errorMessage = "Failed to extract text from document.";
+    
+    if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
+      errorCode = "OCR_PERMISSION";
+      errorMessage = "OCR failed: Google Vision API permission denied. Please check IAM roles.";
+    } else if (error.code === 16 || error.message?.includes("UNAUTHENTICATED")) {
+      errorCode = "OCR_AUTH";
+      errorMessage = "OCR failed: Google Vision API authentication failed. Please check credentials.";
+    } else if (error.message?.includes("quota") || error.message?.includes("limit")) {
+      errorCode = "OCR_QUOTA";
+      errorMessage = "OCR failed: API quota exceeded. Please try again later.";
+    } else if (error.message?.includes("not enabled") || error.message?.includes("API not enabled")) {
+      errorCode = "OCR_API_DISABLED";
+      errorMessage = "OCR failed: Google Vision API is not enabled. Please enable it in Google Cloud Console.";
+    } else if (error.message?.includes("No text detected") || error.message?.includes("No text")) {
+      errorCode = "NO_TEXT_DETECTED";
+      errorMessage = "No text was detected in the document. Please ensure the document contains readable text.";
+    } else if (error.message?.includes("timed out") || error.message?.includes("timeout")) {
+      errorCode = "OCR_TIMEOUT";
+      errorMessage = "OCR request timed out. The file may be too large. Please try again with a smaller file.";
+    }
+    
+    logError(requestId, "processDocumentForTranslation_ocr", error, {
+      errorCode,
+      errorMessage,
+      fileType,
+    });
+    
+    throw new functions.https.HttpsError(
+      "internal",
+      errorMessage,
+      createErrorResponse(requestId, errorCode, errorMessage)
+    );
+  }
+  
+  // Translate text
+  let translatedText = "";
+  try {
+    const translate = getTranslateClient();
+    
+    // Get project ID
+    let projectId = process.env.GCLOUD_PROJECT;
+    if (!projectId) {
+      projectId = admin.app().options.projectId;
+    }
+    if (!projectId) {
+      throw new Error("Project ID not found");
+    }
+    
+    // Translation API v3 requires location
+    const location = "global";
+    
+    // Chunk text if too long (Translation API has limits)
+    const MAX_CHUNK_SIZE = 100000; // 100k characters per request
+    const textChunks = [];
+    
+    // Helper function to split a large text into smaller chunks
+    function splitLargeText(text, maxSize) {
+      const chunks = [];
+      
+      if (text.length <= maxSize) {
+        return [text];
+      }
+      
+      // First try splitting by sentences (preserve structure)
+      const sentences = text.split(/([.!?]+\s+)/);
+      let currentChunk = "";
+      
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        
+        if (currentChunk.length + sentence.length > maxSize) {
+          if (currentChunk) {
+            chunks.push(currentChunk);
+            currentChunk = "";
+          }
+          
+          if (sentence.length > maxSize) {
+            for (let j = 0; j < sentence.length; j += maxSize) {
+              chunks.push(sentence.substring(j, j + maxSize));
+            }
+          } else {
+            currentChunk = sentence;
+          }
+        } else {
+          currentChunk += sentence;
+        }
+      }
+      
+      if (currentChunk) {
+        chunks.push(currentChunk);
+      }
+      
+      return chunks;
+    }
+    
+    if (extractedText.length > MAX_CHUNK_SIZE) {
+      const paragraphs = extractedText.split(/\n\n+/);
+      let currentChunk = "";
+      
+      for (const para of paragraphs) {
+        if (para.length > MAX_CHUNK_SIZE) {
+          if (currentChunk) {
+            textChunks.push(currentChunk);
+            currentChunk = "";
+          }
+          const paraChunks = splitLargeText(para, MAX_CHUNK_SIZE);
+          textChunks.push(...paraChunks);
+        } else if (currentChunk.length + para.length > MAX_CHUNK_SIZE) {
+          if (currentChunk) textChunks.push(currentChunk);
+          currentChunk = para;
+        } else {
+          currentChunk += (currentChunk ? "\n\n" : "") + para;
+        }
+      }
+      if (currentChunk) textChunks.push(currentChunk);
+    } else {
+      textChunks.push(extractedText);
+    }
+    
+    // Final safety check: ensure no chunk exceeds limit
+    const finalChunks = [];
+    for (const chunk of textChunks) {
+      if (chunk.length > MAX_CHUNK_SIZE) {
+        finalChunks.push(...splitLargeText(chunk, MAX_CHUNK_SIZE));
+      } else {
+        finalChunks.push(chunk);
+      }
+    }
+    
+    // Translate each chunk
+    const translatedChunks = [];
+    for (let i = 0; i < finalChunks.length; i++) {
+      const chunk = finalChunks[i];
+      
+      const request = {
+        parent: `projects/${projectId}/locations/${location}`,
+        contents: [chunk],
+        mimeType: "text/plain",
+        sourceLanguageCode: "en",
+        targetLanguageCode: targetLanguage,
+      };
+      
+      const [response] = await translate.translateText(request);
+      
+      if (response.translations && response.translations.length > 0) {
+        translatedChunks.push(response.translations[0].translatedText);
+        
+        // Try to get detected source language from first chunk
+        if (translatedChunks.length === 1 && response.translations[0].detectedLanguageCode) {
+          sourceLanguage = response.translations[0].detectedLanguageCode;
+        }
+      } else {
+        throw new Error("Translation returned empty result");
+      }
+    }
+    
+    // Reassemble translated text
+    translatedText = translatedChunks.join("\n\n");
+    
+    if (DEBUG_MODE) {
+      console.log(JSON.stringify({
+        requestId,
+        operation: "translation_completed",
+        originalLength: extractedText.length,
+        translatedLength: translatedText.length,
+        chunksProcessed: finalChunks.length,
+      }));
+    }
+  } catch (error) {
+    let errorCode = "TRANSLATE_FAILED";
+    let errorMessage = "Failed to translate text.";
+    
+    if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
+      errorCode = "TRANSLATE_PERMISSION";
+      errorMessage = "Translation failed: Google Translation API permission denied. Please check IAM roles.";
+    } else if (error.code === 16 || error.message?.includes("UNAUTHENTICATED")) {
+      errorCode = "TRANSLATE_AUTH";
+      errorMessage = "Translation failed: Google Translation API authentication failed. Please check credentials.";
+    } else if (error.message?.includes("quota") || error.message?.includes("limit")) {
+      errorCode = "TRANSLATE_QUOTA";
+      errorMessage = "Translation failed: API quota exceeded. Please try again later.";
+    } else if (error.message?.includes("not enabled") || error.message?.includes("API not enabled")) {
+      errorCode = "TRANSLATE_API_DISABLED";
+      errorMessage = "Translation failed: Google Translation API is not enabled. Please enable it in Google Cloud Console.";
+    }
+    
+    logError(requestId, "processDocumentForTranslation_translation", error);
+    
+    throw new functions.https.HttpsError(
+      "internal",
+      errorMessage,
+      createErrorResponse(requestId, errorCode, errorMessage)
+    );
+  }
+  
+  const duration = Date.now() - startTime;
+  
+  if (DEBUG_MODE) {
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processDocumentForTranslation_success",
+      duration,
+      textLength: extractedText.length,
+      translatedLength: translatedText.length,
+      pageCount,
+    }));
+  }
+  
+  return {
+    extractedText: extractedText,
+    translatedText: translatedText,
+    detectedLanguage: sourceLanguage,
+    pageCount: pageCount,
+    mimeType: data.mimeType,
+  };
+});
+
+/**
+ * Document Translator: processDocument (legacy - kept for backward compatibility)
  * Uses Google Cloud Vision OCR for images and PDFs
  * Uses Google Cloud Translation API to translate to Spanish
  * Stores results in Firestore translatorJobs collection

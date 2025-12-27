@@ -2,7 +2,7 @@
 // Document Translator Tool
 // Uses Google Cloud Vision OCR to extract text from documents and translates to Spanish
 
-import { auth, storage, db } from "../config.js";
+import { auth, storage } from "../config.js";
 
 import {
   ref,
@@ -10,11 +10,7 @@ import {
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
-import {
-  collection,
-  addDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+// Removed Firestore imports - no longer using translatorJobs collection
 
 import {
   getFunctions,
@@ -375,44 +371,13 @@ async function scanAndTranslate() {
       throw new Error("User not authenticated. Please sign in and try again.");
     }
     
-    // Determine file type (image or pdf)
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const fileType = isPdf ? "pdf" : "image";
-    
-    // Compute filePath BEFORE creating Firestore job document
-    // This ensures filePath is included in the initial jobData, as required by Firestore rules
+    // Storage path: users/{uid}/translator/{timestamp}_{filename}
     const safeName = file.name.replace(/[^\w.\-]+/g, "_");
     const timestamp = Date.now();
-    const filePath = `uploads/${currentUid}/contract-scanner/${timestamp}_${safeName}`;
+    const storagePath = `users/${currentUid}/translator/${timestamp}_${safeName}`;
     
-    // Create Firestore job document with filePath included
-    setMsg("statusMsg", "Creating translation job...");
-    
-    const jobData = {
-      uid: currentUid,
-      fileType: fileType,
-      originalFileName: file.name,
-      filePath: filePath,  // MUST exist at create time for Firestore rules
-      status: "uploaded",
-      targetLanguage: "es",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-    
-    let jobRef;
-    try {
-      jobRef = await addDoc(collection(db, "translatorJobs"), jobData);
-    } catch (firestoreError) {
-      console.error("Firestore create error:", firestoreError);
-      console.error("Error code:", firestoreError.code);
-      console.error("Error message:", firestoreError.message);
-      throw new Error(`Failed to create job: ${firestoreError.message || firestoreError.code || "Permission denied"}`);
-    }
-    
-    const jobId = jobRef.id;
-    
-    // Upload file to Firebase Storage using the same filePath
-    const storageRef = ref(storage, filePath);
+    // Upload file to Firebase Storage
+    const storageRef = ref(storage, storagePath);
     
     setMsg("statusMsg", "Uploading file...");
     
@@ -431,23 +396,17 @@ async function scanAndTranslate() {
     
     setMsg("statusMsg", "Processing with OCR and Translation... This may take 30-60 seconds for images, or 2-5 minutes for PDFs.");
     
-    // Call Cloud Function to process the file
-    // The function will:
-    // 1. Verify job exists and belongs to user
-    // 2. Use Google Cloud Vision OCR (textDetection for images, asyncBatchAnnotateFiles for PDFs)
-    // 3. Use Google Cloud Translation API to translate to Spanish
-    // 4. Save results to Firestore translatorJobs collection
-    // 5. Return { extractedText: "...", translatedText: "...", sourceLanguage: "en" }
-    
-    const processDocument = httpsCallable(functions, "processDocument");
-    const result = await processDocument({
-      jobId: jobId,
-      filePath: filePath,
-      fileType: fileType,
-      targetLanguage: "es"
+    // Call Cloud Function to process the document
+    // Function uses Google Cloud Vision OCR + Google Cloud Translation
+    const processDocumentForTranslation = httpsCallable(functions, "processDocumentForTranslation");
+    const result = await processDocumentForTranslation({
+      storagePath: storagePath,
+      targetLanguage: "es",
+      originalFilename: file.name,
+      mimeType: file.type
     });
     
-    // Log full result for debugging (remove in production if needed)
+    // Log full result for debugging
     console.log("Process result:", result?.data);
     
     // Check for error in response
@@ -456,7 +415,6 @@ async function scanAndTranslate() {
       
       // Handle structured error response
       if (typeof errorData === "object" && errorData !== null) {
-        // If it has a code, use structured error format
         if (errorData.code) {
           throw { 
             code: errorData.code, 
@@ -464,14 +422,12 @@ async function scanAndTranslate() {
             details: errorData.details 
           };
         }
-        // If it's an object without code, extract message from common properties
         const message = errorData.message || errorData.error || errorData.details || 
                        (typeof errorData.details === "string" ? errorData.details : null) ||
                        JSON.stringify(errorData);
         throw new Error(message);
       }
       
-      // If errorData is a string or primitive, use it directly
       throw new Error(String(errorData || "An error occurred"));
     }
     

@@ -26,9 +26,10 @@
   // Determine logo path based on page location
   let logoPath = 'images/logo.png';
   // Adjust path for subdirectories (count directory depth)
-  const pathParts = window.location.pathname.split('/').filter(p => p);
-  const htmlFile = pathParts[pathParts.length - 1];
-  const depth = pathParts.length - 1; // Subtract 1 because last part is the HTML file
+  // pathname format: /path/to/file.html or /file.html
+  // Split and filter out empty strings, then count directories (exclude HTML file)
+  const pathParts = window.location.pathname.split('/').filter(p => p && !p.endsWith('.html'));
+  const depth = pathParts.length; // Count only directories, excluding HTML file
   if (depth > 0) {
     logoPath = '../'.repeat(depth) + 'images/logo.png';
   }
