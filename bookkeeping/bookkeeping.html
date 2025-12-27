@@ -317,40 +317,26 @@
       }
     }
     
-    /* Desktop: Fix Amount and Method column alignment */
+    /* Desktop: Evenly space all columns across full table width */
     @media (min-width: 769px) {
-      /* Ensure table uses proper table layout for alignment */
+      /* Ensure table uses full width and fixed layout for even column distribution */
       #paymentsTable {
         table-layout: fixed;
         width: 100%;
       }
       
-      /* Set consistent column widths to ensure alignment */
+      /* Evenly distribute all 5 columns (Date, Amount, Method, Memo, Actions) */
       #paymentsTable thead th:nth-child(1),
-      #paymentsTable tbody td:nth-child(1) {
-        width: 15%;
-      }
-      
+      #paymentsTable tbody td:nth-child(1),
       #paymentsTable thead th:nth-child(2),
-      #paymentsTable tbody td:nth-child(2) {
-        width: 15%;
-        text-align: right;
-      }
-      
+      #paymentsTable tbody td:nth-child(2),
       #paymentsTable thead th:nth-child(3),
-      #paymentsTable tbody td:nth-child(3) {
-        width: 15%;
-      }
-      
+      #paymentsTable tbody td:nth-child(3),
       #paymentsTable thead th:nth-child(4),
-      #paymentsTable tbody td:nth-child(4) {
-        width: 35%;
-      }
-      
+      #paymentsTable tbody td:nth-child(4),
       #paymentsTable thead th:nth-child(5),
       #paymentsTable tbody td:nth-child(5) {
-        width: 20%;
-        text-align: right;
+        width: 20%; /* Each column gets equal 20% width */
       }
       
       /* Ensure all cells display as table cells */
@@ -362,6 +348,11 @@
       
       /* Ensure Amount header is right-aligned to match values */
       #paymentsTable thead th:nth-child(2) {
+        text-align: right;
+      }
+      
+      /* Ensure Actions column is right-aligned */
+      #paymentsTable thead th:nth-child(5) {
         text-align: right;
       }
     }

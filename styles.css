@@ -2108,6 +2108,36 @@ body[data-page="bookkeeping"] .page-title {
     gap: 12px !important;
     padding-left: 14px !important;
   }
+  
+  /* Desktop: Evenly space Payment Breakdown table columns */
+  body[data-page="1099"] #paymentsTable {
+    table-layout: fixed;
+    width: 100%;
+  }
+  
+  body[data-page="1099"] #paymentsTable thead th:nth-child(1),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(1),
+  body[data-page="1099"] #paymentsTable thead th:nth-child(2),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(2),
+  body[data-page="1099"] #paymentsTable thead th:nth-child(3),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(3),
+  body[data-page="1099"] #paymentsTable thead th:nth-child(4),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(4) {
+    width: 25%; /* Each column gets equal 25% width */
+  }
+  
+  /* Ensure Amount column is right-aligned */
+  body[data-page="1099"] #paymentsTable thead th:nth-child(2),
+  body[data-page="1099"] #paymentsTable tbody td:nth-child(2) {
+    text-align: right;
+  }
+  
+  /* Ensure all cells display as table cells */
+  body[data-page="1099"] #paymentsTable tbody td,
+  body[data-page="1099"] #paymentsTable thead th {
+    display: table-cell;
+    vertical-align: top;
+  }
 }
 
 /* Desktop-only: Align Compile Packet card with What Pre-Qualified Means card on Pre-Qualification page */
@@ -3141,11 +3171,12 @@ body[data-page="bookkeeping"] .page-title {
     object-fit: contain;
   }
   
-  /* Scale overlay elements proportionally - use correct base dimensions */
-  /* Since w9-sheet maintains aspect ratio, both dimensions scale by width ratio */
+  /* Scale overlay elements proportionally - use consistent aspect ratio scaling */
+  /* Since w9-sheet maintains 816:1056 aspect ratio, both x and y scale by the same factor (width ratio) */
+  /* To maintain correct proportions, we scale both dimensions using the width (816) as the base */
   body.page-w9 .w9-txt {
     left: calc((var(--x) / 816) * 100%) !important;
-    top: calc((var(--y) / 1056) * 100%) !important; /* Fixed: use 1056 for height scaling */
+    top: calc((var(--y) / 816) * 100%) !important; /* Use 816 for consistent aspect ratio scaling */
     width: calc((var(--w, 200) / 816) * 100%) !important;
     max-width: 100% !important;
     /* Font size scales proportionally with container width */
@@ -3169,9 +3200,9 @@ body[data-page="bookkeeping"] .page-title {
   
   body.page-w9 .w9-check {
     left: calc((var(--x) / 816) * 100%) !important;
-    top: calc((var(--y) / 1056) * 100%) !important; /* Fixed: use 1056 for height scaling */
+    top: calc((var(--y) / 816) * 100%) !important; /* Use 816 for consistent aspect ratio scaling */
     width: calc((12 / 816) * 100%) !important;
-    height: calc((12 / 1056) * 100%) !important; /* Fixed: use 1056 for height scaling */
+    height: calc((12 / 816) * 100%) !important; /* Use 816 for consistent aspect ratio scaling */
     max-width: 100% !important;
   }
   
