@@ -799,11 +799,60 @@ function renderPayments() {
     return null;
   }
 
+  // Helper function to parse MM/DD/YY date format
+  function parseMMDDYY(dateStr) {
+    if (!dateStr) return null;
+    
+    try {
+      // Handle ISO date string (YYYY-MM-DD)
+      if (dateStr.includes("-")) {
+        return new Date(dateStr);
+      }
+      
+      // Handle MM/DD/YY format
+      if (dateStr.includes("/")) {
+        const parts = dateStr.split("/");
+        if (parts.length === 3) {
+          const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
+          const day = parseInt(parts[1], 10);
+          let year = parseInt(parts[2], 10);
+          
+          // Convert 2-digit year to 4-digit (00-69 => 2000-2069, 70-99 => 1970-1999)
+          if (year < 70) {
+            year += 2000;
+          } else if (year < 100) {
+            year += 1900;
+          }
+          
+          return new Date(year, month, day);
+        }
+      }
+      
+      // Fallback: try Date constructor
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    } catch (err) {
+      console.warn("Error parsing date:", dateStr, err);
+    }
+    
+    return null;
+  }
+
   const laborerPayments = payments
     .filter(p => p.laborerId === selectedLaborerId)
     .filter(p => {
-      if (dateRangeFrom && p.datePaid < dateRangeFrom) return false;
-      if (dateRangeTo && p.datePaid > dateRangeTo) return false;
+      // Parse dates before comparison to handle MM/DD/YY and ISO formats
+      const paymentDate = parseMMDDYY(p.datePaid);
+      const rangeFrom = dateRangeFrom ? parseMMDDYY(dateRangeFrom) : null;
+      const rangeTo = dateRangeTo ? parseMMDDYY(dateRangeTo) : null;
+      
+      // Handle invalid/missing dates - exclude from range if date can't be parsed
+      if (!paymentDate) return false;
+      
+      if (rangeFrom && paymentDate < rangeFrom) return false;
+      if (rangeTo && paymentDate > rangeTo) return false;
       return true;
     })
     .sort((a, b) => {
@@ -986,10 +1035,59 @@ async function deletePaymentFromModal() {
    Summaries
 ------------------------------ */
 function updateSummaries() {
+  // Helper function to parse MM/DD/YY date format
+  function parseMMDDYY(dateStr) {
+    if (!dateStr) return null;
+    
+    try {
+      // Handle ISO date string (YYYY-MM-DD)
+      if (dateStr.includes("-")) {
+        return new Date(dateStr);
+      }
+      
+      // Handle MM/DD/YY format
+      if (dateStr.includes("/")) {
+        const parts = dateStr.split("/");
+        if (parts.length === 3) {
+          const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
+          const day = parseInt(parts[1], 10);
+          let year = parseInt(parts[2], 10);
+          
+          // Convert 2-digit year to 4-digit (00-69 => 2000-2069, 70-99 => 1970-1999)
+          if (year < 70) {
+            year += 2000;
+          } else if (year < 100) {
+            year += 1900;
+          }
+          
+          return new Date(year, month, day);
+        }
+      }
+      
+      // Fallback: try Date constructor
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    } catch (err) {
+      console.warn("Error parsing date:", dateStr, err);
+    }
+    
+    return null;
+  }
+
   // Filter payments by date range
   const filteredPayments = payments.filter(p => {
-    if (dateRangeFrom && p.datePaid < dateRangeFrom) return false;
-    if (dateRangeTo && p.datePaid > dateRangeTo) return false;
+    // Parse dates before comparison to handle MM/DD/YY and ISO formats
+    const paymentDate = parseMMDDYY(p.datePaid);
+    const rangeFrom = dateRangeFrom ? parseMMDDYY(dateRangeFrom) : null;
+    const rangeTo = dateRangeTo ? parseMMDDYY(dateRangeTo) : null;
+    
+    // Handle invalid/missing dates - exclude from range if date can't be parsed
+    if (!paymentDate) return false;
+    
+    if (rangeFrom && paymentDate < rangeFrom) return false;
+    if (rangeTo && paymentDate > rangeTo) return false;
     return true;
   });
 
@@ -1005,7 +1103,12 @@ function updateSummaries() {
 
   // YTD total
   const yearStart = yearStartISO();
-  const ytdPayments = payments.filter(p => p.datePaid >= yearStart);
+  const yearStartDate = parseMMDDYY(yearStart);
+  const ytdPayments = payments.filter(p => {
+    const paymentDate = parseMMDDYY(p.datePaid);
+    if (!paymentDate || !yearStartDate) return false;
+    return paymentDate >= yearStartDate;
+  });
   const ytdTotal = ytdPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
   const ytdTotalEl = $("summaryYtdPaid");
   if (ytdTotalEl) ytdTotalEl.textContent = money(ytdTotal);
