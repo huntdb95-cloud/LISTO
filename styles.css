@@ -2143,6 +2143,7 @@ body[data-page="bookkeeping"] .page-title {
 /* Desktop-only: Align Compile Packet card with What Pre-Qualified Means card on Pre-Qualification page */
 @media (min-width: 769px) {
   /* Ensure both standalone info cards (What Pre-Qualified Means + Compile Packet) align perfectly */
+  /* Match the width of dashboard-grid cards by constraining to container width */
   body[data-page="prequal"] .card.pad.mt {
     width: 100%;
     max-width: 100%;
@@ -2154,6 +2155,19 @@ body[data-page="bookkeeping"] .page-title {
   /* Ensure consistent spacing between cards */
   body[data-page="prequal"] .card.pad.mt + .card.pad.mt {
     margin-top: 24px;
+  }
+  
+  /* Ensure all cards in the container (including Compile Packet) match the same width */
+  /* Override any potential width issues that might make Compile Packet card wider */
+  body[data-page="prequal"] .container > .card.pad.mt {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    /* Ensure no horizontal margin/padding that could make it wider */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: inherit;
+    padding-right: inherit;
   }
 }
 
