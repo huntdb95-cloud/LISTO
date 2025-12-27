@@ -145,8 +145,9 @@ function renderEmployeesList() {
     const workersCompLink = emp.workersCompUrl ? `<a href="${emp.workersCompUrl}" target="_blank" class="mini-link">View Workers Comp</a>` : `<span class="muted small">No Workers Comp uploaded</span>`;
     
     // Mobile: icon buttons, Desktop: text buttons
-    // Escape single quotes in employee name for HTML attribute using HTML entity
-    const escapedName = (emp.name || "").replace(/'/g, "&#39;");
+    // Escape single quotes in employee name for JavaScript string in onclick attribute
+    // Use JavaScript string escaping (\') instead of HTML entities, as HTML entities are not decoded in attribute values
+    const escapedName = (emp.name || "").replace(/'/g, "\\'").replace(/\\/g, "\\\\");
     const editBtn = `<button class="btn small employee-edit-btn" onclick="editEmployee('${emp.id}')" data-i18n="employees.edit" aria-label="Edit"><span class="employee-btn-text">Edit</span><span class="employee-btn-icon">✏️</span></button>`;
     const archiveBtn = `<button class="btn small ghost employee-archive-btn" onclick="archiveEmployee('${emp.id}', '${escapedName}')" data-i18n="employees.archive" aria-label="Archive"><span class="employee-btn-text">Archive</span><span class="employee-btn-icon">🗑️</span></button>`;
     
