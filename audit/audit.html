@@ -47,10 +47,14 @@
     textarea { min-height: 90px; }
     .small { font-size: 12px; }
     
-    /* Brand green accents for section headers */
-    body[data-page="audit"] h1,
+    /* Brand green accents for section headers (h2 only - main page title uses standard black) */
     body[data-page="audit"] h2 {
       color: var(--audit-brand-dark);
+    }
+    
+    /* Main page title should match standard page-title styling (black, not green) */
+    body[data-page="audit"] .page-title {
+      color: var(--text) !important;
     }
     
     /* Section header borders with brand green */
@@ -234,14 +238,17 @@
 <div class="app-layout">
   <div id="sidebar"></div>
   <main id="main">
-  <div class="page-wrap">
-    <!-- Page Title -->
-    <div class="card">
-      <h1 style="margin-top:0;" data-i18n="audit.title">Audit Help</h1>
-      <p class="muted" style="margin-bottom:0;" data-i18n="audit.description">
-        Learn about insurance audits and prepare your audit package with our step-by-step tool.
-      </p>
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <h1 class="page-title" data-i18n="audit.title">Audit Help</h1>
+        <p class="muted" data-i18n="audit.description">
+          Learn about insurance audits and prepare your audit package with our step-by-step tool.
+        </p>
+      </div>
     </div>
+  </section>
+  <div class="page-wrap">
 
     <!-- Part 1: Audit Explanation -->
     <div class="card" style="margin-bottom: 32px;">
