@@ -145,8 +145,10 @@ function renderEmployeesList() {
     const workersCompLink = emp.workersCompUrl ? `<a href="${emp.workersCompUrl}" target="_blank" class="mini-link">View Workers Comp</a>` : `<span class="muted small">No Workers Comp uploaded</span>`;
     
     // Mobile: icon buttons, Desktop: text buttons
+    // Escape single quotes in employee name for HTML attribute using HTML entity
+    const escapedName = (emp.name || "").replace(/'/g, "&#39;");
     const editBtn = `<button class="btn small employee-edit-btn" onclick="editEmployee('${emp.id}')" data-i18n="employees.edit" aria-label="Edit"><span class="employee-btn-text">Edit</span><span class="employee-btn-icon">✏️</span></button>`;
-    const archiveBtn = `<button class="btn small ghost employee-archive-btn" onclick="archiveEmployee('${emp.id}', '${(emp.name || "").replace(/'/g, "\\'")}')" data-i18n="employees.archive" aria-label="Archive"><span class="employee-btn-text">Archive</span><span class="employee-btn-icon">🗑️</span></button>`;
+    const archiveBtn = `<button class="btn small ghost employee-archive-btn" onclick="archiveEmployee('${emp.id}', '${escapedName}')" data-i18n="employees.archive" aria-label="Archive"><span class="employee-btn-text">Archive</span><span class="employee-btn-icon">🗑️</span></button>`;
     
     return `
       <div class="employee-card" style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
