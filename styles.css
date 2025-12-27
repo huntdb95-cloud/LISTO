@@ -3292,6 +3292,14 @@ body[data-page="bookkeeping"] .page-title {
     box-sizing: border-box !important;
   }
   
+  /* Ensure footer logo on W-9 page matches standard footer logo size */
+  body.page-w9 .site-footer-global-logo {
+    height: 32px !important;
+    width: auto !important;
+    max-width: none !important;
+    opacity: 0.8 !important;
+  }
+  
   /* Prevent any element from exceeding viewport */
   body.page-w9 * {
     max-width: 100%;
@@ -6107,6 +6115,11 @@ body[data-page="bookkeeping"] .page-title {
 }
 
 @media (max-width: 768px) {
+  /* Center View PDF and Download PDF buttons on mobile */
+  body[data-page="agreement"] .agreement-actions {
+    justify-content: center;
+  }
+  
   /* Ensure form-grid doesn't constrain checkbox wrapper on mobile */
   body[data-page="agreement"] .form-grid {
     width: 100%;
