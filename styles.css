@@ -1022,6 +1022,63 @@ body[data-page="landing"] .lang-switch-mobile {
   transform: translateY(-1px);
 }
 
+/* Global Footer (New) */
+.site-footer-global {
+  padding: 40px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  margin-top: 48px;
+  text-align: center;
+}
+
+.site-footer-global-content {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.site-footer-global-logo {
+  height: 32px;
+  width: auto;
+  opacity: 0.8;
+}
+
+.site-footer-global-tagline {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+.site-footer-global-copyright {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Mobile: Add padding above bottom nav */
+@media (max-width: 1023px) {
+  .site-footer-global {
+    padding-bottom: calc(20px + var(--bottom-nav-height, 60px));
+    margin-bottom: 0;
+  }
+  
+  /* Ensure main content has bottom padding to prevent footer from being hidden */
+  body:not(.auth-page) main {
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + 20px);
+  }
+  
+  /* For pages using app-layout structure */
+  body:not(.auth-page) .app-layout > main {
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + 20px);
+  }
+}
+
 /* Mobile: Force 4-column layout for footer quick links */
 @media (max-width: 768px) {
   .footer-links {
