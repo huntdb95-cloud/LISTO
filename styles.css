@@ -989,7 +989,7 @@ body[data-page="landing"] .lang-switch-mobile {
 
 /* Footer */
 .site-footer{
-  padding: 34px 0 16px;
+  padding: 34px 0 12px;
   border-top: 1px solid rgba(21,31,28,0.10);
   color: var(--text);
 }
@@ -1024,7 +1024,7 @@ body[data-page="landing"] .lang-switch-mobile {
 
 /* Global Footer (New) */
 .site-footer-global {
-  padding: 40px 20px;
+  padding: 40px 20px 24px 20px;
   border-top: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
@@ -1064,7 +1064,7 @@ body[data-page="landing"] .lang-switch-mobile {
 /* Mobile: Add padding above bottom nav */
 @media (max-width: 1023px) {
   .site-footer-global {
-    padding-bottom: calc(20px + var(--bottom-nav-height, 60px));
+    padding-bottom: calc(16px + var(--bottom-nav-height, 60px));
     margin-bottom: 0;
   }
   
@@ -1120,6 +1120,7 @@ body[data-page="landing"] .lang-switch-mobile {
 .footer-bottom{
   margin-top: 16px;
   padding-top: 14px;
+  padding-bottom: 8px;
   border-top: 1px solid rgba(21,31,28,0.10);
 }
 
@@ -2033,7 +2034,12 @@ body[data-page="bookkeeping"] .page-title {
   /* Audit Help */
   body[data-page="audit"] .page-wrap {
     max-width: 1400px !important;
-    padding: 24px 20px !important;
+    padding: 12px 20px 24px 20px !important;
+  }
+  
+  /* Reduce gap between section intro and first card on Audit Help page */
+  body[data-page="audit"] .section {
+    padding-bottom: 32px !important;
   }
   
   /* Contract Scanner/Translator */
