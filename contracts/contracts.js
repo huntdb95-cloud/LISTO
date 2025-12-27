@@ -923,6 +923,46 @@ async function deleteJobConfirm(jobId) {
 
 // ========== MODAL FUNCTIONS ==========
 
+// Helper function to trap focus within modal
+function trapModalFocus(modal, firstFocusable, lastFocusable) {
+  const handleTab = (e) => {
+    if (e.key !== "Tab") return;
+    
+    if (e.shiftKey) {
+      if (document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable?.focus();
+      }
+    } else {
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable?.focus();
+      }
+    }
+  };
+  
+  modal.addEventListener("keydown", handleTab);
+  return () => modal.removeEventListener("keydown", handleTab);
+}
+
+// Helper function to get focusable elements in modal
+function getFocusableElements(modal) {
+  const focusableSelectors = [
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    'a[href]',
+    '[tabindex]:not([tabindex="-1"])'
+  ].join(', ');
+  
+  const elements = Array.from(modal.querySelectorAll(focusableSelectors));
+  return elements.filter(el => {
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+}
+
 function showBuilderModal(builderId = null) {
   const modal = $("builderModal");
   const title = $("builderModalTitle");
@@ -964,16 +1004,73 @@ function showBuilderModal(builderId = null) {
   clearBuilderMessages();
   document.body.style.overflow = "hidden";
   
-  // Focus on first input for better UX
-  setTimeout(() => {
-    const nameInput = $("builderName");
-    if (nameInput) nameInput.focus();
-  }, 100);
+  // Add backdrop click to close (only when clicking the overlay itself, not the content)
+  const handleBackdropClick = (e) => {
+    // Only close if clicking directly on the overlay, not on modal content
+    if (e.target === modal) {
+      hideBuilderModal();
+    }
+  };
+  modal.addEventListener("click", handleBackdropClick);
+  modal._backdropClickHandler = handleBackdropClick;
+  
+  // Prevent modal content clicks from bubbling to overlay
+  const modalContent = modal.querySelector(".modal-content");
+  if (modalContent) {
+    const stopPropagation = (e) => e.stopPropagation();
+    modalContent.addEventListener("click", stopPropagation);
+    modal._contentClickHandler = stopPropagation;
+  }
+  
+  // Add Escape key to close
+  const handleEscape = (e) => {
+    if (e.key === "Escape" || e.key === "Esc") {
+      hideBuilderModal();
+    }
+  };
+  document.addEventListener("keydown", handleEscape);
+  modal._escapeHandler = handleEscape;
+  
+  // Trap focus within modal
+  const focusableElements = getFocusableElements(modal);
+  if (focusableElements.length > 0) {
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+    modal._focusTrapCleanup = trapModalFocus(modal, firstFocusable, lastFocusable);
+    
+    // Focus on first input for better UX
+    setTimeout(() => {
+      firstFocusable?.focus();
+    }, 100);
+  }
 }
 
 function hideBuilderModal() {
   const modal = $("builderModal");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+    
+    // Remove event listeners
+    if (modal._backdropClickHandler) {
+      modal.removeEventListener("click", modal._backdropClickHandler);
+      delete modal._backdropClickHandler;
+    }
+    if (modal._contentClickHandler) {
+      const modalContent = modal.querySelector(".modal-content");
+      if (modalContent) {
+        modalContent.removeEventListener("click", modal._contentClickHandler);
+      }
+      delete modal._contentClickHandler;
+    }
+    if (modal._escapeHandler) {
+      document.removeEventListener("keydown", modal._escapeHandler);
+      delete modal._escapeHandler;
+    }
+    if (modal._focusTrapCleanup) {
+      modal._focusTrapCleanup();
+      delete modal._focusTrapCleanup;
+    }
+  }
   clearBuilderMessages();
   document.body.style.overflow = "";
 }
@@ -1026,11 +1123,74 @@ function showJobModal(jobId = null) {
   
   clearJobMessages();
   document.body.style.overflow = "hidden";
+  
+  // Add backdrop click to close (only when clicking the overlay itself, not the content)
+  const handleBackdropClick = (e) => {
+    // Only close if clicking directly on the overlay, not on modal content
+    if (e.target === modal) {
+      hideJobModal();
+    }
+  };
+  modal.addEventListener("click", handleBackdropClick);
+  modal._backdropClickHandler = handleBackdropClick;
+  
+  // Prevent modal content clicks from bubbling to overlay
+  const modalContent = modal.querySelector(".modal-content");
+  if (modalContent) {
+    const stopPropagation = (e) => e.stopPropagation();
+    modalContent.addEventListener("click", stopPropagation);
+    modal._contentClickHandler = stopPropagation;
+  }
+  
+  // Add Escape key to close
+  const handleEscape = (e) => {
+    if (e.key === "Escape" || e.key === "Esc") {
+      hideJobModal();
+    }
+  };
+  document.addEventListener("keydown", handleEscape);
+  modal._escapeHandler = handleEscape;
+  
+  // Trap focus within modal
+  const focusableElements = getFocusableElements(modal);
+  if (focusableElements.length > 0) {
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+    modal._focusTrapCleanup = trapModalFocus(modal, firstFocusable, lastFocusable);
+    
+    // Focus on first input for better UX
+    setTimeout(() => {
+      firstFocusable?.focus();
+    }, 100);
+  }
 }
 
 function hideJobModal() {
   const modal = $("jobModal");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+    
+    // Remove event listeners
+    if (modal._backdropClickHandler) {
+      modal.removeEventListener("click", modal._backdropClickHandler);
+      delete modal._backdropClickHandler;
+    }
+    if (modal._contentClickHandler) {
+      const modalContent = modal.querySelector(".modal-content");
+      if (modalContent) {
+        modalContent.removeEventListener("click", modal._contentClickHandler);
+      }
+      delete modal._contentClickHandler;
+    }
+    if (modal._escapeHandler) {
+      document.removeEventListener("keydown", modal._escapeHandler);
+      delete modal._escapeHandler;
+    }
+    if (modal._focusTrapCleanup) {
+      modal._focusTrapCleanup();
+      delete modal._focusTrapCleanup;
+    }
+  }
   clearJobMessages();
   document.body.style.overflow = "";
 }
