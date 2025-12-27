@@ -2728,20 +2728,31 @@ function fillW9Form(data) {
 }
 
 // Centralized W-9 field position mapping (in PDF points, top-left origin)
+// Base dimensions: 816px × 1056px (8.5" × 11" at 96 DPI)
 // These coordinates are used for both preview overlay and PDF generation
+// Updated to match known-good percentage-based coordinates
 const w9FieldPositions = {
-  name1: { x: 110, y: 150, width: 520, fontSize: null },
-  name2: { x: 110, y: 205, width: 520, fontSize: null },
+  // Line 1 – Name: 12% left, 15% top, 65% width
+  name1: { x: 98, y: 158, width: 530, fontSize: null },
+  // Line 2 – Business name: 12% left, 18.2% top, 65% width
+  name2: { x: 98, y: 192, width: 530, fontSize: null },
+  // Entity type fields (keep as-is per user requirement)
   llcType: { x: 230, y: 322, width: 26, fontSize: 14 },
   otherType: { x: 210, y: 360, width: 260, fontSize: null },
   exemptPayee: { x: 738, y: 290, width: 120, fontSize: null },
   fatca: { x: 738, y: 347, width: 120, fontSize: null },
-  address: { x: 110, y: 448, width: 520, fontSize: null },
-  cityStateZip: { x: 110, y: 502, width: 520, fontSize: null },
+  // Address: 12% left, 36.5% top, 65% width
+  address: { x: 98, y: 385, width: 530, fontSize: null },
+  // City/State/ZIP: 12% left, 39.5% top, 65% width
+  cityStateZip: { x: 98, y: 417, width: 530, fontSize: null },
   accounts: { x: 110, y: 558, width: 760, fontSize: null },
-  tin: { x: 690, y: 628, width: 210, fontSize: 16 },
-  signature: { x: 120, y: 785, width: 520, fontSize: null },
-  date: { x: 730, y: 785, width: 160, fontSize: null }
+  // TIN (SSN position as default): 69% left, 48.2% top, 25% width, 20px font
+  // Note: EIN would be at 69% left, 54% top, 16% width - handled dynamically if needed
+  tin: { x: 563, y: 509, width: 204, fontSize: 20 },
+  // Signature: 14% left, bottom 22% (y = 78% from top), 35% width
+  signature: { x: 114, y: 824, width: 286, fontSize: null },
+  // Date: right 23.5%, bottom 25% (y = 75% from top), 15% width
+  date: { x: 502, y: 792, width: 122, fontSize: null }
 };
 
 // Tax classification checkbox positions
@@ -2769,6 +2780,26 @@ function applyW9FieldPositions() {
       }
     }
   });
+  
+  // Apply TIN position based on selected type (SSN vs EIN)
+  // SSN: 69% left, 48.2% top, 25% width
+  // EIN: 69% left, 54% top, 16% width
+  const tinEl = document.querySelector(`.w9-txt[data-bind="tin"]`);
+  if (tinEl) {
+    const tinType = document.querySelector('input[name="tinType"]:checked')?.value || "ssn";
+    if (tinType === "ein") {
+      // EIN position: 69% left, 54% top, 16% width
+      tinEl.style.setProperty('--x', '563'); // 69% of 816
+      tinEl.style.setProperty('--y', '570'); // 54% of 1056
+      tinEl.style.setProperty('--w', '131'); // 16% of 816
+    } else {
+      // SSN position: 69% left, 48.2% top, 25% width (default)
+      tinEl.style.setProperty('--x', '563'); // 69% of 816
+      tinEl.style.setProperty('--y', '509'); // 48.2% of 1056
+      tinEl.style.setProperty('--w', '204'); // 25% of 816
+    }
+    tinEl.style.setProperty('--size', '20'); // 20px font size for TIN
+  }
   
   // Apply checkbox positions
   Object.entries(w9CheckPositions).forEach(([key, pos]) => {
@@ -2827,11 +2858,19 @@ function initW9SignatureCanvas() {
   const hiddenInput = document.getElementById("w9_signature");
   if (!canvas || !hiddenInput) return;
 
-  const ctx = canvas.getContext("2d");
-  ctx.strokeStyle = "#000000"; // Black ink
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  // Helper function to get fresh context and apply settings
+  // CRITICAL: Must be called after any canvas dimension changes
+  function getContext() {
+    const ctx = canvas.getContext("2d");
+    ctx.strokeStyle = "#000000"; // Black ink
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    return ctx;
+  }
+
+  // Get initial context
+  let ctx = getContext();
 
   // Store strokes in memory for redraw after resize
   let strokes = [];
@@ -2870,23 +2909,22 @@ function initW9SignatureCanvas() {
       // Save current signature image before resize
       const currentSignature = hiddenInput.value;
       
-      // Store current canvas state
+      // Store current canvas state (get image data before resize invalidates context)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
-      // Resize canvas (this clears it)
+      // Resize canvas (this clears it and invalidates the context)
       canvas.width = newWidth;
       canvas.height = newHeight;
       
-      // Restore drawing context settings after resize
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
+      // CRITICAL: Re-obtain context after resize (canvas dimension changes invalidate context)
+      ctx = getContext();
       
       // Redraw signature from stored image data
       if (currentSignature && currentSignature.startsWith("data:image")) {
         const img = new Image();
         img.onload = () => {
+          // Re-obtain context in case it was invalidated (defensive)
+          ctx = getContext();
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           isResizing = false;
@@ -2973,6 +3011,11 @@ function initW9SignatureCanvas() {
     e.preventDefault();
     e.stopPropagation();
     
+    // Ensure we have a valid context (defensive check)
+    if (!ctx) {
+      ctx = getContext();
+    }
+    
     const coords = getCoordinates(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
@@ -3033,6 +3076,8 @@ function initW9SignatureCanvas() {
   }
 
   function clearCanvas() {
+    // Ensure we have a valid context (defensive check)
+    ctx = getContext();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     hiddenInput.value = "";
     strokes = [];
@@ -3081,7 +3126,11 @@ function attachW9LivePreview() {
   const form = document.getElementById("w9Form");
   if (!form) return;
 
-  const handler = () => updateW9Preview(collectW9FormData());
+  const handler = () => {
+    // Re-apply positions (especially important for TIN field which changes based on type)
+    applyW9FieldPositions();
+    updateW9Preview(collectW9FormData());
+  };
   form.addEventListener("input", handler);
   form.addEventListener("change", handler);
 

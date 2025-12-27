@@ -3145,7 +3145,7 @@ body[data-page="bookkeeping"] .page-title {
   /* Since w9-sheet maintains aspect ratio, both dimensions scale by width ratio */
   body.page-w9 .w9-txt {
     left: calc((var(--x) / 816) * 100%) !important;
-    top: calc((var(--y) / 816) * 100%) !important;
+    top: calc((var(--y) / 1056) * 100%) !important; /* Fixed: use 1056 for height scaling */
     width: calc((var(--w, 200) / 816) * 100%) !important;
     max-width: 100% !important;
     /* Font size scales proportionally with container width */
@@ -3155,11 +3155,23 @@ body[data-page="bookkeeping"] .page-title {
     overflow-wrap: break-word;
   }
   
+  /* TIN field letter spacing on mobile */
+  body.page-w9 .w9-txt[data-bind="tin"] {
+    letter-spacing: 0.5em !important; /* Reduced for mobile readability */
+  }
+  
+  /* Signature image on mobile */
+  body.page-w9 .w9-txt[data-bind="signature"] img {
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+  
   body.page-w9 .w9-check {
     left: calc((var(--x) / 816) * 100%) !important;
-    top: calc((var(--y) / 816) * 100%) !important;
+    top: calc((var(--y) / 1056) * 100%) !important; /* Fixed: use 1056 for height scaling */
     width: calc((12 / 816) * 100%) !important;
-    height: calc((12 / 816) * 100%) !important;
+    height: calc((12 / 1056) * 100%) !important; /* Fixed: use 1056 for height scaling */
     max-width: 100% !important;
   }
   
@@ -3322,6 +3334,20 @@ body[data-page="bookkeeping"] .page-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* TIN field styling - letter spacing for SSN/EIN */
+.w9-txt[data-bind="tin"] {
+  letter-spacing: 1.0em;
+  font-family: monospace;
+}
+
+/* Signature image styling */
+.w9-txt[data-bind="signature"] img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 .w9-check{
   width: 12px;
