@@ -2044,7 +2044,17 @@ function showAgreementPdfModal(pdfUrl) {
 }
 
 async function saveAgreement(user, data) {
-  const refDoc = await getAgreementDocRef(user.uid);
+  // Verify user is authenticated
+  if (!user || !user.uid) {
+    console.error("[Agreement] No authenticated user found");
+    throw new Error("Please sign in to save your agreement.");
+  }
+
+  // Double-check: verify auth state is current
+  const currentUid = user.uid;
+  console.log("[Agreement] Saving for user UID:", currentUid);
+  
+  const refDoc = await getAgreementDocRef(currentUid);
   
   // Generate PDF
   let pdfUrl = null;
@@ -2067,10 +2077,14 @@ async function saveAgreement(user, data) {
     safeName = `SubAgreement_${dateStr}.pdf`;
     
     // Upload PDF to Firebase Storage - use correct path: users/{uid}/documents/prequal/subagreement/
-    pdfPath = `users/${user.uid}/documents/prequal/subagreement/${safeName}`;
+    pdfPath = `users/${currentUid}/documents/prequal/subagreement/${safeName}`;
+    console.log("[Agreement] Storage path:", pdfPath);
+    console.log("[Agreement] User UID in path matches authenticated user:", currentUid);
+    
     const storageRef = ref(storage, pdfPath);
     
-    console.log("[Agreement] Uploading PDF to:", pdfPath);
+    console.log("[Agreement] Uploading PDF to Firebase Storage...");
+    console.log("[Agreement] PDF blob size:", pdfBlob.size, "bytes");
     await uploadBytes(storageRef, pdfBlob, {
       contentType: "application/pdf"
     });
@@ -2092,6 +2106,21 @@ async function saveAgreement(user, data) {
     }
   } catch (err) {
     console.error("[Agreement] Error generating/uploading PDF:", err);
+    console.error("[Agreement] Error details:", {
+      code: err.code,
+      message: err.message,
+      stack: err.stack
+    });
+    
+    // Provide more specific error messages
+    if (err.code === 'storage/unauthorized') {
+      throw new Error("Permission denied. Please ensure you are signed in and try again.");
+    } else if (err.code === 'storage/canceled') {
+      throw new Error("Upload was canceled. Please try again.");
+    } else if (err.code === 'storage/unknown') {
+      throw new Error("An unknown error occurred. Please try again.");
+    }
+    
     throw new Error(`Failed to save agreement: ${err.message || "Please try again."}`);
   }
 
@@ -2481,6 +2510,12 @@ async function initAgreementPage(user) {
     if (msg) msg.textContent = "";
     if (err) err.textContent = "";
 
+    // Verify user is authenticated before proceeding
+    if (!user || !user.uid) {
+      if (err) err.textContent = "Please sign in to save your agreement.";
+      return;
+    }
+
     const data = collectAgreementData();
     if (!data.builderName) { if (err) err.textContent = "Builder name is required."; return; }
     if (!data.subcontractorName) { if (err) err.textContent = "Name of signer is required."; return; }
@@ -2496,6 +2531,7 @@ async function initAgreementPage(user) {
       }
       if (msg) msg.textContent = "Saving agreement...";
       
+      console.log("[Agreement] Form submitted, user UID:", user.uid);
       await saveAgreement(user, data);
       
       // Load saved agreement to get PDF URL
