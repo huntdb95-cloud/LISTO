@@ -2714,6 +2714,9 @@ function initW9SignatureCanvas() {
         canvas.width = newWidth;
         canvas.height = newHeight;
         
+        // Set CSS height to match canvas height to prevent scaling/compression
+        canvas.style.height = newHeight + 'px';
+        
         // Restore drawing context settings after resize
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 2;
@@ -3849,6 +3852,25 @@ if (typeof window !== 'undefined') {
     setTimeout(updateBottomNavHeight, 100); // Small delay for layout recalculation
   });
 }
+
+// Load footer script on all pages (footer.js handles auth page exclusion)
+// Determine correct path to footer.js based on current page location
+(function() {
+  const pathParts = window.location.pathname.split('/').filter(p => p);
+  const depth = pathParts.length - 1; // Subtract 1 because last part is the HTML file
+  const footerPath = depth > 0 ? '../'.repeat(depth) + 'footer.js' : 'footer.js';
+  
+  const footerScript = document.createElement('script');
+  footerScript.src = footerPath;
+  footerScript.async = true;
+  if (document.head) {
+    document.head.appendChild(footerScript);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.head.appendChild(footerScript);
+    });
+  }
+})();
 
 document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();

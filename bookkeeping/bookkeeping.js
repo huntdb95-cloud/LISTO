@@ -337,8 +337,8 @@ function renderDocumentStatus(docType, docData, laborer = null) {
     }
     if (infoEl) {
       const uploadDate = docData.uploadedAt ? new Date(docData.uploadedAt).toLocaleDateString() : "Unknown";
+      // Remove filename display - only show upload date and view/download link
       infoEl.innerHTML = `
-        <div>File: ${escapeHtml(docData.fileName || "Unknown")}</div>
         <div>Uploaded: ${uploadDate}</div>
         <div><a href="${escapeHtml(docData.downloadURL)}" target="_blank" style="color: #059669; text-decoration: underline;">View/Download</a></div>
       `;
@@ -758,6 +758,47 @@ function renderPayments() {
     return;
   }
 
+  // Helper function to parse MM/DD/YY date format
+  function parseMMDDYY(dateStr) {
+    if (!dateStr) return null;
+    
+    try {
+      // Handle ISO date string (YYYY-MM-DD)
+      if (dateStr.includes("-")) {
+        return new Date(dateStr);
+      }
+      
+      // Handle MM/DD/YY format
+      if (dateStr.includes("/")) {
+        const parts = dateStr.split("/");
+        if (parts.length === 3) {
+          const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
+          const day = parseInt(parts[1], 10);
+          let year = parseInt(parts[2], 10);
+          
+          // Convert 2-digit year to 4-digit (00-69 => 2000-2069, 70-99 => 1970-1999)
+          if (year < 70) {
+            year += 2000;
+          } else if (year < 100) {
+            year += 1900;
+          }
+          
+          return new Date(year, month, day);
+        }
+      }
+      
+      // Fallback: try Date constructor
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    } catch (err) {
+      console.warn("Error parsing date:", dateStr, err);
+    }
+    
+    return null;
+  }
+
   const laborerPayments = payments
     .filter(p => p.laborerId === selectedLaborerId)
     .filter(p => {
@@ -765,7 +806,19 @@ function renderPayments() {
       if (dateRangeTo && p.datePaid > dateRangeTo) return false;
       return true;
     })
-    .sort((a, b) => new Date(b.datePaid) - new Date(a.datePaid));
+    .sort((a, b) => {
+      // Parse dates safely
+      const dateA = parseMMDDYY(a.datePaid);
+      const dateB = parseMMDDYY(b.datePaid);
+      
+      // Handle missing/invalid dates - send to bottom
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1; // a goes to bottom
+      if (!dateB) return -1; // b goes to bottom
+      
+      // Sort newest first (descending)
+      return dateB.getTime() - dateA.getTime();
+    });
 
   if (laborerPayments.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="bookkeeping-empty-state">No payments in date range</td></tr>`;
