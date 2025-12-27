@@ -1819,26 +1819,44 @@ async function generateAgreementPDF(data) {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "in",
-    format: [8.5, 11] // Letter size: 8.5" x 11"
+    format: [8.5, 11] // US Letter: 8.5" x 11"
   });
 
+  // Word-style page setup: 1 inch margins on all sides
   const pageWidth = 8.5;
   const pageHeight = 11;
-  const margin = 0.75;
-  const contentWidth = pageWidth - (margin * 2);
+  const margin = 1.0; // Word default: 1 inch
+  const contentWidth = pageWidth - (margin * 2); // 6.5 inches content width
   let yPos = margin;
-  const lineHeight = 0.2;
-  const fontSize = 10;
-  const smallFontSize = 9;
+  
+  // Word-style typography: Times New Roman 12pt (or Calibri 11pt)
+  // Using Times New Roman 12pt for legal document appearance
+  const fontSize = 12; // 12pt body text
+  const headerFontSize = 13; // Slightly larger for section headers
+  const titleFontSize = 14; // Title size
+  
+  // Line spacing: 1.15 (Word default)
+  // In jsPDF, line height = font size * line spacing
+  // 12pt * 1.15 = 13.8pt = 0.1917 inches (approximately 0.192")
+  const lineSpacing = 1.15;
+  const lineHeight = (fontSize / 72) * lineSpacing; // Convert pt to inches, then apply spacing
+  
+  // Set font to Times New Roman (jsPDF default is Helvetica, but we'll use available fonts)
+  // Note: jsPDF supports 'times', 'helvetica', 'courier' - using 'times' for Times New Roman-like appearance
+  doc.setFont("times", "normal");
 
-  // Helper to add text with word wrapping
-  function addText(text, fontSize, isBold = false, align = "left") {
-    doc.setFontSize(fontSize);
-    if (isBold) doc.setFont(undefined, "bold");
-    else doc.setFont(undefined, "normal");
+  // Helper to add text with word wrapping (Word-style: left-aligned, minimal spacing)
+  function addText(text, size, isBold = false, align = "left", paragraphSpacing = 0) {
+    doc.setFontSize(size);
+    if (isBold) {
+      doc.setFont("times", "bold");
+    } else {
+      doc.setFont("times", "normal");
+    }
     
     const lines = doc.splitTextToSize(text, contentWidth);
-    lines.forEach((line) => {
+    lines.forEach((line, index) => {
+      // Check if we need a new page
       if (yPos + lineHeight > pageHeight - margin) {
         doc.addPage();
         yPos = margin;
@@ -1846,18 +1864,22 @@ async function generateAgreementPDF(data) {
       doc.text(line, margin, yPos, { align });
       yPos += lineHeight;
     });
+    
+    // Add minimal paragraph spacing (Word default is minimal)
+    if (paragraphSpacing > 0) {
+      yPos += paragraphSpacing;
+    }
   }
 
-  // Title
-  doc.setFontSize(14);
-  doc.setFont(undefined, "bold");
+  // Title (centered, but still document-appropriate size)
+  doc.setFontSize(titleFontSize);
+  doc.setFont("times", "bold");
   doc.text("SUBCONTRACTORS AGREEMENT", pageWidth / 2, yPos, { align: "center" });
-  yPos += 0.3;
+  yPos += (titleFontSize / 72) * lineSpacing + 0.15; // Minimal spacing after title
 
-  // Introduction paragraph
+  // Introduction paragraph (Word-style: left-aligned, normal font, minimal spacing)
   const introText = `This Document is a binding contract, which will serve as a blanket agreement for and between ${data.builderName} herein known as Builder, and the undersigned referred to hereafter as Subcontractor. By signing, Subcontractor and Builder agree to the terms set forth herein. This agreement shall remain in force from the date hereof and from year to year, unless a change is agreed to in writing by both Builder and Subcontractor. The parties agree to the following:`;
-  addText(introText, fontSize);
-  yPos += 0.1;
+  addText(introText, fontSize, false, "left", 0.08); // Minimal paragraph spacing
 
   // Agreement sections (abbreviated for PDF - include key sections)
   const sections = [
@@ -1879,27 +1901,33 @@ async function generateAgreementPDF(data) {
     { title: "16. WARRANTY", text: "Subcontractor shall warrant against any defects in workmanship and/or materials, which were supplied by subcontractor for a period of one year from the date the home is first occupied by the homeowner." }
   ];
 
+  // Agreement sections (Word-style: document flow, minimal spacing)
   sections.forEach((section) => {
-    if (yPos + lineHeight * 3 > pageHeight - margin) {
+    // Check if we need a new page before adding section
+    if (yPos + lineHeight * 4 > pageHeight - margin) {
       doc.addPage();
       yPos = margin;
     }
-    addText(section.title, fontSize, true);
-    addText(section.text, smallFontSize);
-    yPos += 0.1;
+    // Section header: slightly larger, bold, but document-appropriate
+    addText(section.title, headerFontSize, true, "left", 0.05);
+    // Section body: normal font size, left-aligned
+    addText(section.text, fontSize, false, "left", 0.08); // Minimal spacing between sections
   });
 
-  // Signature section
-  yPos += 0.2;
-  if (yPos + 1.5 > pageHeight - margin) {
+  // Signature section (Word-style: natural document flow)
+  yPos += 0.15; // Minimal spacing before signature section
+  if (yPos + 2.0 > pageHeight - margin) {
     doc.addPage();
     yPos = margin;
   }
 
-  // Add signature image
+  // Add signature label
+  addText("Signature:", fontSize, true, "left", 0.05);
+  
+  // Add signature image (embedded in document flow)
   if (data.signature && data.signature.startsWith("data:image")) {
     try {
-      // Calculate signature size (max 3" wide, 1" tall)
+      // Calculate signature size (max 3" wide, 1" tall for professional appearance)
       const maxWidth = 3;
       const maxHeight = 1;
       
@@ -1911,10 +1939,12 @@ async function generateAgreementPDF(data) {
         img.src = data.signature;
       });
 
-      let sigWidth = img.width / 72; // Convert pixels to inches (assuming 72 DPI)
+      // Convert pixels to inches (assuming 72 DPI for canvas)
+      let sigWidth = img.width / 72;
       let sigHeight = img.height / 72;
       const aspectRatio = sigWidth / sigHeight;
 
+      // Scale to fit within max dimensions while maintaining aspect ratio
       if (sigWidth > maxWidth) {
         sigWidth = maxWidth;
         sigHeight = sigWidth / aspectRatio;
@@ -1924,20 +1954,29 @@ async function generateAgreementPDF(data) {
         sigWidth = sigHeight * aspectRatio;
       }
 
+      // Check if signature fits on current page
+      if (yPos + sigHeight + 0.5 > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin;
+      }
+
+      // Add signature image at natural position in document flow
       doc.addImage(data.signature, "PNG", margin, yPos, sigWidth, sigHeight);
-      yPos += sigHeight + 0.2;
+      yPos += sigHeight + 0.15; // Minimal spacing after signature
     } catch (err) {
       console.warn("Could not embed signature image:", err);
-      addText("Signature: [See signed document]", fontSize, true);
+      addText("[Signature not available]", fontSize, false, "left", 0.05);
     }
+  } else {
+    addText("[Signature required]", fontSize, false, "left", 0.05);
   }
 
-  // Signer information
-  yPos += 0.2;
-  addText(`Subcontractor Name: ${data.subcontractorName}`, fontSize);
-  addText(`Title: ${data.title}`, fontSize);
-  addText(`Date Signed: ${data.date}`, fontSize);
-  addText(`Builder Name: ${data.builderName}`, fontSize);
+  // Signer information (Word-style: clean, left-aligned, minimal spacing)
+  yPos += 0.1;
+  addText(`Subcontractor Name: ${data.subcontractorName}`, fontSize, false, "left", 0);
+  addText(`Title: ${data.title}`, fontSize, false, "left", 0);
+  addText(`Date Signed: ${data.date}`, fontSize, false, "left", 0);
+  addText(`Builder Name: ${data.builderName}`, fontSize, false, "left", 0);
 
   return doc;
 }
@@ -2626,9 +2665,15 @@ function fillW9Form(data) {
     setVal("w9_signature", data.signature);
     const canvas = document.getElementById("w9_signatureCanvas");
     if (canvas && data.signature.startsWith("data:image")) {
-      const ctx = canvas.getContext("2d");
       const img = new Image();
       img.onload = () => {
+        // Re-obtain context when drawing (canvas may have been resized)
+        // This ensures the context is valid even if resize occurred between image load
+        const ctx = canvas.getContext("2d");
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };

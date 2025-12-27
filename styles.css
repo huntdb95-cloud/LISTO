@@ -5972,24 +5972,29 @@ body[data-page="bookkeeping"] .page-title {
   margin: 16px 0;
   width: 100%;
   max-width: 100%;
-  overflow: visible;
+  box-sizing: border-box;
 }
 
 .agreement-checkbox-wrapper .checkline {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 10px 12px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .agreement-checkbox-wrapper .checkline input[type="checkbox"] {
   flex-shrink: 0;
   margin-top: 2px;
+  width: auto;
+  min-width: 18px;
+  height: 18px;
 }
 
 .agreement-checkbox-wrapper .checkline span {
@@ -5998,10 +6003,12 @@ body[data-page="bookkeeping"] .page-title {
   word-wrap: break-word;
   overflow-wrap: break-word;
   writing-mode: horizontal-tb;
+  text-orientation: mixed;
   transform: none;
   white-space: normal;
   line-height: 1.5;
-  display: inline-block;
+  display: block;
+  text-align: left;
 }
 
 .signature-container {
