@@ -799,47 +799,6 @@ function renderPayments() {
     return null;
   }
 
-  // Helper function to parse MM/DD/YY date format
-  function parseMMDDYY(dateStr) {
-    if (!dateStr) return null;
-    
-    try {
-      // Handle ISO date string (YYYY-MM-DD)
-      if (dateStr.includes("-")) {
-        return new Date(dateStr);
-      }
-      
-      // Handle MM/DD/YY format
-      if (dateStr.includes("/")) {
-        const parts = dateStr.split("/");
-        if (parts.length === 3) {
-          const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
-          const day = parseInt(parts[1], 10);
-          let year = parseInt(parts[2], 10);
-          
-          // Convert 2-digit year to 4-digit (00-69 => 2000-2069, 70-99 => 1970-1999)
-          if (year < 70) {
-            year += 2000;
-          } else if (year < 100) {
-            year += 1900;
-          }
-          
-          return new Date(year, month, day);
-        }
-      }
-      
-      // Fallback: try Date constructor
-      const date = new Date(dateStr);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    } catch (err) {
-      console.warn("Error parsing date:", dateStr, err);
-    }
-    
-    return null;
-  }
-
   const laborerPayments = payments
     .filter(p => p.laborerId === selectedLaborerId)
     .filter(p => {
