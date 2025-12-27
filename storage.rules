@@ -104,6 +104,17 @@ service firebase.storage {
       allow delete: if isOwnerPath(userId);
     }
 
+    // ========== Pre-Qualification Documents ==========
+    
+    // Pre-Qualification Subcontractor Agreement: users/{uid}/documents/prequal/subagreement/*
+    match /users/{userId}/documents/prequal/subagreement/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && request.resource.contentType.matches('application/pdf');
+      allow delete: if isOwnerPath(userId);
+    }
+
     // ========== Contract Files ==========
     
     // Contract scanner files: users/{uid}/contracts/* (legacy - for contract scanner)
