@@ -123,7 +123,7 @@
 <input autocomplete="street-address" id="w9_address" type="text"/>
 </label>
 <label class="field">
-<span class="field-label">6) City, state, and ZIP</span>
+<span class="field-label">6) City, State, and ZIP</span>
 <input autocomplete="postal-code" id="w9_cityStateZip" type="text"/>
 </label>
 <label class="field">
@@ -156,11 +156,14 @@
 </label>
 <label class="field">
 <span class="field-label">Signature of U.S. person</span>
-<div style="border: 1px solid var(--border); border-radius: var(--radius-sm); background: white; position: relative;">
-<canvas id="w9_signatureCanvas" style="display: block; width: 100%; cursor: crosshair; touch-action: none;"></canvas>
-<button type="button" id="w9_clearSignatureBtn" class="btn ghost small" style="position: absolute; top: 8px; right: 8px; z-index: 10;">Clear Signature</button>
+<div class="signature-container">
+<canvas id="w9_signatureCanvas" width="600" height="200"></canvas>
+<div class="signature-actions">
+<button type="button" class="btn small ghost" id="w9_clearSignatureBtn">Clear</button>
 </div>
 <input type="hidden" id="w9_signature"/>
+</div>
+<p class="muted small" style="margin-top: 8px;">Sign with your finger (mobile) or mouse (desktop) in black ink.</p>
 </label>
 <div class="row">
 <button class="btn primary" id="w9SaveBtn" type="submit">Save W-9</button>
@@ -184,29 +187,29 @@
 <div aria-label="W-9 overlay preview" class="w9-stage">
 <div class="w9-sheet" id="w9Sheet">
 <img alt="W-9 background" class="w9-bg" src="images/w9.png"/>
-<!-- Overlay fields (positions are placeholders; you’ll tune them) -->
-<div class="w9-txt" data-bind="name1" style="--x: 110; --y: 150; --w: 520;"></div>
-<div class="w9-txt" data-bind="name2" style="--x: 110; --y: 205; --w: 520;"></div>
+<!-- Overlay fields (positions applied via centralized w9FieldPositions config) -->
+<div class="w9-txt" data-bind="name1"></div>
+<div class="w9-txt" data-bind="name2"></div>
 <!-- Tax classification checkboxes: set by JS -->
-<div class="w9-check" data-check="individual" style="--x: 122; --y: 284;"></div>
-<div class="w9-check" data-check="c_corp" style="--x: 305; --y: 284;"></div>
-<div class="w9-check" data-check="s_corp" style="--x: 418; --y: 284;"></div>
-<div class="w9-check" data-check="partnership" style="--x: 520; --y: 284;"></div>
-<div class="w9-check" data-check="trust_estate" style="--x: 655; --y: 284;"></div>
-<div class="w9-check" data-check="llc" style="--x: 122; --y: 324;"></div>
-<div class="w9-txt" data-bind="llcType" style="--x: 230; --y: 322; --w: 26; --size: 14;"></div>
-<div class="w9-check" data-check="other" style="--x: 122; --y: 362;"></div>
-<div class="w9-txt" data-bind="otherType" style="--x: 210; --y: 360; --w: 260;"></div>
-<div class="w9-txt" data-bind="exemptPayee" style="--x: 738; --y: 290; --w: 120;"></div>
-<div class="w9-txt" data-bind="fatca" style="--x: 738; --y: 347; --w: 120;"></div>
-<div class="w9-txt" data-bind="address" style="--x: 110; --y: 448; --w: 520;"></div>
-<div class="w9-txt" data-bind="cityStateZip" style="--x: 110; --y: 502; --w: 520;"></div>
-<div class="w9-txt" data-bind="accounts" style="--x: 110; --y: 558; --w: 760;"></div>
-<!-- TIN boxes (we’ll show the string; later you can split into boxes) -->
-<div class="w9-txt" data-bind="tin" style="--x: 690; --y: 628; --w: 210; --size: 16;"></div>
+<div class="w9-check" data-check="individual"></div>
+<div class="w9-check" data-check="c_corp"></div>
+<div class="w9-check" data-check="s_corp"></div>
+<div class="w9-check" data-check="partnership"></div>
+<div class="w9-check" data-check="trust_estate"></div>
+<div class="w9-check" data-check="llc"></div>
+<div class="w9-txt" data-bind="llcType"></div>
+<div class="w9-check" data-check="other"></div>
+<div class="w9-txt" data-bind="otherType"></div>
+<div class="w9-txt" data-bind="exemptPayee"></div>
+<div class="w9-txt" data-bind="fatca"></div>
+<div class="w9-txt" data-bind="address"></div>
+<div class="w9-txt" data-bind="cityStateZip"></div>
+<div class="w9-txt" data-bind="accounts"></div>
+<!-- TIN boxes (we'll show the string; later you can split into boxes) -->
+<div class="w9-txt" data-bind="tin"></div>
 <!-- Signature + date -->
-<div class="w9-txt" data-bind="signature" style="--x: 120; --y: 785; --w: 520;"></div>
-<div class="w9-txt" data-bind="date" style="--x: 730; --y: 785; --w: 160;"></div>
+<div class="w9-txt" data-bind="signature"></div>
+<div class="w9-txt" data-bind="date"></div>
 </div>
 </div>
 <p class="muted small" style="margin-top:12px;">

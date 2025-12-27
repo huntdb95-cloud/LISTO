@@ -1184,7 +1184,7 @@ body[data-page="landing"] .lang-switch-mobile {
 
 .field{ display: grid; gap: 6px; }
 .field-label{ color: var(--muted); font-weight: 650; font-size: 0.95rem; }
-.field-label-number{ display: inline-block; min-width: 2.5em; }
+.field-label-number{ display: inline-block; min-width: 2.5em; text-align: left; }
 
 input, select, textarea{
   width: 100%;
@@ -2056,11 +2056,13 @@ body[data-page="bookkeeping"] .page-title {
   }
 }
 
-/* Desktop-only: Fix header consistency on 1099-NEC Generator and Pre-Qualification pages */
+/* Desktop-only: Fix header consistency on 1099-NEC Generator, Pre-Qualification, and W-9 pages */
 @media (min-width: 769px) {
   /* Ensure header-inner has standard padding, height, and width (override container class) */
   body[data-page="1099"] .site-header .header-inner.container,
-  body[data-page="prequal"] .site-header .header-inner.container {
+  body[data-page="prequal"] .site-header .header-inner.container,
+  body[data-page="w9"] .site-header .header-inner.container,
+  body.page-w9 .site-header .header-inner.container {
     padding: 18px 20px !important;
     align-items: center !important;
     display: grid !important;
@@ -2074,7 +2076,9 @@ body[data-page="bookkeeping"] .page-title {
   
   /* Ensure brand logo has standard size */
   body[data-page="1099"] .site-header .brand-logo,
-  body[data-page="prequal"] .site-header .brand-logo {
+  body[data-page="prequal"] .site-header .brand-logo,
+  body[data-page="w9"] .site-header .brand-logo,
+  body.page-w9 .site-header .brand-logo {
     height: 84px !important;
     width: auto !important;
     display: block !important;
@@ -2084,7 +2088,9 @@ body[data-page="bookkeeping"] .page-title {
   
   /* Ensure brand container is properly centered */
   body[data-page="1099"] .site-header .header-inner > .brand,
-  body[data-page="prequal"] .site-header .header-inner > .brand {
+  body[data-page="prequal"] .site-header .header-inner > .brand,
+  body[data-page="w9"] .site-header .header-inner > .brand,
+  body.page-w9 .site-header .header-inner > .brand {
     grid-column: 2 !important;
     display: flex !important;
     justify-content: center !important;
@@ -2094,7 +2100,9 @@ body[data-page="bookkeeping"] .page-title {
   
   /* Ensure header-left has standard styling */
   body[data-page="1099"] .site-header .header-left,
-  body[data-page="prequal"] .site-header .header-left {
+  body[data-page="prequal"] .site-header .header-left,
+  body[data-page="w9"] .site-header .header-left,
+  body.page-w9 .site-header .header-left {
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
@@ -3035,12 +3043,35 @@ body[data-page="bookkeeping"] .page-title {
   }
   
   /* Ensure container has proper padding on mobile (matches site standard) */
-  body.page-w9 .container {
+  /* Exclude header-inner from this rule - header has its own styling */
+  body.page-w9 .container:not(.header-inner) {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 16px !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
+  }
+  
+  /* Ensure W-9 header matches standard header on mobile */
+  body.page-w9 .site-header .header-inner.container {
+    padding: 18px 20px !important;
+    align-items: center !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
+    gap: 18px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure brand logo has standard size on mobile */
+  body.page-w9 .site-header .brand-logo {
+    height: 84px !important;
+    width: auto !important;
+    display: block !important;
+    max-height: 84px !important;
+    object-fit: contain !important;
   }
   
   /* Fix: Add proper padding for page title and subtitle on mobile */
@@ -3227,6 +3258,14 @@ body[data-page="bookkeeping"] .page-title {
     white-space: normal !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
+  }
+  
+  /* Ensure field-label-number in legend aligns with other field labels */
+  body.page-w9 .fieldset legend .field-label-number {
+    display: inline-block;
+    min-width: 2.5em;
+    text-align: left;
+    vertical-align: baseline;
   }
   
   /* Force all images, canvases, and media to respect container */
@@ -6042,8 +6081,62 @@ body[data-page="bookkeeping"] .page-title {
 }
 
 @media (max-width: 768px) {
+  /* Ensure form-grid doesn't constrain checkbox wrapper on mobile */
+  body[data-page="agreement"] .form-grid {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
   .agreement-checkbox-wrapper {
     margin: 12px 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  
+  .agreement-checkbox-wrapper .checkline {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    display: flex !important;
+  }
+  
+  .agreement-checkbox-wrapper .checkline input[type="checkbox"] {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    margin-right: 10px !important;
+    margin-top: 2px !important;
+  }
+  
+  .agreement-checkbox-wrapper .checkline span {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: calc(100% - 28px) !important; /* Account for checkbox + gap */
+    display: block !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    direction: ltr !important;
+    text-align: left !important;
+    line-height: 1.5 !important;
+    letter-spacing: normal !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
   }
   
   .signature-container canvas {

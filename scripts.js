@@ -2691,6 +2691,59 @@ function fillW9Form(data) {
   }
 }
 
+// Centralized W-9 field position mapping (in PDF points, top-left origin)
+// These coordinates are used for both preview overlay and PDF generation
+const w9FieldPositions = {
+  name1: { x: 110, y: 150, width: 520, fontSize: null },
+  name2: { x: 110, y: 205, width: 520, fontSize: null },
+  llcType: { x: 230, y: 322, width: 26, fontSize: 14 },
+  otherType: { x: 210, y: 360, width: 260, fontSize: null },
+  exemptPayee: { x: 738, y: 290, width: 120, fontSize: null },
+  fatca: { x: 738, y: 347, width: 120, fontSize: null },
+  address: { x: 110, y: 448, width: 520, fontSize: null },
+  cityStateZip: { x: 110, y: 502, width: 520, fontSize: null },
+  accounts: { x: 110, y: 558, width: 760, fontSize: null },
+  tin: { x: 690, y: 628, width: 210, fontSize: 16 },
+  signature: { x: 120, y: 785, width: 520, fontSize: null },
+  date: { x: 730, y: 785, width: 160, fontSize: null }
+};
+
+// Tax classification checkbox positions
+const w9CheckPositions = {
+  individual: { x: 122, y: 284 },
+  c_corp: { x: 305, y: 284 },
+  s_corp: { x: 418, y: 284 },
+  partnership: { x: 520, y: 284 },
+  trust_estate: { x: 655, y: 284 },
+  llc: { x: 122, y: 324 },
+  other: { x: 122, y: 362 }
+};
+
+// Apply field positions to preview overlay elements
+function applyW9FieldPositions() {
+  // Apply text field positions
+  Object.entries(w9FieldPositions).forEach(([key, pos]) => {
+    const el = document.querySelector(`.w9-txt[data-bind="${key}"]`);
+    if (el) {
+      el.style.setProperty('--x', pos.x);
+      el.style.setProperty('--y', pos.y);
+      el.style.setProperty('--w', pos.width);
+      if (pos.fontSize) {
+        el.style.setProperty('--size', pos.fontSize);
+      }
+    }
+  });
+  
+  // Apply checkbox positions
+  Object.entries(w9CheckPositions).forEach(([key, pos]) => {
+    const el = document.querySelector(`.w9-check[data-check="${key}"]`);
+    if (el) {
+      el.style.setProperty('--x', pos.x);
+      el.style.setProperty('--y', pos.y);
+    }
+  });
+}
+
 function updateW9Preview(data) {
   document.querySelectorAll(".w9-txt[data-bind]").forEach(el => {
     const key = el.getAttribute("data-bind");
@@ -2731,76 +2784,115 @@ async function saveW9(user, w9Data) {
   }, { merge: true });
 }
 
-// Initialize W-9 signature canvas
+// Initialize W-9 signature canvas - Match Subcontractor Agreement signature behavior
 function initW9SignatureCanvas() {
   const canvas = document.getElementById("w9_signatureCanvas");
   const clearBtn = document.getElementById("w9_clearSignatureBtn");
   const hiddenInput = document.getElementById("w9_signature");
   if (!canvas || !hiddenInput) return;
 
-  // Helper function to get fresh context and apply settings
-  function getContext() {
-    const ctx = canvas.getContext("2d");
-    ctx.strokeStyle = "#000000"; // Black ink
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    return ctx;
-  }
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "#000000"; // Black ink
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
-  // Get initial context
-  let ctx = getContext();
+  // Store strokes in memory for redraw after resize
+  let strokes = [];
+  let isDrawing = false;
+  let currentStroke = null;
+  let resizeTimeout = null;
+  let isResizing = false;
 
   // Set canvas size based on container width (responsive)
-  function resizeCanvas() {
+  // CRITICAL: Only resize when NOT drawing to prevent canvas clearing during signature
+  function resizeCanvas(force = false) {
+    // Don't resize if currently drawing
+    if (isDrawing && !force) {
+      return;
+    }
+
+    // Don't resize if already resizing
+    if (isResizing) {
+      return;
+    }
+
+    isResizing = true;
     const container = canvas.parentElement;
     if (container) {
-      const containerWidth = container.clientWidth;
-      const aspectRatio = 3; // 3:1 aspect ratio (wider for signature)
-      const newWidth = containerWidth;
-      const newHeight = Math.max(150, newWidth / aspectRatio);
+      const containerWidth = container.clientWidth - 24; // Account for padding
+      const aspectRatio = 600 / 200; // Original aspect ratio
+      const newWidth = Math.min(600, containerWidth);
+      const newHeight = newWidth / aspectRatio;
       
       // Only resize if dimensions actually changed
-      if (canvas.width !== newWidth || canvas.height !== newHeight) {
-        const currentSignature = hiddenInput.value;
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        
-        // Set CSS height to match canvas height to prevent scaling/compression
-        canvas.style.height = newHeight + 'px';
-        
-        // Re-obtain context after resize (canvas dimensions change resets context)
-        ctx = getContext();
-        
-        // Redraw signature if it exists
-        if (currentSignature && currentSignature.startsWith("data:image")) {
-          const img = new Image();
-          img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          };
-          img.src = currentSignature;
-        }
+      if (canvas.width === newWidth && canvas.height === newHeight) {
+        isResizing = false;
+        return;
       }
+
+      // Save current signature image before resize
+      const currentSignature = hiddenInput.value;
+      
+      // Store current canvas state
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Resize canvas (this clears it)
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      
+      // Restore drawing context settings after resize
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      
+      // Redraw signature from stored image data
+      if (currentSignature && currentSignature.startsWith("data:image")) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          isResizing = false;
+        };
+        img.onerror = () => {
+          isResizing = false;
+        };
+        img.src = currentSignature;
+      } else {
+        isResizing = false;
+      }
+    } else {
+      isResizing = false;
     }
   }
 
-  // Initial resize
-  resizeCanvas();
-  
-  // Resize on window resize
-  let resizeTimeout;
-  window.addEventListener("resize", () => {
+  // Initial resize on load
+  resizeCanvas(true);
+
+  // Debounced resize handler - only resize on window resize/orientation change, NOT during drawing
+  function handleResize() {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(resizeCanvas, 300);
+    resizeTimeout = setTimeout(() => {
+      if (!isDrawing) {
+        resizeCanvas();
+      }
+    }, 300);
+  }
+
+  window.addEventListener("resize", handleResize);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(handleResize, 500);
   });
 
-  canvas.style.touchAction = "none";
+  // Prevent canvas from being resized during drawing
+  canvas.style.touchAction = "none"; // Prevent touch scrolling during drawing
 
-  let isDrawing = false;
+  // Declare drawing state variables before use
   let lastX = 0;
   let lastY = 0;
 
+  // Get coordinates relative to canvas
   function getCoordinates(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -2810,6 +2902,9 @@ function initW9SignatureCanvas() {
     if (e.touches && e.touches.length > 0) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
+    } else if (e.pointerId !== undefined) {
+      clientX = e.clientX;
+      clientY = e.clientY;
     } else {
       clientX = e.clientX;
       clientY = e.clientY;
@@ -2824,14 +2919,21 @@ function initW9SignatureCanvas() {
   function startDrawing(e) {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Don't start drawing if resizing
+    if (isResizing) return;
+    
     isDrawing = true;
     const coords = getCoordinates(e);
     lastX = coords.x;
     lastY = coords.y;
+    
+    // Start new stroke
+    currentStroke = [{ x: coords.x, y: coords.y }];
   }
 
   function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing || isResizing) return;
     e.preventDefault();
     e.stopPropagation();
     
@@ -2841,22 +2943,46 @@ function initW9SignatureCanvas() {
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
     
+    // Add point to current stroke
+    if (currentStroke) {
+      currentStroke.push({ x: coords.x, y: coords.y });
+    }
+    
     lastX = coords.x;
     lastY = coords.y;
     
-    // Update signature data
-    updateSignatureData();
+    // Update signature data (debounced to avoid excessive updates)
+    if (!updateSignatureData.timeout) {
+      updateSignatureData.timeout = setTimeout(() => {
+        updateSignatureData();
+        updateSignatureData.timeout = null;
+      }, 100);
+    }
   }
 
   function stopDrawing(e) {
     if (!isDrawing) return;
     e.preventDefault();
     e.stopPropagation();
+    
     isDrawing = false;
+    
+    // Save completed stroke
+    if (currentStroke && currentStroke.length > 0) {
+      strokes.push([...currentStroke]);
+      currentStroke = null;
+    }
+    
+    // Final update
+    if (updateSignatureData.timeout) {
+      clearTimeout(updateSignatureData.timeout);
+      updateSignatureData.timeout = null;
+    }
     updateSignatureData();
   }
 
   function updateSignatureData() {
+    if (isResizing) return;
     try {
       hiddenInput.value = canvas.toDataURL("image/png");
       // Trigger preview update
@@ -2873,6 +2999,8 @@ function initW9SignatureCanvas() {
   function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     hiddenInput.value = "";
+    strokes = [];
+    currentStroke = null;
     updateSignatureData();
   }
 
@@ -2884,12 +3012,16 @@ function initW9SignatureCanvas() {
     canvas.addEventListener("pointercancel", stopDrawing);
     canvas.addEventListener("pointerleave", stopDrawing);
   } else {
+    // Fallback: Use touch events if supported, otherwise mouse events
+    // Don't register both to avoid duplicate handlers on touch devices
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      // Touch device - use touch events only
       canvas.addEventListener("touchstart", startDrawing, { passive: false });
       canvas.addEventListener("touchmove", draw, { passive: false });
       canvas.addEventListener("touchend", stopDrawing, { passive: false });
       canvas.addEventListener("touchcancel", stopDrawing, { passive: false });
     } else {
+      // Non-touch device - use mouse events only
       canvas.addEventListener("mousedown", startDrawing);
       canvas.addEventListener("mousemove", draw);
       canvas.addEventListener("mouseup", stopDrawing);
@@ -2905,6 +3037,7 @@ function initW9SignatureCanvas() {
     });
   }
 
+  // Load existing signature if available
   return { clearCanvas, updateSignatureData };
 }
 
@@ -2930,6 +3063,9 @@ async function initW9Page(user) {
   const otherWrap = document.getElementById("otherTypeWrap");
   if (llcWrap) llcWrap.style.display = "none";
   if (otherWrap) otherWrap.style.display = "none";
+
+  // Apply centralized field positions to preview overlay
+  applyW9FieldPositions();
 
   // Initialize signature canvas
   initW9SignatureCanvas();
