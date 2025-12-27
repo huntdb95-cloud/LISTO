@@ -54,17 +54,30 @@ function getFriendlyError(err) {
   return "An error occurred. Please try again.";
 }
 
-// Load employees
+let archivedEmployees = [];
+
+// Load employees (active and archived separately)
 async function loadEmployees() {
   if (!currentUid) return;
   
   try {
     const employeesCol = collection(db, "users", currentUid, "employees");
-    const q = query(employeesCol, orderBy("nameLower"));
-    const snap = await getDocs(q);
     
-    employees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Load active employees (not archived or archived = false)
+    const activeQ = query(employeesCol, orderBy("nameLower"));
+    const activeSnap = await getDocs(activeQ);
+    
+    employees = activeSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(emp => !emp.isArchived); // Filter out archived
+    
+    // Load archived employees
+    archivedEmployees = activeSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(emp => emp.isArchived === true); // Only archived
+    
     renderEmployeesList();
+    renderArchivedWorkersList();
   } catch (err) {
     console.error("Error loading employees:", err);
     $("employeesList").innerHTML = `<div class="form-error">Error loading employees: ${getFriendlyError(err)}</div>`;
@@ -114,7 +127,7 @@ function mapLaborerToEmployeeForm(laborer) {
   };
 }
 
-// Render employees list
+// Render employees list (active only)
 function renderEmployeesList() {
   const container = $("employeesList");
   
@@ -130,6 +143,10 @@ function renderEmployeesList() {
     const w9Link = emp.w9Url ? `<a href="${emp.w9Url}" target="_blank" class="mini-link">View W-9</a>` : `<span class="muted small">No W-9 uploaded</span>`;
     const coiLink = emp.coiUrl ? `<a href="${emp.coiUrl}" target="_blank" class="mini-link">View COI</a>` : `<span class="muted small">No COI uploaded</span>`;
     const workersCompLink = emp.workersCompUrl ? `<a href="${emp.workersCompUrl}" target="_blank" class="mini-link">View Workers Comp</a>` : `<span class="muted small">No Workers Comp uploaded</span>`;
+    
+    // Mobile: icon buttons, Desktop: text buttons
+    const editBtn = `<button class="btn small employee-edit-btn" onclick="editEmployee('${emp.id}')" data-i18n="employees.edit" aria-label="Edit"><span class="employee-btn-text">Edit</span><span class="employee-btn-icon">✏️</span></button>`;
+    const archiveBtn = `<button class="btn small ghost employee-archive-btn" onclick="archiveEmployee('${emp.id}', '${(emp.name || "").replace(/'/g, "\\'")}')" data-i18n="employees.archive" aria-label="Archive"><span class="employee-btn-text">Archive</span><span class="employee-btn-icon">🗑️</span></button>`;
     
     return `
       <div class="employee-card" style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;">
@@ -148,9 +165,48 @@ function renderEmployeesList() {
               ` : ""}
             </div>
           </div>
+          <div style="flex-shrink: 0; margin-left: 12px; display: flex; gap: 8px;">
+            ${editBtn}
+            ${archiveBtn}
+          </div>
+        </div>
+        ${(emp.email || emp.phone) ? `
+        <div class="small muted" style="margin-top: 6px;">
+          ${emp.email ? `<span>Email: ${emp.email}</span>` : ""}
+          ${emp.email && emp.phone ? ` • ` : ""}
+          ${emp.phone ? `<span>Phone: ${emp.phone}</span>` : ""}
+        </div>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+// Render archived workers list
+function renderArchivedWorkersList() {
+  const container = $("archivedWorkersList");
+  if (!container) return;
+  
+  if (archivedEmployees.length === 0) {
+    container.innerHTML = `<div class="muted">No archived workers</div>`;
+    return;
+  }
+  
+  container.innerHTML = archivedEmployees.map(emp => {
+    const typeLabel = emp.type === "subcontractor" ? "Subcontractor" : "Employee";
+    const typeBadge = `<span class="pill" style="background: ${emp.type === "subcontractor" ? "#e3f2fd" : "#f3e5f5"}; color: ${emp.type === "subcontractor" ? "#1976d2" : "#7b1fa2"}; opacity: 0.7;">${typeLabel}</span>`;
+    
+    return `
+      <div class="employee-card" style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; opacity: 0.7;">
+        <div class="row-between" style="margin-bottom: 6px; align-items: flex-start;">
+          <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+              <h3 class="h3" style="margin: 0; font-size: 1.1rem;">${emp.name || "—"}</h3>
+              ${typeBadge}
+            </div>
+          </div>
           <div style="flex-shrink: 0; margin-left: 12px;">
-            <button class="btn small" onclick="editEmployee('${emp.id}')" data-i18n="employees.edit">Edit</button>
-            <button class="btn small ghost" onclick="deleteEmployee('${emp.id}', '${(emp.name || "").replace(/'/g, "\\'")}')" data-i18n="employees.delete">Delete</button>
+            <button class="btn small primary" onclick="reinstateEmployee('${emp.id}')" data-i18n="employees.reinstate">Reinstate</button>
           </div>
         </div>
         ${(emp.email || emp.phone) ? `
@@ -400,6 +456,7 @@ async function saveEmployee(e) {
     if (!employeeId) {
       // Create new employee first to get ID (without file URLs yet)
       employeeData.createdAt = serverTimestamp();
+      employeeData.isArchived = false; // New employees are active by default
       const employeesCol = collection(db, "users", currentUid, "employees");
       const newRef = await addDoc(employeesCol, employeeData);
       employeeId = newRef.id;
@@ -660,9 +717,9 @@ async function saveLaborer(name, email, phone, type) {
   }, 1500);
 }
 
-// Delete employee
-async function deleteEmployee(employeeId, employeeName) {
-  if (!confirm(`Delete ${employeeName || "this employee"}? This action cannot be undone.`)) {
+// Archive employee (set isArchived = true, don't delete)
+async function archiveEmployee(employeeId, employeeName) {
+  if (!confirm(`Archive ${employeeName || "this employee"}? They will be moved to Archived Workers and removed from active lists.`)) {
     return;
   }
   
@@ -670,97 +727,109 @@ async function deleteEmployee(employeeId, employeeName) {
   
   try {
     const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return;
     
-    // Delete files from Storage
-    if (employee?.w9Url) await deleteFile(employee.w9Url);
-    if (employee?.coiUrl) await deleteFile(employee.coiUrl);
-    if (employee?.workersCompUrl) await deleteFile(employee.workersCompUrl);
+    // Archive employee in Firestore
+    const employeeRef = doc(db, "users", currentUid, "employees", employeeId);
+    await updateDoc(employeeRef, {
+      isArchived: true,
+      updatedAt: serverTimestamp()
+    });
     
-    // Delete corresponding laborer if it exists
+    // Archive corresponding laborer if it exists
     if (employee?.laborerId) {
       try {
         const laborerRef = doc(db, "users", currentUid, "laborers", employee.laborerId);
-        const laborerDoc = await getDoc(laborerRef);
-        
-        if (laborerDoc.exists()) {
-          const laborerData = laborerDoc.data();
-          
-          // Delete laborer documents from Storage
-          if (laborerData.documents?.w9?.storagePath) {
-            try {
-              const w9Ref = ref(storage, laborerData.documents.w9.storagePath);
-              await deleteObject(w9Ref);
-            } catch (err) {
-              console.warn("Error deleting laborer W-9 file:", err);
-            }
-          }
-          
-          if (laborerData.documents?.coi?.storagePath) {
-            try {
-              const coiRef = ref(storage, laborerData.documents.coi.storagePath);
-              await deleteObject(coiRef);
-            } catch (err) {
-              console.warn("Error deleting laborer COI file:", err);
-            }
-          }
-          
-          // Delete laborer from Firestore
-          await deleteDoc(laborerRef);
-        }
+        await updateDoc(laborerRef, {
+          isArchived: true,
+          updatedAt: serverTimestamp()
+        });
       } catch (err) {
-        console.warn("Error deleting corresponding laborer:", err);
-        // Continue with employee deletion even if laborer deletion fails
+        console.warn("Error archiving corresponding laborer:", err);
+        // Continue even if laborer archiving fails
       }
     } else {
       // If no laborerId stored, try to find by name (for legacy data)
-      // Only delete if exactly one match to avoid deleting wrong laborer
+      // Only archive if exactly one match
       try {
         const laborersCol = collection(db, "users", currentUid, "laborers");
         const laborersSnap = await getDocs(query(laborersCol, where("displayName", "==", employeeName)));
         
         if (laborersSnap.docs.length === 1) {
-          // Only delete if exactly one match (safe)
           const laborerDoc = laborersSnap.docs[0];
-          const laborerData = laborerDoc.data();
-          
-          // Delete laborer documents from Storage
-          if (laborerData.documents?.w9?.storagePath) {
-            try {
-              const w9Ref = ref(storage, laborerData.documents.w9.storagePath);
-              await deleteObject(w9Ref);
-            } catch (err) {
-              console.warn("Error deleting laborer W-9 file:", err);
-            }
-          }
-          
-          if (laborerData.documents?.coi?.storagePath) {
-            try {
-              const coiRef = ref(storage, laborerData.documents.coi.storagePath);
-              await deleteObject(coiRef);
-            } catch (err) {
-              console.warn("Error deleting laborer COI file:", err);
-            }
-          }
-          
-          // Delete laborer from Firestore
-          await deleteDoc(doc(db, "users", currentUid, "laborers", laborerDoc.id));
+          await updateDoc(doc(db, "users", currentUid, "laborers", laborerDoc.id), {
+            isArchived: true,
+            updatedAt: serverTimestamp()
+          });
         } else if (laborersSnap.docs.length > 1) {
-          console.warn(`Multiple laborers found with name "${employeeName}". Skipping laborer deletion to avoid data corruption.`);
+          console.warn(`Multiple laborers found with name "${employeeName}". Skipping laborer archive to avoid data corruption.`);
         }
       } catch (err) {
-        console.warn("Error finding/deleting laborer by name:", err);
-        // Continue with employee deletion even if laborer deletion fails
+        console.warn("Error finding/archiving laborer by name:", err);
+        // Continue even if laborer archiving fails
       }
     }
     
-    // Delete employee from Firestore
+    await loadEmployees();
+  } catch (err) {
+    console.error("Error archiving employee:", err);
+    alert(`Error archiving employee: ${getFriendlyError(err)}`);
+  }
+}
+
+// Reinstate employee (set isArchived = false)
+async function reinstateEmployee(employeeId) {
+  if (!currentUid) return;
+  
+  try {
+    const employee = archivedEmployees.find(e => e.id === employeeId);
+    if (!employee) return;
+    
+    // Reinstate employee in Firestore
     const employeeRef = doc(db, "users", currentUid, "employees", employeeId);
-    await deleteDoc(employeeRef);
+    await updateDoc(employeeRef, {
+      isArchived: false,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Reinstate corresponding laborer if it exists
+    if (employee?.laborerId) {
+      try {
+        const laborerRef = doc(db, "users", currentUid, "laborers", employee.laborerId);
+        await updateDoc(laborerRef, {
+          isArchived: false,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.warn("Error reinstating corresponding laborer:", err);
+        // Continue even if laborer reinstating fails
+      }
+    } else {
+      // If no laborerId stored, try to find by name (for legacy data)
+      // Only reinstate if exactly one match
+      try {
+        const laborersCol = collection(db, "users", currentUid, "laborers");
+        const laborersSnap = await getDocs(query(laborersCol, where("displayName", "==", employee.name)));
+        
+        if (laborersSnap.docs.length === 1) {
+          const laborerDoc = laborersSnap.docs[0];
+          await updateDoc(doc(db, "users", currentUid, "laborers", laborerDoc.id), {
+            isArchived: false,
+            updatedAt: serverTimestamp()
+          });
+        } else if (laborersSnap.docs.length > 1) {
+          console.warn(`Multiple laborers found with name "${employee.name}". Skipping laborer reinstate to avoid data corruption.`);
+        }
+      } catch (err) {
+        console.warn("Error finding/reinstating laborer by name:", err);
+        // Continue even if laborer reinstating fails
+      }
+    }
     
     await loadEmployees();
   } catch (err) {
-    console.error("Error deleting employee:", err);
-    alert(`Error deleting employee: ${getFriendlyError(err)}`);
+    console.error("Error reinstating employee:", err);
+    alert(`Error reinstating employee: ${getFriendlyError(err)}`);
   }
 }
 
@@ -774,7 +843,8 @@ function editEmployee(employeeId) {
 
 // Make functions globally available
 window.editEmployee = editEmployee;
-window.deleteEmployee = deleteEmployee;
+window.archiveEmployee = archiveEmployee;
+window.reinstateEmployee = reinstateEmployee;
 
 // Initialize
 function init() {

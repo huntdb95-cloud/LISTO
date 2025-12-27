@@ -7,9 +7,36 @@
 <link rel="icon" type="image/png" href="/images/favicon.png"/>
 <link rel="shortcut icon" type="image/png" href="/images/favicon.png"/>
 <link rel="apple-touch-icon" href="/images/favicon.png"/>
-<title>Listo — Employee Management</title>
+<title>Listo — Labor Management</title>
 <meta content="Manage your employees and subcontractors, upload W9s, COIs, and Workers Compensation documents." name="description"/>
 <link href="../styles.css" rel="stylesheet"/>
+<style>
+  /* Mobile: Show icon buttons, hide text */
+  @media (max-width: 768px) {
+    .employee-btn-text {
+      display: none;
+    }
+    .employee-btn-icon {
+      display: inline-block;
+      font-size: 1.2rem;
+    }
+    .employee-edit-btn,
+    .employee-archive-btn {
+      min-width: 44px; /* Good touch target size */
+      padding: 8px 12px;
+    }
+  }
+  
+  /* Desktop: Show text, hide icon */
+  @media (min-width: 769px) {
+    .employee-btn-icon {
+      display: none;
+    }
+    .employee-btn-text {
+      display: inline-block;
+    }
+  }
+</style>
 </head>
 <body data-page="employees" data-requires-auth="true">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -36,15 +63,15 @@
 <section class="section">
 <div class="container">
 <div class="section-head">
-<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 8px;">
   <div style="flex: 1; min-width: 0;">
-    <h1 class="page-title" data-i18n="employees.title">Employee Management</h1>
+    <h1 class="page-title" data-i18n="employees.title">Labor Management</h1>
     <p class="muted" data-i18n="employees.subtitle">
       Add and manage your employees and subcontractors. Upload W9s, COIs, and Workers Compensation documents.
     </p>
   </div>
-  <a href="../bookkeeping/bookkeeping.html" class="btn ghost" style="text-decoration: none; flex-shrink: 0; white-space: nowrap;">Back to Bookkeeping</a>
-</div>
+  <div style="margin-top: 16px;">
+    <a href="../bookkeeping/bookkeeping.html" class="btn primary" style="text-decoration: none; display: inline-flex; align-items: center; font-size: 0.9rem; padding: 10px 14px;" data-i18n="employees.backToBookkeeping">Back to Bookkeeping</a>
+  </div>
 </div>
 
 <!-- Add/Edit Employee Form -->
@@ -226,6 +253,17 @@
 <div id="employeesList" class="employees-list">
 <div class="muted" data-i18n="employees.loading">Loading...</div>
 </div>
+</div>
+
+<!-- Archived Workers List -->
+<div class="card pad" style="margin-top: 24px;">
+<div class="row-between">
+<h2 class="h2">Archived Workers</h2>
+</div>
+<div class="divider"></div>
+
+<div id="archivedWorkersList" class="employees-list">
+<div class="muted">No archived workers</div>
 </div>
 </div>
 </section>

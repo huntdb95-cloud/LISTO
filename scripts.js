@@ -2693,11 +2693,18 @@ function initW9SignatureCanvas() {
   const hiddenInput = document.getElementById("w9_signature");
   if (!canvas || !hiddenInput) return;
 
-  const ctx = canvas.getContext("2d");
-  ctx.strokeStyle = "#000000"; // Black ink
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  // Helper function to get fresh context and apply settings
+  function getContext() {
+    const ctx = canvas.getContext("2d");
+    ctx.strokeStyle = "#000000"; // Black ink
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    return ctx;
+  }
+
+  // Get initial context
+  let ctx = getContext();
 
   // Set canvas size based on container width (responsive)
   function resizeCanvas() {
@@ -2717,11 +2724,8 @@ function initW9SignatureCanvas() {
         // Set CSS height to match canvas height to prevent scaling/compression
         canvas.style.height = newHeight + 'px';
         
-        // Restore drawing context settings after resize
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        // Re-obtain context after resize (canvas dimensions change resets context)
+        ctx = getContext();
         
         // Redraw signature if it exists
         if (currentSignature && currentSignature.startsWith("data:image")) {
