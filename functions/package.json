@@ -3,6 +3,7 @@
   "description": "Cloud Functions for Listo",
   "scripts": {
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
