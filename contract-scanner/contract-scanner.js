@@ -19,9 +19,12 @@ import {
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
+import { app } from "../config.js";
+
 const $ = (id) => document.getElementById(id);
 
-const functions = getFunctions();
+// Initialize Functions with explicit region (us-central1)
+const functions = getFunctions(app, "us-central1");
 
 // State
 let currentUid = null;
@@ -615,10 +618,239 @@ Message: ${lastErrorDetails.message || "N/A"}`;
   onAuthStateChanged(auth, (user) => {
     if (user) {
       currentUid = user.uid;
+      console.log("User authenticated:", user.uid);
     } else {
       currentUid = null;
+      console.log("User signed out");
     }
   });
+  
+  // ========== DIAGNOSTICS HANDLERS ==========
+  
+  // Toggle diagnostics section
+  const btnToggleDiagnostics = $("btnToggleDiagnostics");
+  const diagnosticsContent = $("diagnosticsContent");
+  const diagnosticsResults = $("diagnosticsResults");
+  const diagnosticsOutput = $("diagnosticsOutput");
+  
+  if (btnToggleDiagnostics && diagnosticsContent) {
+    btnToggleDiagnostics.addEventListener("click", () => {
+      const isVisible = diagnosticsContent.style.display !== "none";
+      diagnosticsContent.style.display = isVisible ? "none" : "block";
+      btnToggleDiagnostics.textContent = isVisible ? "Show" : "Hide";
+    });
+  }
+  
+  // Helper: Log diagnostics result
+  function logDiagnostics(message, data = null) {
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] ${message}${data ? "\n" + JSON.stringify(data, null, 2) : ""}\n\n`;
+    
+    if (diagnosticsOutput) {
+      diagnosticsOutput.textContent += logLine;
+      diagnosticsResults.style.display = "block";
+      diagnosticsResults.scrollTop = diagnosticsResults.scrollHeight;
+    }
+    
+    console.log(message, data || "");
+  }
+  
+  // Helper: Clear diagnostics output
+  function clearDiagnostics() {
+    if (diagnosticsOutput) {
+      diagnosticsOutput.textContent = "";
+    }
+    if (diagnosticsResults) {
+      diagnosticsResults.style.display = "none";
+    }
+  }
+  
+  // Helper: Format callable error for display
+  function formatCallableError(error) {
+    let message = "";
+    if (error.code) {
+      message += `Code: ${error.code}\n`;
+    }
+    if (error.message) {
+      message += `Message: ${error.message}\n`;
+    }
+    if (error.details) {
+      message += `Details: ${JSON.stringify(error.details, null, 2)}\n`;
+    }
+    return message || String(error);
+  }
+  
+  // Run Ping
+  const btnPing = $("btnPing");
+  if (btnPing) {
+    btnPing.addEventListener("click", async () => {
+      clearDiagnostics();
+      logDiagnostics("🔍 Running Ping test...");
+      
+      try {
+        logDiagnostics("Current user UID:", currentUid);
+        logDiagnostics("Functions region: us-central1");
+        
+        const ping = httpsCallable(functions, "ping");
+        const result = await ping({});
+        
+        logDiagnostics("✅ Ping successful!", result.data);
+        
+        if (result.data.ok && result.data.uidPresent) {
+          logDiagnostics("✓ Authentication: OK");
+        } else if (result.data.ok && !result.data.uidPresent) {
+          logDiagnostics("⚠️ Authentication: User not signed in");
+        }
+      } catch (error) {
+        logDiagnostics("❌ Ping failed!", {
+          error: formatCallableError(error),
+          fullError: error
+        });
+      }
+    });
+  }
+  
+  // Verify Upload + Read
+  const btnVerifyUpload = $("btnVerifyUpload");
+  if (btnVerifyUpload) {
+    btnVerifyUpload.addEventListener("click", async () => {
+      clearDiagnostics();
+      logDiagnostics("🔍 Running Upload + Read verification...");
+      
+      try {
+        if (!currentUid) {
+          throw new Error("User not authenticated. Please sign in first.");
+        }
+        
+        const fileInput = $("contractFile");
+        const file = fileInput?.files?.[0];
+        
+        if (!file) {
+          throw new Error("Please select a file first.");
+        }
+        
+        logDiagnostics("Selected file:", {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+        
+        // Upload file to Storage
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+        const timestamp = Date.now();
+        const storagePath = `users/${currentUid}/translator/${timestamp}_${safeName}`;
+        
+        logDiagnostics("Uploading to Storage path:", storagePath);
+        
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, file, {
+          contentType: file.type || "application/octet-stream"
+        });
+        
+        logDiagnostics("✅ File uploaded successfully");
+        
+        // Call debugStorageRead
+        logDiagnostics("Calling debugStorageRead...");
+        const debugStorageRead = httpsCallable(functions, "debugStorageRead");
+        const result = await debugStorageRead({ storagePath });
+        
+        logDiagnostics("✅ Storage read successful!", result.data);
+        
+        if (result.data.ok && result.data.bytes > 0) {
+          logDiagnostics(`✓ File read: ${result.data.bytes} bytes, Content-Type: ${result.data.contentType}`);
+        }
+      } catch (error) {
+        logDiagnostics("❌ Upload + Read failed!", {
+          error: formatCallableError(error),
+          fullError: error
+        });
+      }
+    });
+  }
+  
+  // Run OCR + Translate Smoke Test
+  const btnSmokeTest = $("btnSmokeTest");
+  if (btnSmokeTest) {
+    btnSmokeTest.addEventListener("click", async () => {
+      clearDiagnostics();
+      logDiagnostics("🔍 Running OCR + Translate smoke test...");
+      
+      try {
+        if (!currentUid) {
+          throw new Error("User not authenticated. Please sign in first.");
+        }
+        
+        const fileInput = $("contractFile");
+        const file = fileInput?.files?.[0];
+        
+        if (!file) {
+          throw new Error("Please select a file first.");
+        }
+        
+        logDiagnostics("Selected file:", {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+        
+        // Upload file to Storage
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+        const timestamp = Date.now();
+        const storagePath = `users/${currentUid}/translator/${timestamp}_${safeName}`;
+        
+        logDiagnostics("Uploading to Storage path:", storagePath);
+        
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, file, {
+          contentType: file.type || "application/octet-stream"
+        });
+        
+        logDiagnostics("✅ File uploaded successfully");
+        
+        // Call processDocumentForTranslation
+        logDiagnostics("Calling processDocumentForTranslation...");
+        const processDocumentForTranslation = httpsCallable(functions, "processDocumentForTranslation");
+        const result = await processDocumentForTranslation({
+          storagePath: storagePath,
+          targetLanguage: "es",
+          originalFilename: file.name,
+          mimeType: file.type
+        });
+        
+        logDiagnostics("✅ OCR + Translation successful!", {
+          extractedTextLength: result.data.extractedText?.length || 0,
+          translatedTextLength: result.data.translatedText?.length || 0,
+          pageCount: result.data.pageCount || null,
+          mimeType: result.data.mimeType
+        });
+        
+        if (result.data.extractedText && result.data.extractedText.length > 0) {
+          logDiagnostics(`✓ Extracted text: ${result.data.extractedText.length} characters`);
+          logDiagnostics("Extracted text preview:", result.data.extractedText.substring(0, 200) + "...");
+        } else {
+          logDiagnostics("⚠️ Warning: No text extracted");
+        }
+        
+        if (result.data.translatedText && result.data.translatedText.length > 0) {
+          logDiagnostics(`✓ Translated text: ${result.data.translatedText.length} characters`);
+          logDiagnostics("Translated text preview:", result.data.translatedText.substring(0, 200) + "...");
+        } else {
+          logDiagnostics("⚠️ Warning: No translated text");
+        }
+        
+        // Also update the UI with results
+        if (result.data.extractedText && result.data.translatedText) {
+          showResults(result.data.extractedText, result.data.translatedText);
+          logDiagnostics("✅ Results displayed in UI");
+        }
+      } catch (error) {
+        logDiagnostics("❌ OCR + Translation failed!", {
+          error: formatCallableError(error),
+          fullError: error
+        });
+      }
+    });
+  }
 }
 
 // Start when DOM is ready

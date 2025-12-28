@@ -1004,6 +1004,27 @@ function showBuilderModal(builderId = null) {
   clearBuilderMessages();
   document.body.style.overflow = "hidden";
   
+  // Clean up any existing listeners before adding new ones (prevent accumulation)
+  if (modal._backdropClickHandler) {
+    modal.removeEventListener("click", modal._backdropClickHandler);
+    delete modal._backdropClickHandler;
+  }
+  if (modal._contentClickHandler) {
+    const existingContent = modal.querySelector(".modal-content");
+    if (existingContent) {
+      existingContent.removeEventListener("click", modal._contentClickHandler);
+    }
+    delete modal._contentClickHandler;
+  }
+  if (modal._escapeHandler) {
+    document.removeEventListener("keydown", modal._escapeHandler);
+    delete modal._escapeHandler;
+  }
+  if (modal._focusTrapCleanup) {
+    modal._focusTrapCleanup();
+    delete modal._focusTrapCleanup;
+  }
+  
   // Add backdrop click to close (only when clicking the overlay itself, not the content)
   const handleBackdropClick = (e) => {
     // Only close if clicking directly on the overlay, not on modal content
@@ -1123,6 +1144,27 @@ function showJobModal(jobId = null) {
   
   clearJobMessages();
   document.body.style.overflow = "hidden";
+  
+  // Clean up any existing listeners before adding new ones (prevent accumulation)
+  if (modal._backdropClickHandler) {
+    modal.removeEventListener("click", modal._backdropClickHandler);
+    delete modal._backdropClickHandler;
+  }
+  if (modal._contentClickHandler) {
+    const existingContent = modal.querySelector(".modal-content");
+    if (existingContent) {
+      existingContent.removeEventListener("click", modal._contentClickHandler);
+    }
+    delete modal._contentClickHandler;
+  }
+  if (modal._escapeHandler) {
+    document.removeEventListener("keydown", modal._escapeHandler);
+    delete modal._escapeHandler;
+  }
+  if (modal._focusTrapCleanup) {
+    modal._focusTrapCleanup();
+    delete modal._focusTrapCleanup;
+  }
   
   // Add backdrop click to close (only when clicking the overlay itself, not the content)
   const handleBackdropClick = (e) => {
