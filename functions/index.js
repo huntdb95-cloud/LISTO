@@ -547,27 +547,41 @@ async function updateOcrStatus(userId, laborerId, status, error) {
 
 /**
  * Diagnostics: ping
- * Simple health check to verify callable functions work and auth is present
+ * Minimal crash-proof health check to verify callable functions work and auth is present
  */
 exports.ping = functions.region("us-central1").https.onCall(async (data, context) => {
-  const requestId = generateRequestId();
-  const origin = context.rawRequest?.headers?.origin || "unknown";
-  
-  console.log(JSON.stringify({
-    requestId,
-    timestamp: new Date().toISOString(),
-    operation: "ping",
-    uid: context.auth?.uid || null,
-    origin: origin,
-  }));
-  
-  return {
-    ok: true,
-    serverTime: new Date().toISOString(),
-    uidPresent: context.auth != null,
-    projectId: process.env.GCLOUD_PROJECT || admin.app().options.projectId || "unknown",
-    requestId,
-  };
+  try {
+    const requestId = generateRequestId();
+    const uid = context.auth ? context.auth.uid : null;
+    
+    console.log(JSON.stringify({
+      requestId,
+      timestamp: new Date().toISOString(),
+      operation: "ping",
+      uid: uid,
+    }));
+    
+    const projectId = process.env.GCLOUD_PROJECT || (admin.app().options ? admin.app().options.projectId : null) || "unknown";
+    
+    return {
+      ok: true,
+      serverTime: new Date().toISOString(),
+      uidPresent: context.auth != null,
+      projectId: projectId,
+    };
+  } catch (error) {
+    console.error(JSON.stringify({
+      operation: "ping_error",
+      error: error.message || String(error),
+      stack: error.stack || "no stack",
+      timestamp: new Date().toISOString(),
+    }));
+    throw new functions.https.HttpsError(
+      "internal",
+      `Ping failed: ${error.message || "Unknown error"}`,
+      { error: error.message || "Unknown error" }
+    );
+  }
 });
 
 /**
@@ -694,102 +708,167 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
 
 /**
  * Document Translator: processDocumentForTranslation
- * Uses Google Cloud Vision OCR for images and PDFs
- * Uses Google Cloud Translation API to translate text
- * Simplified interface: no Firestore jobs required
+ * TEMPORARY ECHO TEST: Validates callable + Storage access without OCR/Translation
+ * After this works, re-enable Vision OCR + Translation API calls
  */
 exports.processDocumentForTranslation = functions.region("us-central1").https.onCall(async (data, context) => {
   const requestId = generateRequestId();
   const startTime = Date.now();
   
-  // Log request (always log, not just in DEBUG_MODE)
+  // Log request
   console.log(JSON.stringify({
     requestId,
     timestamp: new Date().toISOString(),
     operation: "processDocumentForTranslation_start",
-    environment: ENVIRONMENT,
-    storagePath: data.storagePath,
-    targetLanguage: data.targetLanguage,
-    mimeType: data.mimeType,
+    storagePath: data?.storagePath || "missing",
+    mimeType: data?.mimeType || "missing",
     uid: context.auth?.uid || null,
   }));
   
   try {
     // Check authentication
     if (!context.auth) {
-      logError(requestId, "processDocumentForTranslation_auth", new Error("Unauthenticated"));
+      console.error(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_auth_error",
+        error: "Unauthenticated",
+        timestamp: new Date().toISOString(),
+      }));
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Please sign in to use this feature.",
-        createErrorResponse(requestId, "UNAUTHENTICATED", "Please sign in to use this feature.")
+        { requestId, errorCode: "UNAUTHENTICATED" }
       );
     }
     
     const userId = context.auth.uid;
   
-  // Validate input
-  if (!data.storagePath || !data.mimeType) {
-    logError(requestId, "processDocumentForTranslation_validation", new Error("Missing required fields"));
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Storage path and MIME type are required",
-      createErrorResponse(requestId, "BAD_REQUEST", "Storage path and MIME type are required")
-    );
-  }
-  
-  // Validate storage path: must start with users/{uid}/translator/
-  const expectedPathPrefix = `users/${userId}/translator/`;
-  if (!data.storagePath.startsWith(expectedPathPrefix)) {
-    logError(requestId, "processDocumentForTranslation_validation", new Error("Invalid storage path"));
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Invalid storage path. Files must be in users/{uid}/translator/",
-      createErrorResponse(requestId, "PERMISSION_DENIED", "Invalid storage path.")
-    );
-  }
-  
-  // Determine file type from MIME type
-  const isPdf = data.mimeType === "application/pdf" || data.storagePath.toLowerCase().endsWith(".pdf");
-  const fileType = isPdf ? "pdf" : "image";
-  const targetLanguage = data.targetLanguage || "es";
-  
-  // Get Storage client and file reference
-  const storage = getStorageClient();
-  const bucket = storage.bucket();
-  const file = bucket.file(data.storagePath);
-  
-  // Check if file exists
-  const [exists] = await file.exists();
-  if (!exists) {
-    throw new functions.https.HttpsError(
-      "not-found",
-      "File not found in storage",
-      createErrorResponse(requestId, "FILE_NOT_FOUND", "File not found in storage.")
-    );
-  }
-  
-  // Get file metadata for page count (PDFs)
-  let pageCount = null;
-  if (isPdf) {
-    try {
-      const [metadata] = await file.getMetadata();
-      // For PDFs, we'll determine page count from OCR results
-      pageCount = null; // Will be set after OCR
-    } catch (err) {
-      console.warn("Could not get file metadata:", err);
+    // Validate input
+    if (!data || !data.storagePath) {
+      console.error(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_validation_error",
+        error: "Missing storagePath",
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Storage path is required",
+        { requestId, errorCode: "BAD_REQUEST" }
+      );
     }
-  }
   
-  // Perform OCR using Google Cloud Vision
-  let extractedText = "";
-  let sourceLanguage = "en"; // Default to English
+    // Validate storage path: must start with users/{uid}/translator/
+    const expectedPathPrefix = `users/${userId}/translator/`;
+    if (!data.storagePath.startsWith(expectedPathPrefix)) {
+      console.error(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_validation_error",
+        error: "Invalid storage path",
+        storagePath: data.storagePath,
+        expectedPrefix: expectedPathPrefix,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        `Invalid storage path. Files must be in ${expectedPathPrefix}`,
+        { requestId, errorCode: "PERMISSION_DENIED" }
+      );
+    }
   
-  try {
-    const vision = getVisionClient();
+    // Get Storage client and file reference
+    const storage = getStorageClient();
+    const bucket = storage.bucket();
+    const file = bucket.file(data.storagePath);
+  
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      console.error(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_file_not_found",
+        storagePath: data.storagePath,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+      throw new functions.https.HttpsError(
+        "not-found",
+        "File not found in storage",
+        { requestId, errorCode: "FILE_NOT_FOUND" }
+      );
+    }
+  
+    // Get file metadata (echo test - just return metadata)
+    const [metadata] = await file.getMetadata();
+    const size = metadata.size ? parseInt(metadata.size, 10) : 0;
+    const contentType = metadata.contentType || data.mimeType || "unknown";
     
-    if (fileType === "image") {
-      // For images: use documentTextDetection (better for forms/documents)
-      const gcsUri = `gs://${bucket.name}/${data.storagePath}`;
+    const duration = Date.now() - startTime;
+    
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processDocumentForTranslation_success",
+      duration,
+      storagePath: data.storagePath,
+      contentType,
+      size,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+    
+    // Return echo test result (Storage metadata only)
+    return {
+      ok: true,
+      storagePath: data.storagePath,
+      contentType: contentType,
+      size: size,
+      uid: userId,
+    };
+  } catch (error) {
+    // Catch any errors and log with full details
+    const errorDetails = {
+      requestId,
+      operation: "processDocumentForTranslation_error",
+      error: error.message || String(error),
+      stack: error.stack || "no stack",
+      uid: context.auth?.uid || null,
+      storagePath: data?.storagePath || "missing",
+      timestamp: new Date().toISOString(),
+    };
+    
+    console.error(JSON.stringify(errorDetails));
+    
+    // If it's already an HttpsError, re-throw it
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    // Wrap in HttpsError with real error message (not just "internal")
+    throw new functions.https.HttpsError(
+      "internal",
+      error.message || "An unexpected error occurred during document processing.",
+      { requestId, errorCode: "UNEXPECTED_ERROR", originalError: error.message }
+    );
+  }
+});
+
+/**
+ * Document Translator: processDocument (legacy - kept for backward compatibility)
+ * Uses Google Cloud Vision OCR for images and PDFs
+ * Uses Google Cloud Translation API to translate to Spanish
+ * Stores results in Firestore translatorJobs collection
+ */
+exports.processDocument = functions.https.onCall(async (data, context) => {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+  
+  // Log request
+  if (DEBUG_MODE) {
+    console.log(JSON.stringify({
+      requestId,
+      timestamp: new Date().toISOString(),
       
       const [result] = await vision.documentTextDetection(gcsUri);
       
