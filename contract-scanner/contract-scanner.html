@@ -333,6 +333,24 @@
       </div>
       <div id="statusMsg" class="small muted" style="margin-top:10px;"></div>
       <div id="errorMsg" class="small danger" style="margin-top:10px;"></div>
+      
+      <!-- Diagnostics Section (Development/Testing) -->
+      <div id="diagnosticsSection" class="card" style="margin-top: 24px; border: 2px dashed var(--border, rgba(0,0,0,0.2)); background: rgba(255,255,255,0.5);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">🔧 Diagnostics & Testing</h3>
+          <button id="btnToggleDiagnostics" class="btn btn-secondary" type="button" style="padding: 6px 12px; font-size: 0.85rem;">Show</button>
+        </div>
+        <div id="diagnosticsContent" style="display: none;">
+          <div class="btn-row" style="margin-top: 12px;">
+            <button id="btnPing" class="btn btn-secondary" type="button">Run Ping</button>
+            <button id="btnVerifyUpload" class="btn btn-secondary" type="button">Verify Upload + Read</button>
+            <button id="btnSmokeTest" class="btn btn-secondary" type="button">Run OCR + Translate (Smoke Test)</button>
+          </div>
+          <div id="diagnosticsResults" style="margin-top: 16px; padding: 12px; background: var(--bg, #f7faf8); border-radius: 8px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; display: none;">
+            <pre id="diagnosticsOutput" style="margin: 0; white-space: pre-wrap; word-wrap: break-word;"></pre>
+          </div>
+        </div>
+      </div>
       <div id="errorDetails" style="margin-top:8px; display:none;">
         <div class="small muted" style="margin-bottom:4px;">
           <span id="errorRequestId"></span>

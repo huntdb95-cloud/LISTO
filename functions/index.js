@@ -546,31 +546,51 @@ async function updateOcrStatus(userId, laborerId, status, error) {
 }
 
 /**
- * Document Translator: processDocumentForTranslation
- * Uses Google Cloud Vision OCR for images and PDFs
- * Uses Google Cloud Translation API to translate text
- * Simplified interface: no Firestore jobs required
+ * Diagnostics: ping
+ * Simple health check to verify callable functions work and auth is present
  */
-exports.processDocumentForTranslation = functions.https.onCall(async (data, context) => {
+exports.ping = functions.region("us-central1").https.onCall(async (data, context) => {
+  const requestId = generateRequestId();
+  const origin = context.rawRequest?.headers?.origin || "unknown";
+  
+  console.log(JSON.stringify({
+    requestId,
+    timestamp: new Date().toISOString(),
+    operation: "ping",
+    uid: context.auth?.uid || null,
+    origin: origin,
+  }));
+  
+  return {
+    ok: true,
+    serverTime: new Date().toISOString(),
+    uidPresent: context.auth != null,
+    projectId: process.env.GCLOUD_PROJECT || admin.app().options.projectId || "unknown",
+    requestId,
+  };
+});
+
+/**
+ * Diagnostics: debugStorageRead
+ * Verifies that the Cloud Function can read files from Storage
+ * Tests Storage access and path validation
+ */
+exports.debugStorageRead = functions.region("us-central1").https.onCall(async (data, context) => {
   const requestId = generateRequestId();
   const startTime = Date.now();
   
   // Log request
-  if (DEBUG_MODE) {
-    console.log(JSON.stringify({
-      requestId,
-      timestamp: new Date().toISOString(),
-      operation: "processDocumentForTranslation_start",
-      environment: ENVIRONMENT,
-      storagePath: data.storagePath,
-      targetLanguage: data.targetLanguage,
-      mimeType: data.mimeType,
-    }));
-  }
+  console.log(JSON.stringify({
+    requestId,
+    timestamp: new Date().toISOString(),
+    operation: "debugStorageRead_start",
+    storagePath: data.storagePath,
+    uid: context.auth?.uid || null,
+  }));
   
   // Check authentication
   if (!context.auth) {
-    logError(requestId, "processDocumentForTranslation_auth", new Error("Unauthenticated"));
+    logError(requestId, "debugStorageRead_auth", new Error("Unauthenticated"));
     throw new functions.https.HttpsError(
       "unauthenticated",
       "Please sign in to use this feature.",
@@ -579,6 +599,133 @@ exports.processDocumentForTranslation = functions.https.onCall(async (data, cont
   }
   
   const userId = context.auth.uid;
+  
+  // Validate input
+  if (!data.storagePath) {
+    logError(requestId, "debugStorageRead_validation", new Error("Missing storagePath"));
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Storage path is required",
+      createErrorResponse(requestId, "BAD_REQUEST", "Storage path is required")
+    );
+  }
+  
+  // Validate storage path: must start with users/{uid}/translator/
+  const expectedPathPrefix = `users/${userId}/translator/`;
+  if (!data.storagePath.startsWith(expectedPathPrefix)) {
+    logError(requestId, "debugStorageRead_validation", new Error("Invalid storage path"));
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Invalid storage path. Files must be in users/{uid}/translator/",
+      createErrorResponse(requestId, "PERMISSION_DENIED", `Invalid storage path. Must start with ${expectedPathPrefix}`)
+    );
+  }
+  
+  try {
+    // Get Storage client and file reference
+    const storage = getStorageClient();
+    const bucket = storage.bucket();
+    const file = bucket.file(data.storagePath);
+    
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new functions.https.HttpsError(
+        "not-found",
+        "File not found in storage",
+        createErrorResponse(requestId, "FILE_NOT_FOUND", `File not found at path: ${data.storagePath}`)
+      );
+    }
+    
+    // Get file metadata
+    const [metadata] = await file.getMetadata();
+    
+    // Download file to get size
+    const [fileBuffer] = await file.download();
+    const bytes = fileBuffer.length;
+    
+    const duration = Date.now() - startTime;
+    
+    console.log(JSON.stringify({
+      requestId,
+      operation: "debugStorageRead_success",
+      duration,
+      bytes,
+      contentType: metadata.contentType,
+      name: metadata.name,
+    }));
+    
+    return {
+      ok: true,
+      bytes: bytes,
+      contentType: metadata.contentType || "unknown",
+      name: metadata.name || data.storagePath,
+      size: metadata.size || bytes,
+      requestId,
+    };
+  } catch (error) {
+    let errorCode = "STORAGE_READ_FAILED";
+    let errorMessage = "Failed to read file from storage.";
+    
+    if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
+      errorCode = "STORAGE_PERMISSION";
+      errorMessage = "Storage read failed: Permission denied. Check Cloud Function service account IAM roles.";
+    } else if (error.code === 16 || error.message?.includes("UNAUTHENTICATED")) {
+      errorCode = "STORAGE_AUTH";
+      errorMessage = "Storage read failed: Authentication failed. Check service account credentials.";
+    } else if (error instanceof functions.https.HttpsError) {
+      // Re-throw HttpsError as-is
+      throw error;
+    }
+    
+    logError(requestId, "debugStorageRead_error", error, {
+      errorCode,
+      errorMessage,
+      storagePath: data.storagePath,
+    });
+    
+    throw new functions.https.HttpsError(
+      "internal",
+      errorMessage,
+      createErrorResponse(requestId, errorCode, errorMessage)
+    );
+  }
+});
+
+/**
+ * Document Translator: processDocumentForTranslation
+ * Uses Google Cloud Vision OCR for images and PDFs
+ * Uses Google Cloud Translation API to translate text
+ * Simplified interface: no Firestore jobs required
+ */
+exports.processDocumentForTranslation = functions.region("us-central1").https.onCall(async (data, context) => {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+  
+  // Log request (always log, not just in DEBUG_MODE)
+  console.log(JSON.stringify({
+    requestId,
+    timestamp: new Date().toISOString(),
+    operation: "processDocumentForTranslation_start",
+    environment: ENVIRONMENT,
+    storagePath: data.storagePath,
+    targetLanguage: data.targetLanguage,
+    mimeType: data.mimeType,
+    uid: context.auth?.uid || null,
+  }));
+  
+  try {
+    // Check authentication
+    if (!context.auth) {
+      logError(requestId, "processDocumentForTranslation_auth", new Error("Unauthenticated"));
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Please sign in to use this feature.",
+        createErrorResponse(requestId, "UNAUTHENTICATED", "Please sign in to use this feature.")
+      );
+    }
+    
+    const userId = context.auth.uid;
   
   // Validate input
   if (!data.storagePath || !data.mimeType) {
@@ -981,9 +1128,9 @@ exports.processDocumentForTranslation = functions.https.onCall(async (data, cont
     );
   }
   
-  const duration = Date.now() - startTime;
-  
-  if (DEBUG_MODE) {
+    const duration = Date.now() - startTime;
+    
+    // Always log success (not just in DEBUG_MODE)
     console.log(JSON.stringify({
       requestId,
       operation: "processDocumentForTranslation_success",
@@ -992,15 +1139,34 @@ exports.processDocumentForTranslation = functions.https.onCall(async (data, cont
       translatedLength: translatedText.length,
       pageCount,
     }));
+    
+    return {
+      extractedText: extractedText,
+      translatedText: translatedText,
+      detectedLanguage: sourceLanguage,
+      pageCount: pageCount,
+      mimeType: data.mimeType,
+    };
+  } catch (error) {
+    // Catch any unhandled errors and wrap them properly
+    if (error instanceof functions.https.HttpsError) {
+      // Re-throw HttpsError as-is (already properly formatted)
+      throw error;
+    }
+    
+    // Log unexpected errors
+    logError(requestId, "processDocumentForTranslation_unhandled", error, {
+      storagePath: data?.storagePath,
+      mimeType: data?.mimeType,
+    });
+    
+    // Wrap in HttpsError with clear message
+    throw new functions.https.HttpsError(
+      "internal",
+      error.message || "An unexpected error occurred during document processing.",
+      createErrorResponse(requestId, "UNEXPECTED_ERROR", error.message || "An unexpected error occurred.")
+    );
   }
-  
-  return {
-    extractedText: extractedText,
-    translatedText: translatedText,
-    detectedLanguage: sourceLanguage,
-    pageCount: pageCount,
-    mimeType: data.mimeType,
-  };
 });
 
 /**
