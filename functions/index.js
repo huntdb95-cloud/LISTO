@@ -122,7 +122,11 @@ function checkEnvVars() {
  * Storage trigger: Process W-9 uploads for laborers
  * Triggered when a file is uploaded to: users/{uid}/laborers/{laborerId}/documents/w9/{fileName}
  */
-exports.processW9Upload = functions.storage
+exports.processW9Upload = functions
+    .region("us-central1")
+    .runWith({serviceAccount: "listo-c6a60@appspot.gserviceaccount.com"})
+    .storage
+    .bucket("listo-c6a60.firebasestorage.app")
     .object()
     .onFinalize(async (object) => {
       const filePath = object.name;
