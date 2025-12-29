@@ -1,11 +1,11 @@
 /**
  * Firebase Cloud Functions for Listo
- *
+ * 
  * W-9 OCR Processing:
  * - Automatically processes W-9 uploads for laborers
  * - Extracts text using Google Cloud Vision OCR
  * - Parses W-9 fields and updates laborer records
- *
+ * 
  * Document Translator (processDocument):
  * - Uses Google Cloud Vision OCR for images and PDFs
  * - Uses Google Cloud Translation API to translate to Spanish
@@ -96,7 +96,7 @@ function logError(requestId, operation, error, context = {}) {
     },
     context: DEBUG_MODE ? context : {}, // Only log context in debug mode
   };
-
+  
   console.error(JSON.stringify(logEntry));
   return logEntry;
 }
@@ -115,13 +115,13 @@ function createErrorResponse(requestId, errorCode, message, details = null) {
 // Helper: Check environment variables
 function checkEnvVars() {
   const missing = [];
-
+  
   // Check for Google Cloud credentials
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.GCLOUD_PROJECT) {
     // In Firebase Functions, credentials are usually auto-detected
     // But we should check if we can initialize clients
   }
-
+  
   return {
     valid: missing.length === 0,
     missing,
@@ -137,116 +137,116 @@ exports.processW9Upload = functions
     .runWith({serviceAccount: "listo-c6a60@appspot.gserviceaccount.com"})
     .storage
     .bucket("listo-c6a60.firebasestorage.app")
-    .object()
-    .onFinalize(async (object) => {
-      const filePath = object.name;
-      const bucket = object.bucket;
-      const contentType = object.contentType || "";
+  .object()
+  .onFinalize(async (object) => {
+    const filePath = object.name;
+    const bucket = object.bucket;
+    const contentType = object.contentType || "";
 
-      // Only process W-9 uploads for laborers
-      const w9PathMatch = filePath.match(
+    // Only process W-9 uploads for laborers
+    const w9PathMatch = filePath.match(
           /^users\/([^/]+)\/laborers\/([^/]+)\/documents\/w9\/(.+)$/,
-      );
+    );
 
-      if (!w9PathMatch) {
-        console.log(`Skipping non-W9 file: ${filePath}`);
-        return null;
-      }
+    if (!w9PathMatch) {
+      console.log(`Skipping non-W9 file: ${filePath}`);
+      return null;
+    }
 
       const [, userId, laborerId] = w9PathMatch;
 
-      console.log(`Processing W-9 upload: ${filePath}`);
-      console.log(`User: ${userId}, Laborer: ${laborerId}`);
+    console.log(`Processing W-9 upload: ${filePath}`);
+    console.log(`User: ${userId}, Laborer: ${laborerId}`);
 
-      // Validate file type
-      const validTypes = [
-        "application/pdf",
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-      ];
-      if (!validTypes.includes(contentType)) {
-        console.warn(`Invalid file type for W-9: ${contentType}`);
-        await updateOcrStatus(userId, laborerId, "failed", {
-          error: "Invalid file type. Please upload a PDF or image (JPG/PNG).",
-        });
-        return null;
-      }
+    // Validate file type
+    const validTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+    if (!validTypes.includes(contentType)) {
+      console.warn(`Invalid file type for W-9: ${contentType}`);
+      await updateOcrStatus(userId, laborerId, "failed", {
+        error: "Invalid file type. Please upload a PDF or image (JPG/PNG).",
+      });
+      return null;
+    }
 
-      try {
+    try {
       // Set OCR status to processing
-        await updateOcrStatus(userId, laborerId, "processing", null);
+      await updateOcrStatus(userId, laborerId, "processing", null);
 
-        // Download file from Storage
+      // Download file from Storage
         const storageClient = getStorageClient();
         const bucketObj = storageClient.bucket(bucket);
-        const file = bucketObj.file(filePath);
-        const [fileBuffer] = await file.download();
+      const file = bucketObj.file(filePath);
+      const [fileBuffer] = await file.download();
 
-        // Perform OCR using Google Cloud Vision
-        let fullText = "";
-
-        if (contentType === "application/pdf") {
+      // Perform OCR using Google Cloud Vision
+      let fullText = "";
+      
+      if (contentType === "application/pdf") {
         // For PDFs, use Document Text Detection
-          const [result] = await visionClient.documentTextDetection({
+        const [result] = await visionClient.documentTextDetection({
             image: {content: fileBuffer},
-          });
-
-          if (result.fullTextAnnotation) {
-            fullText = result.fullTextAnnotation.text;
-          } else {
-            throw new Error("No text detected in PDF");
-          }
-        } else {
-        // For images, use Document Text Detection (better for forms)
-          const [result] = await visionClient.documentTextDetection({
-            image: {content: fileBuffer},
-          });
-
-          if (result.fullTextAnnotation) {
-            fullText = result.fullTextAnnotation.text;
-          } else {
-          // Fallback to regular text detection
-            const [fallbackResult] = await visionClient.textDetection({
-              image: {content: fileBuffer},
-            });
-
-            if (fallbackResult.textAnnotations && fallbackResult.textAnnotations.length > 0) {
-              fullText = fallbackResult.textAnnotations[0].description || "";
-            } else {
-              throw new Error("No text detected in image");
-            }
-          }
-        }
-
-        if (!fullText || fullText.trim().length === 0) {
-          throw new Error("No text extracted from W-9 document");
-        }
-
-        console.log(`Extracted text length: ${fullText.length} characters`);
-
-        // Parse W-9 fields from extracted text
-        const parsedFields = parseW9Text(fullText);
-
-        // Update laborer document with extracted fields
-        await updateLaborerWithW9Data(
-            userId,
-            laborerId,
-            parsedFields,
-            filePath,
-            object.mediaLink || null,
-        );
-
-        console.log(`Successfully processed W-9 for laborer ${laborerId}`);
-        return null;
-      } catch (error) {
-        console.error(`Error processing W-9: ${error.message}`, error);
-        await updateOcrStatus(userId, laborerId, "failed", {
-          error: error.message || "Failed to process W-9 document",
         });
-        return null;
+        
+        if (result.fullTextAnnotation) {
+          fullText = result.fullTextAnnotation.text;
+        } else {
+          throw new Error("No text detected in PDF");
+        }
+      } else {
+        // For images, use Document Text Detection (better for forms)
+        const [result] = await visionClient.documentTextDetection({
+            image: {content: fileBuffer},
+        });
+        
+        if (result.fullTextAnnotation) {
+          fullText = result.fullTextAnnotation.text;
+        } else {
+          // Fallback to regular text detection
+          const [fallbackResult] = await visionClient.textDetection({
+              image: {content: fileBuffer},
+          });
+          
+          if (fallbackResult.textAnnotations && fallbackResult.textAnnotations.length > 0) {
+            fullText = fallbackResult.textAnnotations[0].description || "";
+          } else {
+            throw new Error("No text detected in image");
+          }
+        }
       }
-    });
+
+      if (!fullText || fullText.trim().length === 0) {
+        throw new Error("No text extracted from W-9 document");
+      }
+
+      console.log(`Extracted text length: ${fullText.length} characters`);
+
+      // Parse W-9 fields from extracted text
+      const parsedFields = parseW9Text(fullText);
+
+      // Update laborer document with extracted fields
+      await updateLaborerWithW9Data(
+        userId,
+        laborerId,
+        parsedFields,
+        filePath,
+            object.mediaLink || null,
+      );
+
+      console.log(`Successfully processed W-9 for laborer ${laborerId}`);
+      return null;
+    } catch (error) {
+      console.error(`Error processing W-9: ${error.message}`, error);
+      await updateOcrStatus(userId, laborerId, "failed", {
+        error: error.message || "Failed to process W-9 document",
+      });
+      return null;
+    }
+  });
 
 /**
  * Parse W-9 text to extract key fields
@@ -277,7 +277,7 @@ function parseW9Text(text) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
+    
     // Check for name field label
     for (const pattern of namePatterns) {
       if (pattern.test(line)) {
@@ -344,7 +344,7 @@ function parseW9Text(text) {
           const addrLine1 = lines[i + 1];
           if (addrLine1 && addrLine1.length > 5) {
             fields.addressLine1 = addrLine1;
-
+            
             // Check for line 2
             if (i + 2 < lines.length) {
               const addrLine2 = lines[i + 2];
@@ -426,7 +426,7 @@ function parseW9Text(text) {
   // Determine confidence level
   const requiredFields = [fields.legalName, fields.addressLine1, fields.city, fields.state, fields.zip];
   const foundRequiredCount = requiredFields.filter(Boolean).length;
-
+  
   if (foundRequiredCount < 3) {
     fields.confidence = "low";
   } else if (foundRequiredCount < 5) {
@@ -442,18 +442,18 @@ function parseW9Text(text) {
  * Update laborer document with W-9 OCR data
  */
 async function updateLaborerWithW9Data(
-    userId,
-    laborerId,
-    parsedFields,
-    filePath,
+  userId,
+  laborerId,
+  parsedFields,
+  filePath,
     downloadUrl,
 ) {
   const laborerRef = admin
-      .firestore()
-      .collection("users")
-      .doc(userId)
-      .collection("laborers")
-      .doc(laborerId);
+    .firestore()
+    .collection("users")
+    .doc(userId)
+    .collection("laborers")
+    .doc(laborerId);
 
   const laborerDoc = await laborerRef.get();
   if (!laborerDoc.exists) {
@@ -489,7 +489,7 @@ async function updateLaborerWithW9Data(
         addressParts.push(`${parsedFields.city}, ${parsedFields.state} ${parsedFields.zip}`);
       }
       const fullAddress = addressParts.join(", ");
-
+      
       if (!existingData.address || existingData.address.trim() === "") {
         updateData.address = fullAddress;
       }
@@ -537,11 +537,11 @@ async function updateLaborerWithW9Data(
  */
 async function updateOcrStatus(userId, laborerId, status, error) {
   const laborerRef = admin
-      .firestore()
-      .collection("users")
-      .doc(userId)
-      .collection("laborers")
-      .doc(laborerId);
+    .firestore()
+    .collection("users")
+    .doc(userId)
+    .collection("laborers")
+    .doc(laborerId);
 
   const updateData = {
     w9OcrStatus: status,
@@ -606,23 +606,20 @@ exports.ping = functions.region("us-central1").https.onCall(async (data, context
  * Diagnostics: debugStorageRead
  * Verifies that the Cloud Function can read files from Storage
  * Tests Storage access and path validation
+ * Includes retry logic for race conditions after upload
  */
 exports.debugStorageRead = functions.region("us-central1").https.onCall(async (data, context) => {
   const requestId = generateRequestId();
   const startTime = Date.now();
 
-  // Log request
-  console.log(JSON.stringify({
-    requestId,
-    timestamp: new Date().toISOString(),
-    operation: "debugStorageRead_start",
-    storagePath: data.storagePath,
-    uid: context.auth?.uid || null,
-  }));
-
   // Check authentication
   if (!context.auth) {
-    logError(requestId, "debugStorageRead_auth", new Error("Unauthenticated"));
+    console.error(JSON.stringify({
+      requestId,
+      operation: "debugStorageRead_auth_error",
+      error: "Unauthenticated",
+      timestamp: new Date().toISOString(),
+    }));
     throw new functions.https.HttpsError(
         "unauthenticated",
         "Please sign in to use this feature.",
@@ -633,8 +630,14 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
   const userId = context.auth.uid;
 
   // Validate input
-  if (!data.storagePath) {
-    logError(requestId, "debugStorageRead_validation", new Error("Missing storagePath"));
+  if (!data || !data.storagePath) {
+    console.error(JSON.stringify({
+      requestId,
+      operation: "debugStorageRead_validation_error",
+      error: "Missing storagePath",
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
     throw new functions.https.HttpsError(
         "invalid-argument",
         "Storage path is required",
@@ -645,93 +648,203 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
   // Validate storage path: must start with users/{uid}/translator/
   const expectedPathPrefix = `users/${userId}/translator/`;
   if (!data.storagePath.startsWith(expectedPathPrefix)) {
-    logError(requestId, "debugStorageRead_validation", new Error("Invalid storage path"));
+    console.error(JSON.stringify({
+      requestId,
+      operation: "debugStorageRead_validation_error",
+      error: "Invalid storage path",
+      storagePath: data.storagePath,
+      expectedPrefix: expectedPathPrefix,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
     throw new functions.https.HttpsError(
-        "permission-denied",
-        "Invalid storage path. Files must be in users/{uid}/translator/",
+        "invalid-argument",
+        `Invalid storage path. Expected path format: users/<uid>/translator/<filename>`,
         createErrorResponse(
             requestId,
-            "PERMISSION_DENIED",
+            "INVALID_PATH",
             `Invalid storage path. Must start with ${expectedPathPrefix}`,
         ),
     );
   }
 
-  try {
-    // Get Storage client and file reference
-    const bucket = getBucket();
-    const file = bucket.file(data.storagePath);
+  // Get bucket using admin.storage() (uses bucket from admin initialization)
+  const bucket = admin.storage().bucket();
+  const bucketName = bucket.name;
+  const file = bucket.file(data.storagePath);
 
-    console.log(JSON.stringify({
-      requestId,
-      operation: "debugStorageRead_bucket_info",
-      bucketName: bucket.name,
-      storagePath: data.storagePath,
-    }));
+  // Log request with bucket info
+  console.log(JSON.stringify({
+    requestId,
+    timestamp: new Date().toISOString(),
+    operation: "debugStorageRead_start",
+    uid: userId,
+    storagePath: data.storagePath,
+    bucketName: bucketName,
+  }));
 
-    // Check if file exists
-    const [exists] = await file.exists();
-    if (!exists) {
-      throw new functions.https.HttpsError(
-          "not-found",
-          "File not found in storage",
-          createErrorResponse(requestId, "FILE_NOT_FOUND", `File not found at path: ${data.storagePath}`),
-      );
+  // Retry logic for race conditions (file may not be immediately available after upload)
+  const maxRetries = 3;
+  const retryDelay = 500; // 500ms
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        if (attempt < maxRetries) {
+          console.log(JSON.stringify({
+            requestId,
+            operation: "debugStorageRead_retry",
+            attempt,
+            maxRetries,
+            storagePath: data.storagePath,
+            bucketName: bucketName,
+            reason: "File not found, retrying...",
+          }));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          continue;
+        } else {
+          throw new functions.https.HttpsError(
+              "not-found",
+              `Object not found in bucket ${bucketName} at path: ${data.storagePath}`,
+              createErrorResponse(
+                  requestId,
+                  "FILE_NOT_FOUND",
+                  `File not found at path: ${data.storagePath} after ${maxRetries} attempts`,
+              ),
+          );
+        }
+      }
+
+      // Get file metadata
+      const [metadata] = await file.getMetadata();
+      const size = metadata.size ? parseInt(metadata.size, 10) : 0;
+      const contentType = metadata.contentType || "unknown";
+
+      // Download only first 1024 bytes as sample
+      const [fileBuffer] = await file.download({
+        start: 0,
+        end: 1024,
+      });
+      const sampleBytes = fileBuffer.length;
+
+      const duration = Date.now() - startTime;
+
+      console.log(JSON.stringify({
+        requestId,
+        operation: "debugStorageRead_success",
+        duration,
+        attempt,
+        bucketName: bucketName,
+        storagePath: data.storagePath,
+        size: size,
+        contentType: contentType,
+        sampleBytes: sampleBytes,
+        name: metadata.name || data.storagePath,
+      }));
+
+      return {
+        ok: true,
+        bucketName: bucketName,
+        name: metadata.name || data.storagePath,
+        size: size,
+        contentType: contentType,
+        sampleBytes: sampleBytes,
+        requestId,
+      };
+    } catch (error) {
+      lastError = error;
+
+      // If it's an HttpsError (like not-found), handle it
+      if (error instanceof functions.https.HttpsError) {
+        // If it's a not-found error and we have retries left, retry
+        if (error.code === "not-found" && attempt < maxRetries) {
+          console.log(JSON.stringify({
+            requestId,
+            operation: "debugStorageRead_retry",
+            attempt,
+            maxRetries,
+            storagePath: data.storagePath,
+            bucketName: bucketName,
+            reason: error.message,
+          }));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        // Otherwise, re-throw the HttpsError
+        throw error;
+      }
+
+      // Check for NotFound errors (404) or "No such object" messages
+      const isNotFoundError = error.code === 404 ||
+        error.message?.includes("No such object") ||
+        error.message?.includes("not found") ||
+        error.message?.includes("NotFound");
+
+      if (isNotFoundError && attempt < maxRetries) {
+        console.log(JSON.stringify({
+          requestId,
+          operation: "debugStorageRead_retry",
+          attempt,
+          maxRetries,
+          storagePath: data.storagePath,
+          bucketName: bucketName,
+          reason: error.message || "File not found, retrying...",
+        }));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        continue;
+      }
+
+      // If we've exhausted retries or it's not a not-found error, break and handle below
+      break;
     }
+  }
 
-    // Get file metadata
-    const [metadata] = await file.getMetadata();
+  // Handle final error
+  let errorCode = "STORAGE_READ_FAILED";
+  let errorMessage = "Failed to read file from storage.";
+  let httpsErrorCode = "internal";
 
-    // Download file to get size
-    const [fileBuffer] = await file.download();
-    const bytes = fileBuffer.length;
-
-    const duration = Date.now() - startTime;
-
-    console.log(JSON.stringify({
-      requestId,
-      operation: "debugStorageRead_success",
-      duration,
-      bytes,
-      contentType: metadata.contentType,
-      name: metadata.name,
-    }));
-
-    return {
-      ok: true,
-      bytes: bytes,
-      contentType: metadata.contentType || "unknown",
-      name: metadata.name || data.storagePath,
-      size: metadata.size || bytes,
-      requestId,
-    };
-  } catch (error) {
-    let errorCode = "STORAGE_READ_FAILED";
-    let errorMessage = "Failed to read file from storage.";
-
-    if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
+  if (lastError) {
+    // Permission errors
+    if (lastError.code === 7 || lastError.message?.includes("PERMISSION_DENIED")) {
       errorCode = "STORAGE_PERMISSION";
       errorMessage = "Storage read failed: Permission denied. Check Cloud Function service account IAM roles.";
-    } else if (error.code === 16 || error.message?.includes("UNAUTHENTICATED")) {
+      httpsErrorCode = "permission-denied";
+    } else if (lastError.code === 16 || lastError.message?.includes("UNAUTHENTICATED")) {
       errorCode = "STORAGE_AUTH";
       errorMessage = "Storage read failed: Authentication failed. Check service account credentials.";
-    } else if (error instanceof functions.https.HttpsError) {
-      // Re-throw HttpsError as-is
-      throw error;
+      httpsErrorCode = "unauthenticated";
+    } else if (lastError.code === 404 || lastError.message?.includes("No such object") || lastError.message?.includes("not found")) {
+      errorCode = "FILE_NOT_FOUND";
+      errorMessage = `Object not found in bucket ${bucketName} at path: ${data.storagePath}`;
+      httpsErrorCode = "not-found";
+    } else {
+      errorMessage = lastError.message || "Failed to read file from storage.";
     }
-
-    logError(requestId, "debugStorageRead_error", error, {
-      errorCode,
-      errorMessage,
-      storagePath: data.storagePath,
-    });
-
-    throw new functions.https.HttpsError(
-        "internal",
-        errorMessage,
-        createErrorResponse(requestId, errorCode, errorMessage),
-    );
   }
+
+  // Log error with full details
+  console.error(JSON.stringify({
+    requestId,
+    operation: "debugStorageRead_failed",
+    uid: userId,
+    storagePath: data.storagePath,
+    bucketName: bucketName,
+    error: lastError?.message || "Unknown error",
+    errorCode: lastError?.code || "UNKNOWN",
+    stack: lastError?.stack || "no stack",
+    attempts: maxRetries,
+    timestamp: new Date().toISOString(),
+  }));
+
+  throw new functions.https.HttpsError(
+      httpsErrorCode,
+      errorMessage,
+      createErrorResponse(requestId, errorCode, errorMessage),
+  );
 });
 
 /**
@@ -900,7 +1013,7 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
 exports.processDocument = functions.https.onCall(async (data, context) => {
   const requestId = generateRequestId();
   const startTime = Date.now();
-
+  
   // Log request
   if (DEBUG_MODE) {
     console.log(JSON.stringify({
@@ -913,93 +1026,93 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
       fileType: data.fileType,
     }));
   }
-
+  
   // Check authentication
   if (!context.auth) {
     logError(requestId, "processDocument_auth", new Error("Unauthenticated"));
     throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Please sign in to use this feature.",
+      "unauthenticated",
+      "Please sign in to use this feature.",
         createErrorResponse(requestId, "UNAUTHENTICATED", "Please sign in to use this feature."),
     );
   }
-
+  
   const userId = context.auth.uid;
-
+  
   // Validate input
   if (!data.jobId || !data.filePath || !data.fileType) {
     logError(requestId, "processDocument_validation", new Error("Missing required fields"));
     throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Job ID, file path, and file type are required",
+      "invalid-argument",
+      "Job ID, file path, and file type are required",
         createErrorResponse(requestId, "BAD_REQUEST", "Job ID, file path, and file type are required"),
     );
   }
-
+  
   // Validate file type
   const validTypes = ["image", "pdf"];
   if (!validTypes.includes(data.fileType)) {
     logError(requestId, "processDocument_validation", new Error(`Invalid file type: ${data.fileType}`));
     throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Invalid file type",
+      "invalid-argument",
+      "Invalid file type",
         createErrorResponse(requestId, "BAD_REQUEST", "Invalid file type. Must be 'image' or 'pdf'."),
     );
   }
-
+  
   const db = admin.firestore();
   const jobRef = db.collection("translatorJobs").doc(data.jobId);
-
+  
   try {
     // Verify job exists and belongs to user
     const jobDoc = await jobRef.get();
     if (!jobDoc.exists) {
-      throw new functions.https.HttpsError(
-          "not-found",
-          "Job not found",
+    throw new functions.https.HttpsError(
+        "not-found",
+        "Job not found",
           createErrorResponse(requestId, "JOB_NOT_FOUND", "Translation job not found."),
       );
     }
-
+    
     const jobData = jobDoc.data();
     if (jobData.uid !== userId) {
       throw new functions.https.HttpsError(
-          "permission-denied",
-          "Access denied",
+        "permission-denied",
+        "Access denied",
           createErrorResponse(requestId, "PERMISSION_DENIED", "You do not have access to this job."),
       );
     }
-
+    
     // Update status to processing
     await jobRef.update({
       status: "processing",
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
+    
     // Get Storage client and file reference
     const bucket = getBucket();
     const file = bucket.file(data.filePath);
-
+    
     // Check if file exists
     const [exists] = await file.exists();
     if (!exists) {
       throw new Error("File not found in storage");
     }
-
+  
     // Perform OCR using Google Cloud Vision
     let extractedText = "";
     let sourceLanguage = "en"; // Default to English
-
+    
     try {
       const vision = getVisionClient();
-
+      
       if (data.fileType === "image") {
         // For images: use textDetection
         const gcsUri = `gs://${bucket.name}/${data.filePath}`;
-
+        
         const [result] = await vision.textDetection(gcsUri);
         const detections = result.textAnnotations;
-
+        
         if (detections && detections.length > 0) {
           // Use fullTextAnnotation if available (better quality), otherwise use first detection
           if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
@@ -1008,13 +1121,13 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
             extractedText = detections[0].description || "";
           }
         }
-
+        
         if (!extractedText || extractedText.trim().length === 0) {
           throw new Error("No text detected in image");
         }
-
+        
         extractedText = extractedText.trim();
-
+        
         if (DEBUG_MODE) {
           console.log(JSON.stringify({
             requestId,
@@ -1027,21 +1140,21 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
         // For PDFs: use asyncBatchAnnotateFiles
         const gcsSourceUri = `gs://${bucket.name}/${data.filePath}`;
         const gcsDestinationUri = `gs://${bucket.name}/ocr-output/${userId}/${data.jobId}/`;
-
+        
         const inputConfig = {
           mimeType: "application/pdf",
           gcsSource: {
             uri: gcsSourceUri,
           },
         };
-
+        
         const outputConfig = {
           gcsDestination: {
             uri: gcsDestinationUri,
           },
           batchSize: 2, // Process 2 pages at a time
         };
-
+        
         const request = {
           requests: [
             {
@@ -1051,11 +1164,11 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
             },
           ],
         };
-
+        
         // Start async batch operation
         const [operation] = await vision.asyncBatchAnnotateFiles(request);
         const operationName = operation.name;
-
+        
         if (DEBUG_MODE) {
           console.log(JSON.stringify({
             requestId,
@@ -1063,22 +1176,22 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
             operationName,
           }));
         }
-
+        
         // Poll for completion (max 5 minutes)
         // Note: asyncBatchAnnotateFiles returns a long-running operation
         // We need to wait for it to complete by checking the output bucket
         const maxWaitTime = 5 * 60 * 1000; // 5 minutes
         const pollInterval = 10000; // 10 seconds
         const startPollTime = Date.now();
-
+        
         let completed = false;
         while (!completed && (Date.now() - startPollTime) < maxWaitTime) {
           await new Promise((resolve) => setTimeout(resolve, pollInterval));
-
+          
           // Check if output files exist in the destination bucket
           const outputPrefix = `ocr-output/${userId}/${data.jobId}/`;
           const [files] = await bucket.getFiles({prefix: outputPrefix});
-
+          
           // If we have JSON output files, the operation is likely complete
           const hasJsonFiles = files.some((f) => f.name.endsWith(".json"));
           if (hasJsonFiles) {
@@ -1087,29 +1200,29 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
             completed = true;
           }
         }
-
+        
         if (!completed) {
           throw new Error("OCR operation timed out. PDF processing may take longer for large files.");
         }
-
+        
         // Read results from output bucket
         const outputPrefix = `ocr-output/${userId}/${data.jobId}/`;
         const [files] = await bucket.getFiles({prefix: outputPrefix});
-
+        
         // Sort files by name (page order)
         files.sort((a, b) => {
           const aNum = parseInt(a.name.match(/-(\d+)-output/)?.[1] || "0");
           const bNum = parseInt(b.name.match(/-(\d+)-output/)?.[1] || "0");
           return aNum - bNum;
         });
-
+        
         // Extract text from each output file
         const pageTexts = [];
         for (const outputFile of files) {
           if (outputFile.name.endsWith(".json")) {
             const [fileBuffer] = await outputFile.download();
             const jsonData = JSON.parse(fileBuffer.toString());
-
+            
             // Extract text from response
             if (jsonData.responses && jsonData.responses.length > 0) {
               for (const response of jsonData.responses) {
@@ -1122,15 +1235,15 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
             }
           }
         }
-
+        
         extractedText = pageTexts.join("\n\n");
-
+        
         if (!extractedText || extractedText.trim().length === 0) {
           throw new Error("No text detected in PDF");
         }
-
+        
         extractedText = extractedText.trim();
-
+        
         if (DEBUG_MODE) {
           console.log(JSON.stringify({
             requestId,
@@ -1144,7 +1257,7 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
     } catch (error) {
       let errorCode = "OCR_FAILED";
       let errorMessage = "Failed to extract text from document.";
-
+      
       if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
         errorCode = "OCR_PERMISSION";
         errorMessage = "OCR failed: Google Vision API permission denied. Please check IAM roles.";
@@ -1164,32 +1277,32 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
         errorCode = "OCR_TIMEOUT";
         errorMessage = "OCR request timed out. The file may be too large. Please try again with a smaller file.";
       }
-
+      
       logError(requestId, "processDocument_ocr", error, {
         errorCode,
         errorMessage,
         fileType: data.fileType,
       });
-
+      
       // Update job status to error
       await jobRef.update({
         status: "error",
         errorMessage: errorMessage,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-
+      
       throw new functions.https.HttpsError(
-          "internal",
-          errorMessage,
+        "internal",
+        errorMessage,
           createErrorResponse(requestId, errorCode, errorMessage),
       );
     }
-
+    
     // Translate to Spanish
     let translatedText = "";
     try {
       const translate = getTranslateClient();
-
+      
       // Get project ID
       let projectId = process.env.GCLOUD_PROJECT;
       if (!projectId) {
@@ -1198,37 +1311,37 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
       if (!projectId) {
         throw new Error("Project ID not found");
       }
-
+      
       // Translation API v3 requires location
       const location = "global";
-
+      
       // Chunk text if too long (Translation API has limits)
       const MAX_CHUNK_SIZE = 100000; // 100k characters per request
       const textChunks = [];
-
+      
       // Helper function to split a large text into smaller chunks
       const splitLargeText = (text, maxSize) => {
         const chunks = [];
-
+        
         // If text is small enough, return as single chunk
         if (text.length <= maxSize) {
           return [text];
         }
-
+        
         // First try splitting by sentences (preserve structure)
         const sentences = text.split(/([.!?]+\s+)/);
         let currentChunk = "";
-
+        
         for (let i = 0; i < sentences.length; i++) {
           const sentence = sentences[i];
-
+          
           // If adding this sentence would exceed limit
           if (currentChunk.length + sentence.length > maxSize) {
             if (currentChunk) {
               chunks.push(currentChunk);
               currentChunk = "";
             }
-
+            
             // If sentence itself is too large, split by character
             if (sentence.length > maxSize) {
               // Split into character chunks
@@ -1242,19 +1355,19 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
             currentChunk += sentence;
           }
         }
-
+        
         if (currentChunk) {
           chunks.push(currentChunk);
         }
-
+        
         return chunks;
       };
-
+      
       if (extractedText.length > MAX_CHUNK_SIZE) {
         // Split by paragraphs to preserve structure
         const paragraphs = extractedText.split(/\n\n+/);
         let currentChunk = "";
-
+        
         for (const para of paragraphs) {
           // Check if paragraph itself exceeds limit
           if (para.length > MAX_CHUNK_SIZE) {
@@ -1279,7 +1392,7 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
       } else {
         textChunks.push(extractedText);
       }
-
+      
       // Final safety check: ensure no chunk exceeds limit
       const finalChunks = [];
       for (const chunk of textChunks) {
@@ -1290,15 +1403,15 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
           finalChunks.push(chunk);
         }
       }
-
+      
       // Use final chunks (guaranteed to be <= MAX_CHUNK_SIZE)
       const safeChunks = finalChunks;
-
+      
       // Translate each chunk
       const translatedChunks = [];
       for (let i = 0; i < safeChunks.length; i++) {
         const chunk = safeChunks[i];
-
+        
         const request = {
           parent: `projects/${projectId}/locations/${location}`,
           contents: [chunk],
@@ -1306,12 +1419,12 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
           sourceLanguageCode: "en",
           targetLanguageCode: "es",
         };
-
+        
         const [response] = await translate.translateText(request);
-
+        
         if (response.translations && response.translations.length > 0) {
           translatedChunks.push(response.translations[0].translatedText);
-
+          
           // Try to get detected source language from first chunk
           if (translatedChunks.length === 1 && response.translations[0].detectedLanguageCode) {
             sourceLanguage = response.translations[0].detectedLanguageCode;
@@ -1320,10 +1433,10 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
           throw new Error("Translation returned empty result");
         }
       }
-
+      
       // Reassemble translated text
       translatedText = translatedChunks.join("\n\n");
-
+      
       if (DEBUG_MODE) {
         console.log(JSON.stringify({
           requestId,
@@ -1337,7 +1450,7 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
       // Check for specific Google API errors
       let errorCode = "TRANSLATE_FAILED";
       let errorMessage = "Failed to translate text.";
-
+      
       if (error.code === 7 || error.message?.includes("PERMISSION_DENIED")) {
         errorCode = "TRANSLATE_PERMISSION";
         errorMessage = "Translation failed: Google Translation API permission denied. Please check IAM roles.";
@@ -1353,23 +1466,23 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
           "Translation failed: Google Translation API is not enabled. " +
           "Please enable it in Google Cloud Console.";
       }
-
+      
       logError(requestId, "processDocument_translation", error);
-
+      
       // Update job status to error
       await jobRef.update({
         status: "error",
         errorMessage: errorMessage,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-
+      
       throw new functions.https.HttpsError(
-          "internal",
-          errorMessage,
+        "internal",
+        errorMessage,
           createErrorResponse(requestId, errorCode, errorMessage),
       );
     }
-
+    
     // Save results to Firestore
     await jobRef.update({
       status: "done",
@@ -1379,9 +1492,9 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
       targetLanguage: data.targetLanguage || "es",
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
+    
     const duration = Date.now() - startTime;
-
+    
     if (DEBUG_MODE) {
       console.log(JSON.stringify({
         requestId,
@@ -1391,7 +1504,7 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
         translatedLength: translatedText.length,
       }));
     }
-
+    
     return {
       ok: true,
       extractedText: extractedText,
@@ -1404,7 +1517,7 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-
+    
     // Update job status to error if we have a jobRef
     try {
       if (data.jobId) {
@@ -1418,12 +1531,12 @@ exports.processDocument = functions.https.onCall(async (data, context) => {
     } catch (updateError) {
       // Ignore update errors if job doesn't exist
     }
-
+    
     // Otherwise, wrap it
     logError(requestId, "processDocument_unknown", error);
     throw new functions.https.HttpsError(
-        "internal",
-        "An internal server error occurred. Please try again or contact support if the issue persists.",
+      "internal",
+      "An internal server error occurred. Please try again or contact support if the issue persists.",
         createErrorResponse(requestId, "UNKNOWN", "An internal server error occurred."),
     );
   }
@@ -1442,14 +1555,14 @@ exports.healthGoogle = functions.https.onRequest(async (req, res) => {
     environment: ENVIRONMENT,
     checks: {},
   };
-
+  
   // Check environment variables
   const envCheck = checkEnvVars();
   diagnostics.checks.environment = {
     valid: envCheck.valid,
     missing: envCheck.missing,
   };
-
+  
   // Check Vision client initialization
   try {
     getVisionClient(); // Test initialization
@@ -1464,7 +1577,7 @@ exports.healthGoogle = functions.https.onRequest(async (req, res) => {
     };
     diagnostics.ok = false;
   }
-
+  
   // Check Translation client initialization
   try {
     getTranslateClient(); // Test initialization
@@ -1479,7 +1592,7 @@ exports.healthGoogle = functions.https.onRequest(async (req, res) => {
     };
     diagnostics.ok = false;
   }
-
+  
   // Check Storage client initialization
   try {
     getStorageClient(); // Test initialization
@@ -1494,23 +1607,23 @@ exports.healthGoogle = functions.https.onRequest(async (req, res) => {
     };
     diagnostics.ok = false;
   }
-
+  
   // Check project ID
   diagnostics.checks.projectId = {
     value: process.env.GCLOUD_PROJECT || "not set",
     set: !!process.env.GCLOUD_PROJECT,
   };
-
+  
   // Set CORS headers
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type");
-
+  
   if (req.method === "OPTIONS") {
     res.status(204).send("");
     return;
   }
-
+  
   const statusCode = diagnostics.ok ? 200 : 503;
   res.status(statusCode).json(diagnostics);
 });
