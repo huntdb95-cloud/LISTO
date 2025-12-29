@@ -840,6 +840,8 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
 
 /**
  * Helper: Read Vision async OCR output JSON files from GCS prefix and extract text
+ * Returns: { text: string, debug: { fullTextAnnotationPresent, fullTextLength,
+ *   textAnnotationsCount, firstAnnotationLength, pagesCount } }
  */
 async function readVisionOutputFiles(bucket, outputPrefix, requestId) {
   const [files] = await bucket.getFiles({prefix: outputPrefix});
@@ -853,6 +855,12 @@ async function readVisionOutputFiles(bucket, outputPrefix, requestId) {
 
   // Extract text from each output file
   const pageTexts = [];
+  let fullTextAnnotationPresent = false;
+  let fullTextLength = 0;
+  let textAnnotationsCount = 0;
+  let firstAnnotationLength = 0;
+  let pagesCount = 0;
+
   for (const outputFile of files) {
     if (outputFile.name.endsWith(".json")) {
       const [fileBuffer] = await outputFile.download();
@@ -860,18 +868,39 @@ async function readVisionOutputFiles(bucket, outputPrefix, requestId) {
 
       // Extract text from response
       if (jsonData.responses && jsonData.responses.length > 0) {
+        pagesCount += jsonData.responses.length;
         for (const response of jsonData.responses) {
           if (response.fullTextAnnotation && response.fullTextAnnotation.text) {
-            pageTexts.push(response.fullTextAnnotation.text);
+            const pageText = response.fullTextAnnotation.text;
+            pageTexts.push(pageText);
+            fullTextAnnotationPresent = true;
+            fullTextLength += pageText.length;
           } else if (response.textAnnotations && response.textAnnotations.length > 0) {
-            pageTexts.push(response.textAnnotations[0].description || "");
+            const pageText = response.textAnnotations[0].description || "";
+            pageTexts.push(pageText);
+            textAnnotationsCount += response.textAnnotations.length;
+            if (firstAnnotationLength === 0 && pageText) {
+              firstAnnotationLength = pageText.length;
+            }
           }
         }
       }
     }
   }
 
-  return pageTexts.join("\n\n");
+  const extractedText = pageTexts.join("\n\n");
+  fullTextLength = extractedText.length;
+
+  return {
+    text: extractedText,
+    debug: {
+      fullTextAnnotationPresent,
+      fullTextLength,
+      textAnnotationsCount,
+      firstAnnotationLength,
+      pagesCount,
+    },
+  };
 }
 
 /**
@@ -882,6 +911,7 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
   const requestId = generateRequestId();
   const startTime = Date.now();
   const bucketName = "listo-c6a60.firebasestorage.app";
+  const debugMode = data?.debug === true;
 
   // Log request
   console.log(JSON.stringify({
@@ -891,6 +921,7 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
     storagePath: data?.storagePath || "missing",
     mimeType: data?.mimeType || "missing",
     uid: context.auth?.uid || null,
+    debugMode: debugMode,
   }));
 
   try {
@@ -980,15 +1011,23 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
     // Get file metadata
     const [metadata] = await file.getMetadata();
     const contentType = metadata.contentType || data.mimeType || "unknown";
+    const fileSize = metadata.size ? parseInt(metadata.size, 10) : 0;
     const isPdf = contentType === "application/pdf";
 
     // Perform OCR
     let extractedText = "";
     let ocrPath = "";
+    let ocrDebug = {
+      fullTextAnnotationPresent: false,
+      fullTextLength: 0,
+      textAnnotationsCount: 0,
+      firstAnnotationLength: 0,
+      pagesCount: 0,
+    };
 
     if (isPdf) {
       // PDF: Use asyncBatchAnnotateFiles
-      ocrPath = "PDF_ASYNC";
+      ocrPath = "PDF_ASYNC_BATCH";
       const gcsSourceUri = `gs://${bucketName}/${data.storagePath}`;
       const outputPrefix = `users/${userId}/ocr-output/${requestId}/`;
       const gcsDestinationUri = `gs://${bucketName}/${outputPrefix}`;
@@ -996,7 +1035,11 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
       console.log(JSON.stringify({
         requestId,
         operation: "processDocumentForTranslation_ocr_pdf_start",
-        OCR_PATH: ocrPath,
+        ocrPath: ocrPath,
+        mimeType: contentType,
+        storagePath: data.storagePath,
+        bucketName: bucketName,
+        fileSize: fileSize,
         outputPrefix: outputPrefix,
         gcsSourceUri: gcsSourceUri,
         uid: userId,
@@ -1036,15 +1079,20 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
       await operation.promise();
 
       // Read output files and extract text
-      extractedText = await readVisionOutputFiles(bucket, outputPrefix, requestId);
-      extractedText = extractedText.trim();
+      const ocrResult = await readVisionOutputFiles(bucket, outputPrefix, requestId);
+      extractedText = ocrResult.text.trim();
+      ocrDebug = ocrResult.debug;
     } else {
       // Image: Use documentTextDetection
-      ocrPath = "IMAGE";
+      ocrPath = "IMAGE_DOCUMENT_TEXT_DETECTION";
       console.log(JSON.stringify({
         requestId,
         operation: "processDocumentForTranslation_ocr_image_start",
-        OCR_PATH: ocrPath,
+        ocrPath: ocrPath,
+        mimeType: contentType,
+        storagePath: data.storagePath,
+        bucketName: bucketName,
+        fileSize: fileSize,
         uid: userId,
         timestamp: new Date().toISOString(),
       }));
@@ -1055,30 +1103,58 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
       // Try documentTextDetection first (better quality)
       const [result] = await visionClient.documentTextDetection(gcsUri);
 
+      // Capture debug info from result
       if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
         extractedText = result.fullTextAnnotation.text;
+        ocrDebug.fullTextAnnotationPresent = true;
+        ocrDebug.fullTextLength = extractedText.length;
+        ocrDebug.pagesCount = 1;
       } else if (result.textAnnotations && result.textAnnotations.length > 0) {
         // Fallback to textAnnotations
         extractedText = result.textAnnotations[0].description || "";
+        ocrDebug.textAnnotationsCount = result.textAnnotations.length;
+        ocrDebug.firstAnnotationLength = extractedText.length;
+        ocrDebug.pagesCount = 1;
       }
 
       extractedText = extractedText.trim();
+      ocrDebug.fullTextLength = extractedText.length;
     }
 
-    // Log OCR results
+    // Log OCR results with detailed debug info
     const textPreview = extractedText.substring(0, 200);
-    console.log(JSON.stringify({
+    const ocrCompletedLog = {
       requestId,
       operation: "processDocumentForTranslation_ocr_completed",
-      OCR_PATH: ocrPath,
+      ocrPath: ocrPath,
+      mimeType: contentType,
+      storagePath: data.storagePath,
+      bucketName: bucketName,
+      fileSize: fileSize,
+      fullTextAnnotationPresent: ocrDebug.fullTextAnnotationPresent,
+      fullTextLength: ocrDebug.fullTextLength,
+      textAnnotationsCount: ocrDebug.textAnnotationsCount,
+      firstAnnotationLength: ocrDebug.firstAnnotationLength,
+      pagesCount: ocrDebug.pagesCount,
       extractedTextLength: extractedText.length,
       extractedTextPreview: textPreview,
       uid: userId,
       timestamp: new Date().toISOString(),
-    }));
+    };
+    console.log(JSON.stringify(ocrCompletedLog));
 
     // Check if text was extracted
     if (extractedText.length === 0) {
+      const noTextError = {
+        requestId,
+        operation: "processDocumentForTranslation_no_text",
+        ocrPath: ocrPath,
+        ocrDebug: ocrDebug,
+        extractedTextLength: extractedText.length,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      };
+      console.error(JSON.stringify(noTextError));
       throw new functions.https.HttpsError(
           "failed-precondition",
           "Document doesn't have readable text",
@@ -1182,25 +1258,53 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
 
     const duration = Date.now() - startTime;
 
-    console.log(JSON.stringify({
+    const successLog = {
       requestId,
       operation: "processDocumentForTranslation_success",
       duration,
-      OCR_PATH: ocrPath,
+      ocrPath: ocrPath,
+      mimeType: contentType,
+      storagePath: data.storagePath,
+      bucketName: bucketName,
+      fileSize: fileSize,
       extractedTextLength: extractedText.length,
       translatedTextLength: translatedText.length,
       targetLanguage: targetLanguage,
       uid: userId,
       timestamp: new Date().toISOString(),
-    }));
+    };
+    console.log(JSON.stringify(successLog));
 
-    return {
+    // Build response
+    const response = {
       ok: true,
       extractedText: extractedText,
       translatedText: translatedText,
       targetLanguage: targetLanguage,
       requestId,
     };
+
+    // Add debug object if debugMode is enabled
+    if (debugMode) {
+      response.debug = {
+        ocrPath: ocrPath,
+        mimeType: contentType,
+        storagePath: data.storagePath,
+        bucketName: bucketName,
+        fileSize: fileSize,
+        fullTextAnnotationPresent: ocrDebug.fullTextAnnotationPresent,
+        fullTextLength: ocrDebug.fullTextLength,
+        textAnnotationsCount: ocrDebug.textAnnotationsCount,
+        firstAnnotationLength: ocrDebug.firstAnnotationLength,
+        pagesCount: ocrDebug.pagesCount,
+        extractedTextLength: extractedText.length,
+        extractedTextPreview: textPreview,
+        targetLanguage: targetLanguage,
+        translatedTextLength: translatedText.length,
+      };
+    }
+
+    return response;
   } catch (error) {
     // Catch any errors and log with full details
     const errorDetails = {
