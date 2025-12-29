@@ -201,10 +201,10 @@ function showResults(english, spanish, fileUrl = null) {
   }
   
   // Set initial view based on screen size
-  const isMobile = window.innerWidth <= 480;
+  const isMobile = window.innerWidth <= 768;
   if (isMobile) {
-    // Mobile: default to Spanish after translation
-    switchMobileView("spanish");
+    // Mobile: show both panes (always visible, no toggle needed)
+    // Both panes are already displayed via CSS
   } else {
     // Desktop: show document view
     switchView("document");
@@ -243,41 +243,22 @@ function switchView(view) {
   }
 }
 
-// Switch mobile view between English and Spanish
+// Switch mobile view between English and Spanish (deprecated - mobile now shows both)
 function switchMobileView(view) {
   currentMobileView = view;
-  
-  const englishPane = $("englishPane");
-  const spanishPane = $("spanishPane");
-  const btnMobileEnglish = $("btnMobileEnglish");
-  const btnMobileSpanish = $("btnMobileSpanish");
-  const mobileEnglishHeader = $("mobileEnglishHeader");
-  const mobileSpanishHeader = $("mobileSpanishHeader");
-  
-  const isMobile = window.innerWidth <= 480;
-  
-  if (view === "english") {
-    if (englishPane) englishPane.classList.add("active");
-    if (spanishPane) spanishPane.classList.remove("active");
-    if (btnMobileEnglish) btnMobileEnglish.classList.add("active");
-    if (btnMobileSpanish) btnMobileSpanish.classList.remove("active");
-    if (isMobile) {
-      if (mobileEnglishHeader) mobileEnglishHeader.style.display = "block";
-      if (mobileSpanishHeader) mobileSpanishHeader.style.display = "none";
-      // On mobile, show English text view directly (no document toggle)
-      const englishView = $("englishView");
-      const documentView = $("documentView");
-      if (englishView) englishView.classList.add("active");
-      if (documentView) documentView.classList.remove("active");
-    }
-  } else {
-    if (englishPane) englishPane.classList.remove("active");
-    if (spanishPane) spanishPane.classList.add("active");
-    if (btnMobileEnglish) btnMobileEnglish.classList.remove("active");
-    if (btnMobileSpanish) btnMobileSpanish.classList.add("active");
-    if (isMobile) {
-      if (mobileEnglishHeader) mobileEnglishHeader.style.display = "none";
-      if (mobileSpanishHeader) mobileSpanishHeader.style.display = "block";
+  // On mobile (<=768px), both panes are always visible via CSS
+  // This function is kept for backward compatibility but does nothing on mobile
+  const isMobile = window.innerWidth <= 768;
+  if (!isMobile) {
+    // Only apply toggle logic on desktop (shouldn't happen, but kept for safety)
+    const englishPane = $("englishPane");
+    const spanishPane = $("spanishPane");
+    if (view === "english") {
+      if (englishPane) englishPane.classList.add("active");
+      if (spanishPane) spanishPane.classList.remove("active");
+    } else {
+      if (englishPane) englishPane.classList.remove("active");
+      if (spanishPane) spanishPane.classList.add("active");
     }
   }
 }
@@ -566,19 +547,53 @@ function init() {
       hideResults();
       setMsg("statusMsg", "");
       setMsg("errorMsg", "");
+      // Clear camera input if main input is used
+      const cameraFile = $("cameraFile");
+      if (cameraFile) cameraFile.value = "";
     }
   });
   
-  // Toggle view buttons (desktop)
-  $("btnShowDocument").addEventListener("click", () => switchView("document"));
-  $("btnShowEnglish").addEventListener("click", () => switchView("english"));
+  // Camera input change handler (for mobile photo capture)
+  const cameraFile = $("cameraFile");
+  const cameraLabel = $("cameraLabel");
+  if (cameraFile && cameraLabel) {
+    // Show camera button on mobile only
+    function updateCameraVisibility() {
+      const isMobile = window.innerWidth <= 768;
+      cameraLabel.style.display = isMobile ? "inline-flex" : "none";
+    }
+    updateCameraVisibility();
+    window.addEventListener("resize", updateCameraVisibility);
+    
+    cameraFile.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        // Transfer file to main input for processing
+        const contractFile = $("contractFile");
+        if (contractFile) {
+          // Create a new FileList-like object (can't directly set files, so use DataTransfer)
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          contractFile.files = dataTransfer.files;
+          // Trigger change event
+          contractFile.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        hideResults();
+        setMsg("statusMsg", "");
+        setMsg("errorMsg", "");
+      }
+    });
+  }
   
-  // Mobile language toggle buttons
-  $("btnMobileEnglish").addEventListener("click", () => switchMobileView("english"));
-  $("btnMobileSpanish").addEventListener("click", () => switchMobileView("spanish"));
+  // Toggle view buttons (desktop)
+  const btnShowDocument = $("btnShowDocument");
+  const btnShowEnglish = $("btnShowEnglish");
+  if (btnShowDocument) btnShowDocument.addEventListener("click", () => switchView("document"));
+  if (btnShowEnglish) btnShowEnglish.addEventListener("click", () => switchView("english"));
   
   // Copy error details button
-  $("btnCopyErrorDetails").addEventListener("click", () => {
+  const btnCopyErrorDetails = $("btnCopyErrorDetails");
+  if (btnCopyErrorDetails) btnCopyErrorDetails.addEventListener("click", () => {
     if (!lastErrorDetails) {
       setMsg("statusMsg", "No error details to copy.", true);
       return;
@@ -603,14 +618,12 @@ Message: ${lastErrorDetails.message || "N/A"}`;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-      const isMobile = window.innerWidth <= 480;
-      if (isMobile && englishText && spanishText) {
-        // On mobile, ensure correct view is shown
-        switchMobileView(currentMobileView);
-      } else if (!isMobile && englishText && spanishText) {
+      const isMobile = window.innerWidth <= 768;
+      if (!isMobile && englishText && spanishText) {
         // On desktop, ensure document/english toggle works
         switchView(currentView);
       }
+      // On mobile, both panes are always visible via CSS, no action needed
     }, 250);
   });
   
@@ -625,232 +638,6 @@ Message: ${lastErrorDetails.message || "N/A"}`;
     }
   });
   
-  // ========== DIAGNOSTICS HANDLERS ==========
-  
-  // Toggle diagnostics section
-  const btnToggleDiagnostics = $("btnToggleDiagnostics");
-  const diagnosticsContent = $("diagnosticsContent");
-  const diagnosticsResults = $("diagnosticsResults");
-  const diagnosticsOutput = $("diagnosticsOutput");
-  
-  if (btnToggleDiagnostics && diagnosticsContent) {
-    btnToggleDiagnostics.addEventListener("click", () => {
-      const isVisible = diagnosticsContent.style.display !== "none";
-      diagnosticsContent.style.display = isVisible ? "none" : "block";
-      btnToggleDiagnostics.textContent = isVisible ? "Show" : "Hide";
-    });
-  }
-  
-  // Helper: Log diagnostics result
-  function logDiagnostics(message, data = null) {
-    const timestamp = new Date().toISOString();
-    const logLine = `[${timestamp}] ${message}${data ? "\n" + JSON.stringify(data, null, 2) : ""}\n\n`;
-    
-    if (diagnosticsOutput) {
-      diagnosticsOutput.textContent += logLine;
-      diagnosticsResults.style.display = "block";
-      diagnosticsResults.scrollTop = diagnosticsResults.scrollHeight;
-    }
-    
-    console.log(message, data || "");
-  }
-  
-  // Helper: Clear diagnostics output
-  function clearDiagnostics() {
-    if (diagnosticsOutput) {
-      diagnosticsOutput.textContent = "";
-    }
-    if (diagnosticsResults) {
-      diagnosticsResults.style.display = "none";
-    }
-  }
-  
-  // Helper: Format callable error for display
-  function formatCallableError(error) {
-    let message = "";
-    if (error.code) {
-      message += `Code: ${error.code}\n`;
-    }
-    if (error.message) {
-      message += `Message: ${error.message}\n`;
-    }
-    if (error.details) {
-      message += `Details: ${JSON.stringify(error.details, null, 2)}\n`;
-    }
-    return message || String(error);
-  }
-  
-  // Run Ping
-  const btnPing = $("btnPing");
-  if (btnPing) {
-    btnPing.addEventListener("click", async () => {
-      clearDiagnostics();
-      logDiagnostics("🔍 Running Ping test...");
-      
-      try {
-        logDiagnostics("Current user UID:", currentUid);
-        logDiagnostics("Functions region: us-central1");
-        
-        const ping = httpsCallable(functions, "ping");
-        const result = await ping({});
-        
-        logDiagnostics("✅ Ping successful!", result.data);
-        
-        if (result.data.ok && result.data.uidPresent) {
-          logDiagnostics("✓ Authentication: OK");
-        } else if (result.data.ok && !result.data.uidPresent) {
-          logDiagnostics("⚠️ Authentication: User not signed in");
-        }
-      } catch (error) {
-        logDiagnostics("❌ Ping failed!", {
-          error: formatCallableError(error),
-          fullError: error
-        });
-      }
-    });
-  }
-  
-  // Verify Upload + Read
-  const btnVerifyUpload = $("btnVerifyUpload");
-  if (btnVerifyUpload) {
-    btnVerifyUpload.addEventListener("click", async () => {
-      clearDiagnostics();
-      logDiagnostics("🔍 Running Upload + Read verification...");
-      
-      try {
-        if (!currentUid) {
-          throw new Error("User not authenticated. Please sign in first.");
-        }
-        
-        const fileInput = $("contractFile");
-        const file = fileInput?.files?.[0];
-        
-        if (!file) {
-          throw new Error("Please select a file first.");
-        }
-        
-        logDiagnostics("Selected file:", {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
-        
-        // Upload file to Storage
-        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-        const timestamp = Date.now();
-        const storagePath = `users/${currentUid}/translator/${timestamp}_${safeName}`;
-        
-        logDiagnostics("Uploading to Storage path:", storagePath);
-        
-        const storageRef = ref(storage, storagePath);
-        await uploadBytes(storageRef, file, {
-          contentType: file.type || "application/octet-stream"
-        });
-        
-        logDiagnostics("✅ File uploaded successfully");
-        
-        // Call debugStorageRead
-        logDiagnostics("Calling debugStorageRead...");
-        const debugStorageRead = httpsCallable(functions, "debugStorageRead");
-        const result = await debugStorageRead({ storagePath });
-        
-        logDiagnostics("✅ Storage read successful!", result.data);
-        
-        if (result.data.ok && result.data.bytes > 0) {
-          logDiagnostics(`✓ File read: ${result.data.bytes} bytes, Content-Type: ${result.data.contentType}`);
-        }
-      } catch (error) {
-        logDiagnostics("❌ Upload + Read failed!", {
-          error: formatCallableError(error),
-          fullError: error
-        });
-      }
-    });
-  }
-  
-  // Run OCR + Translate Smoke Test
-  const btnSmokeTest = $("btnSmokeTest");
-  if (btnSmokeTest) {
-    btnSmokeTest.addEventListener("click", async () => {
-      clearDiagnostics();
-      logDiagnostics("🔍 Running OCR + Translate smoke test...");
-      
-      try {
-        if (!currentUid) {
-          throw new Error("User not authenticated. Please sign in first.");
-        }
-        
-        const fileInput = $("contractFile");
-        const file = fileInput?.files?.[0];
-        
-        if (!file) {
-          throw new Error("Please select a file first.");
-        }
-        
-        logDiagnostics("Selected file:", {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
-        
-        // Upload file to Storage
-        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-        const timestamp = Date.now();
-        const storagePath = `users/${currentUid}/translator/${timestamp}_${safeName}`;
-        
-        logDiagnostics("Uploading to Storage path:", storagePath);
-        
-        const storageRef = ref(storage, storagePath);
-        await uploadBytes(storageRef, file, {
-          contentType: file.type || "application/octet-stream"
-        });
-        
-        logDiagnostics("✅ File uploaded successfully");
-        
-        // Call processDocumentForTranslation
-        logDiagnostics("Calling processDocumentForTranslation...");
-        const processDocumentForTranslation = httpsCallable(functions, "processDocumentForTranslation");
-        const result = await processDocumentForTranslation({
-          storagePath: storagePath,
-          targetLanguage: "es",
-          originalFilename: file.name,
-          mimeType: file.type
-        });
-        
-        logDiagnostics("✅ OCR + Translation successful!", {
-          extractedTextLength: result.data.extractedText?.length || 0,
-          translatedTextLength: result.data.translatedText?.length || 0,
-          pageCount: result.data.pageCount || null,
-          mimeType: result.data.mimeType
-        });
-        
-        if (result.data.extractedText && result.data.extractedText.length > 0) {
-          logDiagnostics(`✓ Extracted text: ${result.data.extractedText.length} characters`);
-          logDiagnostics("Extracted text preview:", result.data.extractedText.substring(0, 200) + "...");
-        } else {
-          logDiagnostics("⚠️ Warning: No text extracted");
-        }
-        
-        if (result.data.translatedText && result.data.translatedText.length > 0) {
-          logDiagnostics(`✓ Translated text: ${result.data.translatedText.length} characters`);
-          logDiagnostics("Translated text preview:", result.data.translatedText.substring(0, 200) + "...");
-        } else {
-          logDiagnostics("⚠️ Warning: No translated text");
-        }
-        
-        // Also update the UI with results
-        if (result.data.extractedText && result.data.translatedText) {
-          showResults(result.data.extractedText, result.data.translatedText);
-          logDiagnostics("✅ Results displayed in UI");
-        }
-      } catch (error) {
-        logDiagnostics("❌ OCR + Translation failed!", {
-          error: formatCallableError(error),
-          fullError: error
-        });
-      }
-    });
-  }
 }
 
 // Start when DOM is ready

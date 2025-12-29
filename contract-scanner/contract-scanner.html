@@ -60,48 +60,18 @@
       margin-bottom: 20px;
     }
     
-    /* Mobile: Single column with toggle */
-    @media (max-width: 480px) {
+    /* Mobile: Single column, show both boxes stacked */
+    @media (max-width: 768px) {
       .pane-container {
         grid-template-columns: 1fr;
-        gap: 0;
+        gap: 16px;
       }
       .mobile-language-toggle {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        background: var(--bg, #f7faf8);
-        padding: 8px;
-        border-radius: 12px;
-        border: 1px solid var(--border, rgba(0,0,0,0.1));
-      }
-      .mobile-toggle-btn {
-        flex: 1;
-        padding: 12px 16px;
-        border: 1px solid var(--border, rgba(0,0,0,0.1));
-        border-radius: 8px;
-        background: var(--panel, #fff);
-        cursor: pointer;
-        font-weight: 500;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .mobile-toggle-btn:hover {
-        background: var(--brand-light, rgba(77,167,99,0.08));
-        border-color: var(--border-brand, rgba(77,167,99,0.2));
-      }
-      .mobile-toggle-btn.active {
-        background: var(--brand, #4DA763);
-        color: white;
-        border-color: var(--brand-dark, #2F8B4A);
+        display: none !important;
       }
       .mobile-pane {
-        display: none;
+        display: flex !important;
         margin-bottom: 16px;
-      }
-      .mobile-pane.active {
-        display: flex;
       }
       .desktop-pane-header {
         display: none !important;
@@ -120,10 +90,15 @@
       #englishView.active {
         display: block !important;
       }
+      /* Show mobile headers on mobile */
+      #mobileEnglishHeader,
+      #mobileSpanishHeader {
+        display: block !important;
+      }
     }
     
     /* Desktop: Show side-by-side, hide mobile toggle */
-    @media (min-width: 481px) {
+    @media (min-width: 769px) {
       .mobile-language-toggle {
         display: none !important;
       }
@@ -145,7 +120,7 @@
     }
     
     /* Tablet: Still side-by-side but adjust gap */
-    @media (min-width: 481px) and (max-width: 1023px) {
+    @media (min-width: 769px) and (max-width: 1023px) {
       .pane-container {
         gap: 16px;
       }
@@ -320,11 +295,16 @@
       <div class="upload-header">
         <label for="contractFile" class="upload-label">
           <span class="upload-icon">📄</span>
-          <span data-i18n="documentTranslator.uploadLabel">Upload or Capture Document</span>
+          <span data-i18n="documentTranslator.uploadLabel">Upload Document</span>
         </label>
-        <input id="contractFile" type="file" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,image/jpg,application/pdf" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
+        <input id="contractFile" type="file" accept="image/*,application/pdf" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
+        <label for="cameraFile" class="upload-label" style="margin-top: 8px; display: none;" id="cameraLabel">
+          <span class="upload-icon">📷</span>
+          <span>Take Photo</span>
+        </label>
+        <input id="cameraFile" type="file" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
         <div class="small muted" style="margin-top:8px;" data-i18n="documentTranslator.fileHint">
-          Supported formats: PDF, JPG, JPEG, PNG. On mobile, you can capture a photo directly.
+          Supported formats: PDF, JPG, JPEG, PNG. On mobile, use "Take Photo" to capture directly.
         </div>
       </div>
       <div class="btn-row" style="margin-top: 16px;">
@@ -334,23 +314,6 @@
       <div id="statusMsg" class="small muted" style="margin-top:10px;"></div>
       <div id="errorMsg" class="small danger" style="margin-top:10px;"></div>
       
-      <!-- Diagnostics Section (Development/Testing) -->
-      <div id="diagnosticsSection" class="card" style="margin-top: 24px; border: 2px dashed var(--border, rgba(0,0,0,0.2)); background: rgba(255,255,255,0.5);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">🔧 Diagnostics & Testing</h3>
-          <button id="btnToggleDiagnostics" class="btn btn-secondary" type="button" style="padding: 6px 12px; font-size: 0.85rem;">Show</button>
-        </div>
-        <div id="diagnosticsContent" style="display: none;">
-          <div class="btn-row" style="margin-top: 12px;">
-            <button id="btnPing" class="btn btn-secondary" type="button">Run Ping</button>
-            <button id="btnVerifyUpload" class="btn btn-secondary" type="button">Verify Upload + Read</button>
-            <button id="btnSmokeTest" class="btn btn-secondary" type="button">Run OCR + Translate (Smoke Test)</button>
-          </div>
-          <div id="diagnosticsResults" style="margin-top: 16px; padding: 12px; background: var(--bg, #f7faf8); border-radius: 8px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; display: none;">
-            <pre id="diagnosticsOutput" style="margin: 0; white-space: pre-wrap; word-wrap: break-word;"></pre>
-          </div>
-        </div>
-      </div>
       <div id="errorDetails" style="margin-top:8px; display:none;">
         <div class="small muted" style="margin-bottom:4px;">
           <span id="errorRequestId"></span>
@@ -363,14 +326,8 @@
 
     <!-- Side-by-Side Comparison Panes -->
     <div class="comparison-container" id="comparisonContainer" style="display:none;">
-      <!-- Mobile Language Toggle (hidden on desktop) -->
-      <div class="mobile-language-toggle">
-        <button id="btnMobileEnglish" class="mobile-toggle-btn" type="button">English</button>
-        <button id="btnMobileSpanish" class="mobile-toggle-btn active" type="button">Español</button>
-      </div>
-      
       <div class="pane-container">
-        <!-- Left Pane: English Text (Desktop) / Toggle View (Mobile) -->
+        <!-- Left Pane: English Text (Desktop) / Stacked (Mobile) -->
         <div class="pane left-pane mobile-pane" id="englishPane">
           <div class="pane-header desktop-pane-header">
             <div class="pane-toggle">
@@ -383,7 +340,7 @@
             </div>
           </div>
           <div class="pane-header" id="mobileEnglishHeader" style="display:none;">
-            <h3 data-i18n="documentTranslator.englishTitle" style="margin: 0; font-size: 1.1rem; font-weight: 600;">Original Text</h3>
+            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Original English</h3>
           </div>
           <div class="pane-content">
             <!-- Document View (Desktop only) -->
@@ -406,7 +363,9 @@
             <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Español (Traducción)</h3>
           </div>
           <div class="pane-content">
-            <div id="spanishText" class="text-content"></div>
+            <div class="view-content active" style="display: block;">
+              <div id="spanishText" class="text-content"></div>
+            </div>
           </div>
         </div>
       </div>

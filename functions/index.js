@@ -1034,8 +1034,14 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
       const visionClient = getVisionClient();
       const gcsUri = `gs://${bucketName}/${data.storagePath}`;
 
-      // Use documentTextDetection
-      const [result] = await visionClient.documentTextDetection(gcsUri);
+      // Use documentTextDetection with proper request structure
+      const [result] = await visionClient.documentTextDetection({
+        image: {
+          source: {
+            imageUri: gcsUri,
+          },
+        },
+      });
 
       // Extract text
       if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
