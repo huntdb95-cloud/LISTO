@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Cloud Functions for Listo",
+  "description": "Cloud Functions for Listo. Requires Node 20 LTS for local development.",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
