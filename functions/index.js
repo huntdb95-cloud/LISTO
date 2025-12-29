@@ -839,13 +839,49 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
 });
 
 /**
+ * Helper: Read Vision async OCR output JSON files from GCS prefix and extract text
+ */
+async function readVisionOutputFiles(bucket, outputPrefix, requestId) {
+  const [files] = await bucket.getFiles({prefix: outputPrefix});
+
+  // Sort files by name (page order)
+  files.sort((a, b) => {
+    const aNum = parseInt(a.name.match(/-(\d+)-output/)?.[1] || "0");
+    const bNum = parseInt(b.name.match(/-(\d+)-output/)?.[1] || "0");
+    return aNum - bNum;
+  });
+
+  // Extract text from each output file
+  const pageTexts = [];
+  for (const outputFile of files) {
+    if (outputFile.name.endsWith(".json")) {
+      const [fileBuffer] = await outputFile.download();
+      const jsonData = JSON.parse(fileBuffer.toString());
+
+      // Extract text from response
+      if (jsonData.responses && jsonData.responses.length > 0) {
+        for (const response of jsonData.responses) {
+          if (response.fullTextAnnotation && response.fullTextAnnotation.text) {
+            pageTexts.push(response.fullTextAnnotation.text);
+          } else if (response.textAnnotations && response.textAnnotations.length > 0) {
+            pageTexts.push(response.textAnnotations[0].description || "");
+          }
+        }
+      }
+    }
+  }
+
+  return pageTexts.join("\n\n");
+}
+
+/**
  * Document Translator: processDocumentForTranslation
- * TEMPORARY ECHO TEST: Validates callable + Storage access without OCR/Translation
- * After this works, re-enable Vision OCR + Translation API calls
+ * Performs OCR on PDFs (async) and images, then translates to target language
  */
 exports.processDocumentForTranslation = functions.region("us-central1").https.onCall(async (data, context) => {
   const requestId = generateRequestId();
   const startTime = Date.now();
+  const bucketName = "listo-c6a60.firebasestorage.app";
 
   // Log request
   console.log(JSON.stringify({
@@ -941,10 +977,208 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
       );
     }
 
-    // Get file metadata (echo test - just return metadata)
+    // Get file metadata
     const [metadata] = await file.getMetadata();
-    const size = metadata.size ? parseInt(metadata.size, 10) : 0;
     const contentType = metadata.contentType || data.mimeType || "unknown";
+    const isPdf = contentType === "application/pdf";
+
+    // Perform OCR
+    let extractedText = "";
+    let ocrPath = "";
+
+    if (isPdf) {
+      // PDF: Use asyncBatchAnnotateFiles
+      ocrPath = "PDF_ASYNC";
+      const gcsSourceUri = `gs://${bucketName}/${data.storagePath}`;
+      const outputPrefix = `users/${userId}/ocr-output/${requestId}/`;
+      const gcsDestinationUri = `gs://${bucketName}/${outputPrefix}`;
+
+      console.log(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_ocr_pdf_start",
+        OCR_PATH: ocrPath,
+        outputPrefix: outputPrefix,
+        gcsSourceUri: gcsSourceUri,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+
+      const visionClient = getVisionClient();
+
+      const inputConfig = {
+        mimeType: "application/pdf",
+        gcsSource: {
+          uri: gcsSourceUri,
+        },
+      };
+
+      const outputConfig = {
+        gcsDestination: {
+          uri: gcsDestinationUri,
+        },
+        batchSize: 2,
+      };
+
+      const request = {
+        requests: [
+          {
+            inputConfig: inputConfig,
+            features: [{type: "DOCUMENT_TEXT_DETECTION"}],
+            outputConfig: outputConfig,
+          },
+        ],
+      };
+
+      // Start async batch operation
+      const [operation] = await visionClient.asyncBatchAnnotateFiles(request);
+
+      // Wait for operation to complete
+      await operation.promise();
+
+      // Read output files and extract text
+      extractedText = await readVisionOutputFiles(bucket, outputPrefix, requestId);
+      extractedText = extractedText.trim();
+    } else {
+      // Image: Use documentTextDetection
+      ocrPath = "IMAGE";
+      console.log(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_ocr_image_start",
+        OCR_PATH: ocrPath,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+
+      const visionClient = getVisionClient();
+      const gcsUri = `gs://${bucketName}/${data.storagePath}`;
+
+      // Try documentTextDetection first (better quality)
+      const [result] = await visionClient.documentTextDetection(gcsUri);
+
+      if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
+        extractedText = result.fullTextAnnotation.text;
+      } else if (result.textAnnotations && result.textAnnotations.length > 0) {
+        // Fallback to textAnnotations
+        extractedText = result.textAnnotations[0].description || "";
+      }
+
+      extractedText = extractedText.trim();
+    }
+
+    // Log OCR results
+    const textPreview = extractedText.substring(0, 200);
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processDocumentForTranslation_ocr_completed",
+      OCR_PATH: ocrPath,
+      extractedTextLength: extractedText.length,
+      extractedTextPreview: textPreview,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Check if text was extracted
+    if (extractedText.length === 0) {
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Document doesn't have readable text",
+          {requestId, errorCode: "NO_TEXT_DETECTED"},
+      );
+    }
+
+    // Translate text
+    const targetLanguage = data.targetLanguage || "es";
+    let translatedText = "";
+
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processDocumentForTranslation_translate_start",
+      targetLanguage: targetLanguage,
+      extractedTextLength: extractedText.length,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+
+    try {
+      const translateClient = getTranslateClient();
+      const projectId = process.env.GCLOUD_PROJECT || admin.app().options.projectId;
+      const location = "global";
+
+      // Chunk text if too long (Translation API has limits)
+      const MAX_CHUNK_SIZE = 100000;
+      const textChunks = [];
+
+      if (extractedText.length > MAX_CHUNK_SIZE) {
+        const paragraphs = extractedText.split(/\n\n+/);
+        let currentChunk = "";
+
+        for (const para of paragraphs) {
+          if (para.length > MAX_CHUNK_SIZE) {
+            if (currentChunk) {
+              textChunks.push(currentChunk);
+              currentChunk = "";
+            }
+            // Split large paragraph
+            for (let i = 0; i < para.length; i += MAX_CHUNK_SIZE) {
+              textChunks.push(para.substring(i, i + MAX_CHUNK_SIZE));
+            }
+          } else if (currentChunk.length + para.length > MAX_CHUNK_SIZE) {
+            if (currentChunk) textChunks.push(currentChunk);
+            currentChunk = para;
+          } else {
+            currentChunk += (currentChunk ? "\n\n" : "") + para;
+          }
+        }
+        if (currentChunk) textChunks.push(currentChunk);
+      } else {
+        textChunks.push(extractedText);
+      }
+
+      // Translate each chunk
+      const translatedChunks = [];
+      for (const chunk of textChunks) {
+        const request = {
+          parent: `projects/${projectId}/locations/${location}`,
+          contents: [chunk],
+          mimeType: "text/plain",
+          sourceLanguageCode: "en",
+          targetLanguageCode: targetLanguage,
+        };
+
+        const [response] = await translateClient.translateText(request);
+
+        if (response.translations && response.translations.length > 0) {
+          translatedChunks.push(response.translations[0].translatedText);
+        } else {
+          throw new Error("Translation returned empty result");
+        }
+      }
+
+      translatedText = translatedChunks.join("\n\n");
+    } catch (translateError) {
+      console.error(JSON.stringify({
+        requestId,
+        operation: "processDocumentForTranslation_translate_error",
+        error: translateError.message,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+      throw new functions.https.HttpsError(
+          "internal",
+          "Translation failed: " + translateError.message,
+          {requestId, errorCode: "TRANSLATE_FAILED"},
+      );
+    }
+
+    // Log translation results
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processDocumentForTranslation_translate_completed",
+      targetLanguage: targetLanguage,
+      translatedTextLength: translatedText.length,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
 
     const duration = Date.now() - startTime;
 
@@ -952,20 +1186,20 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
       requestId,
       operation: "processDocumentForTranslation_success",
       duration,
-      storagePath: data.storagePath,
-      contentType,
-      size,
+      OCR_PATH: ocrPath,
+      extractedTextLength: extractedText.length,
+      translatedTextLength: translatedText.length,
+      targetLanguage: targetLanguage,
       uid: userId,
       timestamp: new Date().toISOString(),
     }));
 
-    // Return echo test result (Storage metadata only)
     return {
       ok: true,
-      storagePath: data.storagePath,
-      contentType: contentType,
-      size: size,
-      uid: userId,
+      extractedText: extractedText,
+      translatedText: translatedText,
+      targetLanguage: targetLanguage,
+      requestId,
     };
   } catch (error) {
     // Catch any errors and log with full details
