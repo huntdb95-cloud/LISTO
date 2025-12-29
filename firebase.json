@@ -39,7 +39,6 @@
       "source": "ocr"
     },
     {
-      "source": "fuctionsdefault",
       "codebase": "fuctionsdefault",
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
@@ -51,6 +50,19 @@
       ],
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ],
+      "source": "fuctionsdefault"
+    },
+    {
+      "source": "scanner",
+      "codebase": "scanner",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
       ]
     }
   ],
