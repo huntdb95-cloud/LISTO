@@ -668,9 +668,9 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
     );
   }
 
-  // Get bucket using admin.storage() (uses bucket from admin initialization)
-  const bucket = admin.storage().bucket();
-  const bucketName = bucket.name;
+  // Get bucket explicitly (even though admin is initialized with storageBucket, be explicit)
+  const bucketName = "listo-c6a60.firebasestorage.app";
+  const bucket = admin.storage().bucket(bucketName);
   const file = bucket.file(data.storagePath);
 
   // Log request with bucket info
@@ -720,15 +720,6 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
 
       // Get file metadata
       const [metadata] = await file.getMetadata();
-      const size = metadata.size ? parseInt(metadata.size, 10) : 0;
-      const contentType = metadata.contentType || "unknown";
-
-      // Download only first 1024 bytes as sample
-      const [fileBuffer] = await file.download({
-        start: 0,
-        end: 1024,
-      });
-      const sampleBytes = fileBuffer.length;
 
       const duration = Date.now() - startTime;
 
@@ -739,19 +730,17 @@ exports.debugStorageRead = functions.region("us-central1").https.onCall(async (d
         attempt,
         bucketName: bucketName,
         storagePath: data.storagePath,
-        size: size,
-        contentType: contentType,
-        sampleBytes: sampleBytes,
+        size: metadata.size,
+        contentType: metadata.contentType,
         name: metadata.name || data.storagePath,
       }));
 
       return {
         ok: true,
-        bucketName: bucketName,
+        bucket: bucketName,
         name: metadata.name || data.storagePath,
-        size: size,
-        contentType: contentType,
-        sampleBytes: sampleBytes,
+        size: metadata.size ? parseInt(metadata.size, 10) : 0,
+        contentType: metadata.contentType || "unknown",
         requestId,
       };
     } catch (error) {
