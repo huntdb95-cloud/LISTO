@@ -106,6 +106,16 @@ service firebase.storage {
 
     // ========== Pre-Qualification Documents ==========
     
+    // Pre-Qualification COI: users/{uid}/prequal/coi/*
+    match /users/{userId}/prequal/coi/{fileName} {
+      allow read: if isOwnerPath(userId);
+      allow write: if isOwnerPath(userId)
+        && request.resource.size < 10 * 1024 * 1024  // 10MB max
+        && (request.resource.contentType.matches('application/pdf') ||
+            request.resource.contentType.matches('image/.*'));
+      allow delete: if isOwnerPath(userId);
+    }
+    
     // Pre-Qualification Subcontractor Agreement: users/{uid}/documents/prequal/subagreement/*
     match /users/{userId}/documents/prequal/subagreement/{fileName} {
       allow read: if isOwnerPath(userId);

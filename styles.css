@@ -1365,7 +1365,7 @@ input:focus, select:focus, textarea:focus{
   /* Split reminders into two columns */
   .reminders-split {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 32px;
     align-items: start;
   }

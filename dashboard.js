@@ -105,9 +105,10 @@ async function loadReminders(user) {
   if (!container) return;
 
   try {
-    // Group reminders into Labor and Jobs
+    // Group reminders into Labor, Jobs, and Compliance
     const laborReminders = [];
     const jobReminders = [];
+    const complianceReminders = [];
 
     // LABOR REMINDERS
     // 1. Employees (non-subcontractors) without W9
@@ -170,10 +171,11 @@ async function loadReminders(user) {
       });
     });
 
-    // 3. Compliance reminders (expiring COI, Business License, Workers Comp)
-    const complianceReminders = await getComplianceReminders(user.uid);
-    complianceReminders.forEach(reminder => {
-      jobReminders.push({
+    // COMPLIANCE REMINDERS (separate from Jobs)
+    // COI policy expiration reminders
+    const coiComplianceReminders = await getComplianceReminders(user.uid);
+    coiComplianceReminders.forEach(reminder => {
+      complianceReminders.push({
         text: reminder.text,
         link: reminder.link
       });
@@ -189,17 +191,17 @@ async function loadReminders(user) {
       }
     });
 
-    // Render reminders in two-column layout (desktop) or stacked (mobile)
-    renderReminders(container, laborReminders, jobReminders);
+    // Render reminders in three-column layout (desktop) or stacked (mobile)
+    renderReminders(container, laborReminders, jobReminders, complianceReminders);
   } catch (err) {
     console.error("Error loading reminders:", err);
     container.innerHTML = '<div class="form-error">Error loading reminders. Please refresh the page.</div>';
   }
 }
 
-// Render reminders in Labor/Jobs split layout
-function renderReminders(container, laborReminders, jobReminders) {
-  if (laborReminders.length === 0 && jobReminders.length === 0) {
+// Render reminders in Labor/Jobs/Compliance three-column layout
+function renderReminders(container, laborReminders, jobReminders, complianceReminders = []) {
+  if (laborReminders.length === 0 && jobReminders.length === 0 && complianceReminders.length === 0) {
     container.innerHTML = '<div class="muted">No reminders at this time.</div>';
     return;
   }
@@ -244,6 +246,19 @@ function renderReminders(container, laborReminders, jobReminders) {
                   </div>
                 `;
               }).join("")
+            : '<div class="reminder-empty">All caught up</div>'
+          }
+        </div>
+      </div>
+      <div class="reminders-column reminders-compliance">
+        <h3 class="reminders-column-title">Compliance</h3>
+        <div class="reminders-list">
+          ${complianceReminders.length > 0 
+            ? complianceReminders.map(item => `
+                <div class="reminder-item">
+                  ${item.link ? `<a href="${item.link}" class="reminder-link">${escapeHtml(item.text)}</a>` : escapeHtml(item.text)}
+                </div>
+              `).join("")
             : '<div class="reminder-empty">All caught up</div>'
           }
         </div>
@@ -381,14 +396,49 @@ async function getComplianceReminders(uid) {
     const prequalSnap = await getDoc(prequalRef);
     const prequalData = prequalSnap.exists() ? prequalSnap.data() : {};
 
-    // Check COI expiration
-    if (prequalData.coi?.expiresOn) {
-      const daysUntil = daysUntilExpiration(prequalData.coi.expiresOn);
-      if (daysUntil !== null && daysUntil <= 60) {
-        const status = daysUntil <= 0 ? "expired" : daysUntil <= 30 ? "expiring soon" : "expiring";
+    // Check individual COI policy expirations
+    const coiPolicies = prequalData.coi?.policies || {};
+    
+    // Workers Compensation
+    if (coiPolicies.workersCompensation) {
+      const daysUntil = daysUntilExpiration(coiPolicies.workersCompensation);
+      if (daysUntil !== null && daysUntil <= 30) {
         reminders.push({
-          text: `Certificate of Insurance ${status} (${formatReminderDate(prequalData.coi.expiresOn)})`,
-          link: "coi.html"
+          text: `Workers Compensation ${daysUntil < 0 ? "expired" : "expires"} ${formatReminderDate(coiPolicies.workersCompensation)}`,
+          link: "prequal.html"
+        });
+      }
+    }
+
+    // Automobile Liability
+    if (coiPolicies.automobileLiability) {
+      const daysUntil = daysUntilExpiration(coiPolicies.automobileLiability);
+      if (daysUntil !== null && daysUntil <= 30) {
+        reminders.push({
+          text: `Automobile Liability ${daysUntil < 0 ? "expired" : "expires"} ${formatReminderDate(coiPolicies.automobileLiability)}`,
+          link: "prequal.html"
+        });
+      }
+    }
+
+    // Commercial General Liability
+    if (coiPolicies.commercialGeneralLiability) {
+      const daysUntil = daysUntilExpiration(coiPolicies.commercialGeneralLiability);
+      if (daysUntil !== null && daysUntil <= 30) {
+        reminders.push({
+          text: `Commercial General Liability ${daysUntil < 0 ? "expired" : "expires"} ${formatReminderDate(coiPolicies.commercialGeneralLiability)}`,
+          link: "prequal.html"
+        });
+      }
+    }
+
+    // Fallback: Check overall COI expiration if no individual policies found
+    if (Object.keys(coiPolicies).length === 0 && prequalData.coi?.expiresOn) {
+      const daysUntil = daysUntilExpiration(prequalData.coi.expiresOn);
+      if (daysUntil !== null && daysUntil <= 30) {
+        reminders.push({
+          text: `Certificate of Insurance ${daysUntil < 0 ? "expired" : "expires"} ${formatReminderDate(prequalData.coi.expiresOn)}`,
+          link: "prequal.html"
         });
       }
     }

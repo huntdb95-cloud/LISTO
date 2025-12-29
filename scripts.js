@@ -1689,6 +1689,42 @@ async function renderCoiCurrent(user) {
   if (expEl) expEl.textContent = formatDate(coi.expiresOn);
   if (upEl) upEl.textContent = coi.uploadedAtMs ? new Date(coi.uploadedAtMs).toLocaleString() : "—";
 
+  // Display individual policy expiration dates if available
+  const policies = coi.policies || {};
+  const workersCompRow = document.getElementById("coiWorkersCompRow");
+  const workersCompExp = document.getElementById("coiWorkersCompExp");
+  const autoLiabilityRow = document.getElementById("coiAutoLiabilityRow");
+  const autoLiabilityExp = document.getElementById("coiAutoLiabilityExp");
+  const genLiabilityRow = document.getElementById("coiGenLiabilityRow");
+  const genLiabilityExp = document.getElementById("coiGenLiabilityExp");
+
+  if (workersCompRow && workersCompExp) {
+    if (policies.workersCompensation) {
+      workersCompRow.style.display = "flex";
+      workersCompExp.textContent = formatDate(policies.workersCompensation);
+    } else {
+      workersCompRow.style.display = "none";
+    }
+  }
+
+  if (autoLiabilityRow && autoLiabilityExp) {
+    if (policies.automobileLiability) {
+      autoLiabilityRow.style.display = "flex";
+      autoLiabilityExp.textContent = formatDate(policies.automobileLiability);
+    } else {
+      autoLiabilityRow.style.display = "none";
+    }
+  }
+
+  if (genLiabilityRow && genLiabilityExp) {
+    if (policies.commercialGeneralLiability) {
+      genLiabilityRow.style.display = "flex";
+      genLiabilityExp.textContent = formatDate(policies.commercialGeneralLiability);
+    } else {
+      genLiabilityRow.style.display = "none";
+    }
+  }
+
   if (link && coi.filePath) {
     try {
       const url = await getDownloadURL(ref(storage, coi.filePath));
@@ -1699,15 +1735,44 @@ async function renderCoiCurrent(user) {
     }
   }
 
+  // Check for expiring policies (within 30 days or expired)
+  const expiringPolicies = [];
+  if (policies.workersCompensation) {
+    const until = daysUntil(policies.workersCompensation);
+    if (until !== null && until <= 30) {
+      expiringPolicies.push(`Workers Compensation ${until < 0 ? "expired" : "expires"} ${formatDate(policies.workersCompensation)}`);
+    }
+  }
+  if (policies.automobileLiability) {
+    const until = daysUntil(policies.automobileLiability);
+    if (until !== null && until <= 30) {
+      expiringPolicies.push(`Automobile Liability ${until < 0 ? "expired" : "expires"} ${formatDate(policies.automobileLiability)}`);
+    }
+  }
+  if (policies.commercialGeneralLiability) {
+    const until = daysUntil(policies.commercialGeneralLiability);
+    if (until !== null && until <= 30) {
+      expiringPolicies.push(`Commercial General Liability ${until < 0 ? "expired" : "expires"} ${formatDate(policies.commercialGeneralLiability)}`);
+    }
+  }
+
+  // Also check overall expiration
   const until = daysUntil(coi.expiresOn);
-  if (note && until !== null) {
+  if (note) {
     const lang = document.documentElement.lang || "en";
-    if (until < 0) {
-      note.textContent = I18N[lang]?.["coi.expired"] || I18N.en["coi.expired"];
+    if (expiringPolicies.length > 0) {
+      note.textContent = expiringPolicies.join("; ");
       note.hidden = false;
-    } else if (until <= 14) {
-      note.textContent = I18N[lang]?.["coi.expiringSoon"] || I18N.en["coi.expiringSoon"];
-      note.hidden = false;
+    } else if (until !== null) {
+      if (until < 0) {
+        note.textContent = I18N[lang]?.["coi.expired"] || I18N.en["coi.expired"];
+        note.hidden = false;
+      } else if (until <= 14) {
+        note.textContent = I18N[lang]?.["coi.expiringSoon"] || I18N.en["coi.expiringSoon"];
+        note.hidden = false;
+      } else {
+        note.hidden = true;
+      }
     } else {
       note.hidden = true;
     }
@@ -1738,7 +1803,7 @@ async function initCoiPage(user) {
     if (!expiresOn) { if (err) err.textContent = "Please choose an expiration date."; return; }
 
     const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-    const path = `users/${user.uid}/coi/${Date.now()}_${safeName}`;
+    const path = `users/${user.uid}/prequal/coi/${Date.now()}_${safeName}`;
     const storageRef = ref(storage, path);
 
     try {
@@ -1747,13 +1812,20 @@ async function initCoiPage(user) {
 
       await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
 
+      // Get existing COI data to preserve OCR-extracted policy dates
+      const existingSnap = await getDoc(getPrequalDocRef(user.uid));
+      const existingData = existingSnap.exists() ? existingSnap.data() : {};
+      const existingCoi = existingData.coi || {};
+
       await setDoc(getPrequalDocRef(user.uid), {
         coiCompleted: true,
         coi: {
           fileName: file.name,
           filePath: path,
           expiresOn,
-          uploadedAtMs: Date.now()
+          uploadedAtMs: Date.now(),
+          // Preserve OCR-extracted policy dates if they exist
+          policies: existingCoi.policies || null
         },
         updatedAt: serverTimestamp()
       }, { merge: true });
