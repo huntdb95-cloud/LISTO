@@ -5086,11 +5086,34 @@ body[data-page="bookkeeping"] .page-title {
   gap: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .contracts-search {
   flex: 1;
   min-width: 200px;
+}
+
+/* Desktop: Keep search and filters on one row */
+@media (min-width: 769px) {
+  .contracts-toolbar {
+    flex-wrap: nowrap;
+  }
+  
+  .contracts-search {
+    flex: 0 0 auto;
+    max-width: 480px;
+  }
+  
+  .contracts-filters {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .contracts-filter-select {
+    width: auto;
+    min-width: 160px;
+  }
 }
 
 .contracts-search-input {
