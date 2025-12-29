@@ -715,7 +715,8 @@ function parseCoiText(text) {
             if (match[0].match(/^(january|february|march|april|may|june|july|august|september|october|november|december)/i)) {
               parsedDate = parseMonthNameDate(match[0], match[1], match[2], match[3]);
             } else {
-              parsedDate = parseDateToYyyyMmDd(match[0], match[1], match[2], match[3]);
+              // Pass only the capture groups (match[1], match[2], match[3]), not the full match string
+              parsedDate = parseDateToYyyyMmDd(match[1], match[2], match[3]);
             }
             if (parsedDate) {
               dates.push(parsedDate);
