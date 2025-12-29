@@ -1840,15 +1840,19 @@ async function generateAgreementPDF(data) {
       doc.setFont("times", "normal");
     }
     
+    // Calculate line height based on actual font size being used (not base fontSize)
+    // This ensures correct pagination for title (14pt), headers (13pt), and body (12pt)
+    const currentLineHeight = (size / 72) * lineSpacing;
+    
     const lines = doc.splitTextToSize(text, contentWidth);
     lines.forEach((line, index) => {
-      // Check if we need a new page
-      if (yPos + lineHeight > pageHeight - margin) {
+      // Check if we need a new page using the correct line height for this font size
+      if (yPos + currentLineHeight > pageHeight - margin) {
         doc.addPage();
         yPos = margin;
       }
       doc.text(line, margin, yPos, { align });
-      yPos += lineHeight;
+      yPos += currentLineHeight;
     });
     
     // Add minimal paragraph spacing (Word default is minimal)
