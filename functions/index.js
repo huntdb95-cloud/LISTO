@@ -249,6 +249,141 @@ exports.processW9Upload = functions
     });
 
 /**
+ * Storage trigger: Process COI uploads for prequalification
+ * Triggered when a file is uploaded to: users/{uid}/prequal/coi/{fileName}
+ */
+exports.processCoiUpload = functions
+    .region("us-central1")
+    .runWith({serviceAccount: "listo-c6a60@appspot.gserviceaccount.com"})
+    .storage
+    .bucket("listo-c6a60.firebasestorage.app")
+    .object()
+    .onFinalize(async (object) => {
+      const filePath = object.name;
+      const bucket = object.bucket;
+      const contentType = object.contentType || "";
+
+      // Only process COI uploads for prequalification
+      const coiPathMatch = filePath.match(
+          /^users\/([^/]+)\/prequal\/coi\/(.+)$/,
+      );
+
+      if (!coiPathMatch) {
+        console.log(`Skipping non-COI file: ${filePath}`);
+        return null;
+      }
+
+      const [, userId] = coiPathMatch;
+
+      console.log(`Processing COI upload: ${filePath}`);
+      console.log(`User: ${userId}`);
+
+      // Validate file type
+      const validTypes = [
+        "application/pdf",
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+      ];
+      if (!validTypes.includes(contentType)) {
+        console.warn(`Invalid file type for COI: ${contentType}`);
+        return null;
+      }
+
+      try {
+        // Download file from Storage
+        const storageClient = getStorageClient();
+        const bucketObj = storageClient.bucket(bucket);
+        const file = bucketObj.file(filePath);
+        const [fileBuffer] = await file.download();
+
+        // Perform OCR using Google Cloud Vision
+        let fullText = "";
+        const visionClient = getVisionClient();
+
+        if (contentType === "application/pdf") {
+          // For PDFs, use async batch processing for better results
+          const gcsInputUri = `gs://${bucket}/${filePath}`;
+          const outputPrefix = `gs://${bucket}/users/${userId}/ocr-output/coi/${Date.now()}/`;
+          const outputPrefixPath = `users/${userId}/ocr-output/coi/${Date.now()}/`;
+
+          console.log(`Starting PDF OCR for COI: ${filePath}`);
+
+          // Start async batch operation
+          const [operation] = await visionClient.asyncBatchAnnotateFiles({
+            requests: [{
+              inputConfig: {
+                gcsSource: {uri: gcsInputUri},
+                mimeType: "application/pdf",
+              },
+              features: [{type: "DOCUMENT_TEXT_DETECTION"}],
+              outputConfig: {
+                gcsDestination: {uri: outputPrefix},
+              },
+            }],
+          });
+
+          // Wait for operation to complete
+          await operation.promise();
+
+          // Read output files from GCS
+          const [files] = await bucketObj.getFiles({prefix: outputPrefixPath});
+          const jsonFiles = files.filter((f) => f.name.endsWith(".json"));
+
+          // Extract text from each JSON file
+          const pageTexts = [];
+          for (const outputFile of jsonFiles) {
+            const [fileBuffer] = await outputFile.download();
+            const parsed = JSON.parse(fileBuffer.toString());
+
+            if (parsed.responses && parsed.responses.length > 0) {
+              for (const response of parsed.responses) {
+                if (response.fullTextAnnotation && response.fullTextAnnotation.text) {
+                  pageTexts.push(response.fullTextAnnotation.text);
+                } else if (response.textAnnotations && response.textAnnotations.length > 0 &&
+                    response.textAnnotations[0].description) {
+                  pageTexts.push(response.textAnnotations[0].description);
+                }
+              }
+            }
+          }
+
+          fullText = pageTexts.join("\n\n").trim();
+        } else {
+          // For images, use Document Text Detection
+          const [result] = await visionClient.documentTextDetection({
+            image: {content: fileBuffer},
+          });
+
+          if (result.fullTextAnnotation) {
+            fullText = result.fullTextAnnotation.text;
+          } else if (result.textAnnotations && result.textAnnotations.length > 0) {
+            fullText = result.textAnnotations[0].description || "";
+          }
+        }
+
+        if (!fullText || fullText.trim().length === 0) {
+          console.warn(`No text extracted from COI: ${filePath}`);
+          return null;
+        }
+
+        console.log(`Extracted text length: ${fullText.length} characters`);
+
+        // Parse COI expiration dates from extracted text
+        const parsedPolicies = parseCoiText(fullText);
+
+        // Update prequal document with extracted policy dates
+        await updatePrequalWithCoiData(userId, parsedPolicies, filePath);
+
+        console.log(`Successfully processed COI for user ${userId}`);
+        return null;
+      } catch (error) {
+        console.error(`Error processing COI: ${error.message}`, error);
+        return null; // Don't throw - allow manual entry if OCR fails
+      }
+    });
+
+/**
  * Parse W-9 text to extract key fields
  */
 function parseW9Text(text) {
@@ -436,6 +571,241 @@ function parseW9Text(text) {
   }
 
   return fields;
+}
+
+/**
+ * Parse COI text to extract policy expiration dates
+ * Looks for Workers Compensation, Automobile Liability, and Commercial General Liability
+ */
+function parseCoiText(text) {
+  const policies = {
+    workersCompensation: null,
+    automobileLiability: null,
+    commercialGeneralLiability: null,
+  };
+
+  // Normalize text for searching
+  const normalizedText = text.toLowerCase();
+  const lines = text.split(/\n/).map((line) => line.trim()).filter(Boolean);
+
+  // Common patterns for policy types
+  const policyPatterns = {
+    workersCompensation: [
+      /workers['\s]*comp(?:ensation)?/i,
+      /workmen['\s]*comp(?:ensation)?/i,
+      /wc/i,
+      /workers['\s]*comp/i,
+    ],
+    automobileLiability: [
+      /automobile\s*liability/i,
+      /auto\s*liability/i,
+      /vehicle\s*liability/i,
+      /commercial\s*auto/i,
+      /business\s*auto/i,
+    ],
+    commercialGeneralLiability: [
+      /commercial\s*general\s*liability/i,
+      /general\s*liability/i,
+      /cgl/i,
+      /commercial\s*liability/i,
+    ],
+  };
+
+  // Date patterns - various formats
+  const datePatterns = [
+    // MM/DD/YYYY or M/D/YYYY
+    /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g,
+    // MM-DD-YYYY or M-D-YYYY
+    /\b(\d{1,2})-(\d{1,2})-(\d{4})\b/g,
+    // YYYY-MM-DD
+    /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/g,
+    // Month DD, YYYY
+    /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),?\s+(\d{4})\b/gi,
+  ];
+
+  // Helper to parse date string to YYYY-MM-DD format
+  function parseDateToYyyyMmDd(a, b, c) {
+    // Check if it's YYYY-MM-DD format (first part is 4 digits and > 1900)
+    if (a && a.length === 4 && parseInt(a) > 1900) {
+      const year = parseInt(a);
+      const month = parseInt(b);
+      const day = parseInt(c);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+    } else {
+      // MM/DD/YYYY or MM-DD-YYYY
+      const month = parseInt(a);
+      const day = parseInt(b);
+      const year = parseInt(c);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year > 1900) {
+        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+    }
+    return null;
+  }
+
+  // Helper to parse month name date
+  function parseMonthNameDate(match, monthName, day, year) {
+    const monthNames = [
+      "january", "february", "march", "april", "may", "june",
+      "july", "august", "september", "october", "november", "december",
+    ];
+    const monthIndex = monthNames.indexOf(monthName.toLowerCase());
+    if (monthIndex >= 0) {
+      const month = monthIndex + 1;
+      const dayNum = parseInt(day);
+      const yearNum = parseInt(year);
+      if (dayNum >= 1 && dayNum <= 31 && yearNum > 1900) {
+        return `${yearNum}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      }
+    }
+    return null;
+  }
+
+  // Search for each policy type and find expiration dates
+  for (const [policyKey, patterns] of Object.entries(policyPatterns)) {
+    let foundPolicy = false;
+    let expirationDate = null;
+
+    // Search for policy type in text
+    for (const pattern of patterns) {
+      const policyMatch = text.match(pattern);
+      if (policyMatch) {
+        foundPolicy = true;
+        const matchIndex = text.indexOf(policyMatch[0]);
+
+        // Look for expiration date near the policy type
+        // Search in a window around the policy match (within 500 characters)
+        const searchStart = Math.max(0, matchIndex - 100);
+        const searchEnd = Math.min(text.length, matchIndex + 500);
+        const searchWindow = text.substring(searchStart, searchEnd);
+
+        // Look for "expires", "expiration", "exp date", etc.
+        const expirationKeywords = [
+          /expires?\s*(?:on|date)?/i,
+          /expiration\s*(?:date)?/i,
+          /exp\s*date/i,
+          /valid\s*until/i,
+          /valid\s*through/i,
+          /coverage\s*until/i,
+        ];
+
+        let expirationKeywordIndex = -1;
+        for (const keyword of expirationKeywords) {
+          const keywordMatch = searchWindow.match(keyword);
+          if (keywordMatch) {
+            expirationKeywordIndex = searchWindow.indexOf(keywordMatch[0]);
+            break;
+          }
+        }
+
+        // If we found an expiration keyword, search for date after it
+        // Otherwise, search in the entire window
+        const dateSearchStart = expirationKeywordIndex >= 0 ?
+          expirationKeywordIndex : 0;
+        const dateSearchWindow = searchWindow.substring(dateSearchStart, dateSearchStart + 200);
+
+        // Try to find dates in various formats
+        const dates = [];
+        for (const datePattern of datePatterns) {
+          const matches = [...dateSearchWindow.matchAll(datePattern)];
+          for (const match of matches) {
+            let parsedDate = null;
+            if (match[0].match(/^(january|february|march|april|may|june|july|august|september|october|november|december)/i)) {
+              parsedDate = parseMonthNameDate(match[0], match[1], match[2], match[3]);
+            } else {
+              parsedDate = parseDateToYyyyMmDd(match[0], match[1], match[2], match[3]);
+            }
+            if (parsedDate) {
+              dates.push(parsedDate);
+            }
+          }
+        }
+
+        // Use the most likely expiration date (usually the latest date in the future)
+        if (dates.length > 0) {
+          const now = new Date();
+          const futureDates = dates.filter((d) => {
+            const date = new Date(d);
+            return date > now;
+          });
+
+          if (futureDates.length > 0) {
+            // Sort and take the latest future date
+            futureDates.sort();
+            expirationDate = futureDates[futureDates.length - 1];
+          } else {
+            // If no future dates, take the latest date overall
+            dates.sort();
+            expirationDate = dates[dates.length - 1];
+          }
+        }
+
+        break; // Found the policy, stop searching
+      }
+    }
+
+    if (foundPolicy && expirationDate) {
+      policies[policyKey] = expirationDate;
+      console.log(`Found ${policyKey} expiration: ${expirationDate}`);
+    }
+  }
+
+  return policies;
+}
+
+/**
+ * Update prequal document with COI OCR data
+ */
+async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
+  const prequalRef = admin
+      .firestore()
+      .collection("users")
+      .doc(userId)
+      .collection("private")
+      .doc("prequal");
+
+  const prequalDoc = await prequalRef.get();
+  const existingData = prequalDoc.exists ? prequalDoc.data() : {};
+  const existingCoi = existingData.coi || {};
+
+  // Build policies object, preserving existing data if OCR didn't find a date
+  const policies = {
+    workersCompensation: parsedPolicies.workersCompensation || existingCoi.policies?.workersCompensation || null,
+    automobileLiability: parsedPolicies.automobileLiability || existingCoi.policies?.automobileLiability || null,
+    commercialGeneralLiability: parsedPolicies.commercialGeneralLiability || existingCoi.policies?.commercialGeneralLiability || null,
+  };
+
+  // Determine overall expiration (earliest of the three, or use existing expiresOn if set)
+  let overallExpiration = existingCoi.expiresOn || null;
+  const validDates = Object.values(policies).filter((d) => d !== null);
+  if (validDates.length > 0) {
+    validDates.sort();
+    overallExpiration = validDates[0]; // Earliest expiration
+  }
+
+  const updateData = {
+    coi: {
+      ...existingCoi,
+      policies: policies,
+      expiresOn: overallExpiration || existingCoi.expiresOn || null,
+      ocrProcessedAt: admin.firestore.FieldValue.serverTimestamp(),
+      ocrProcessed: true,
+    },
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  // Only update filePath if this is the current file
+  if (filePath && (!existingCoi.filePath || filePath.includes(existingCoi.filePath) || !existingCoi.filePath.includes("prequal/coi"))) {
+    // Extract filename from path
+    const fileName = filePath.split("/").pop();
+    updateData.coi.filePath = filePath;
+    updateData.coi.fileName = fileName;
+  }
+
+  await prequalRef.set(updateData, {merge: true});
+  console.log(`Updated prequal COI data for user ${userId}`);
 }
 
 /**
