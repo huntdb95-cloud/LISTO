@@ -1208,6 +1208,73 @@ function sanitizeHTML(html) {
   });
 }
 
+// MutationObserver for dynamic content
+let translationObserver = null;
+
+function setupTranslationObserver() {
+  // Only set up observer once
+  if (translationObserver) return;
+  
+  const DEBUG = false;
+  const currentLang = localStorage.getItem(LANG_KEY) || "en";
+  
+  // Debounce translation application
+  let debounceTimer = null;
+  const debouncedApply = () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (DEBUG) {
+        console.log("[i18n] Re-applying translations for dynamically added content");
+      }
+      applyTranslations(currentLang);
+    }, 100);
+  };
+  
+  // Observe main content areas for dynamically added elements
+  const observeTargets = [
+    document.getElementById("main"),
+    document.body,
+    document.querySelector(".app-layout"),
+    document.querySelector(".auth-center")
+  ].filter(Boolean);
+  
+  if (observeTargets.length > 0) {
+    translationObserver = new MutationObserver((mutations) => {
+      let shouldReapply = false;
+      
+      for (const mutation of mutations) {
+        // Check if any added nodes have translation attributes
+        if (mutation.addedNodes.length > 0) {
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.hasAttribute("data-i18n") || 
+                  node.hasAttribute("data-i18n-placeholder") || 
+                  node.hasAttribute("data-i18n-value") ||
+                  node.querySelector("[data-i18n], [data-i18n-placeholder], [data-i18n-value]")) {
+                shouldReapply = true;
+                break;
+              }
+            }
+          }
+        }
+        if (shouldReapply) break;
+      }
+      
+      if (shouldReapply) {
+        debouncedApply();
+      }
+    });
+    
+    // Observe each target
+    observeTargets.forEach(target => {
+      translationObserver.observe(target, {
+        childList: true,
+        subtree: true
+      });
+    });
+  }
+}
+
 function applyTranslations(lang) {
   const DEBUG = false; // Set to true for debugging
   const dict = I18N[lang] || I18N.en;
@@ -1257,6 +1324,9 @@ function applyTranslations(lang) {
   setPressedButtons(lang);
   localStorage.setItem(LANG_KEY, lang);
   
+  // Set up MutationObserver for dynamic content (only once)
+  setupTranslationObserver();
+  
   if (DEBUG) {
     console.log(`[i18n] Applied ${lang} translations to ${translatedCount} elements`);
   }
@@ -1283,6 +1353,9 @@ async function loadUserLanguage(user) {
   return null;
 }
 
+// Track if language toggle listeners are already attached
+let languageToggleListenersAttached = false;
+
 function initLanguage() {
   const DEBUG = false; // Set to true for debugging
   // For non-authenticated pages (login, signup, forgot password, landing), use localStorage
@@ -1293,30 +1366,36 @@ function initLanguage() {
     console.log(`[i18n] Initializing language: ${lang} (saved: ${saved})`);
   }
   
+  // Apply translations immediately
   applyTranslations(lang);
   
-  // Set up language toggle buttons
-  const toggleButtons = document.querySelectorAll("[data-lang]");
-  if (DEBUG) {
-    console.log(`[i18n] Found ${toggleButtons.length} language toggle buttons`);
-  }
-  
-  toggleButtons.forEach(btn => {
-    // Remove any existing listeners by cloning
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-    
-    newBtn.addEventListener("click", (e) => {
+  // Set up language toggle buttons using event delegation (more robust)
+  if (!languageToggleListenersAttached) {
+    // Use event delegation on document to handle all language toggles
+    document.addEventListener("click", (e) => {
+      const toggleBtn = e.target.closest("[data-lang]");
+      if (!toggleBtn) return;
+      
+      // Skip if this is a Settings page button (handled by account.js)
+      if (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn") {
+        // Let account.js handle it (it will stop propagation)
+        return;
+      }
+      
       e.preventDefault();
       e.stopPropagation();
-      const selectedLang = newBtn.getAttribute("data-lang");
+      
+      const selectedLang = toggleBtn.getAttribute("data-lang");
       if (DEBUG) {
         console.log(`[i18n] Language toggle clicked: ${selectedLang}`);
       }
+      
       localStorage.setItem(LANG_KEY, selectedLang);
       applyTranslations(selectedLang);
     });
-  });
+    
+    languageToggleListenersAttached = true;
+  }
   
   if (DEBUG) {
     console.log(`[i18n] Language initialization complete`);
@@ -1329,27 +1408,48 @@ async function initLanguageForUser(user) {
     return;
   }
   
+  const DEBUG = false; // Set to true for debugging
+  
   // Load language from Firestore profile
   const userLang = await loadUserLanguage(user);
   const lang = (userLang && I18N[userLang]) ? userLang : (localStorage.getItem(LANG_KEY) || "en");
   
+  if (DEBUG) {
+    console.log(`[i18n] Initializing language for user: ${lang} (userLang: ${userLang}, saved: ${localStorage.getItem(LANG_KEY)})`);
+  }
+  
+  // Apply translations immediately
   applyTranslations(lang);
   
-  // Set up language toggle buttons if they exist (for login/signup/forgot pages)
-  document.querySelectorAll("[data-lang]").forEach(btn => {
-    // Remove any existing listeners
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-    
-    newBtn.addEventListener("click", async (e) => {
+  // Set up language toggle buttons using event delegation (more robust)
+  if (!languageToggleListenersAttached) {
+    // Use event delegation on document to handle all language toggles
+    document.addEventListener("click", async (e) => {
+      const toggleBtn = e.target.closest("[data-lang]");
+      if (!toggleBtn) return;
+      
+      // Skip if this is a Settings page button (handled by account.js)
+      if (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn") {
+        // Let account.js handle it (it will stop propagation)
+        return;
+      }
+      
       e.preventDefault();
       e.stopPropagation();
-      const selectedLang = newBtn.getAttribute("data-lang");
+      
+      const selectedLang = toggleBtn.getAttribute("data-lang");
+      if (DEBUG) {
+        console.log(`[i18n] Language toggle clicked: ${selectedLang}`);
+      }
+      
       applyTranslations(selectedLang);
+      
       // For authenticated users, save to Firestore
-      if (user) {
+      // Get current user from auth state (not closure variable)
+      const currentUser = auth?.currentUser;
+      if (currentUser) {
         try {
-          const profileRef = doc(db, "users", user.uid, "private", "profile");
+          const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
           await setDoc(profileRef, {
             language: selectedLang,
             updatedAt: serverTimestamp()
@@ -1359,7 +1459,9 @@ async function initLanguageForUser(user) {
         }
       }
     });
-  });
+    
+    languageToggleListenersAttached = true;
+  }
 }
 
 /* ========= Firebase ========= */
@@ -4699,6 +4801,44 @@ document.addEventListener("click", async (e) => {
   showLogoutConfirmation();
 }, { passive: false });
 
+// Initialize language as early as possible (runs immediately when script loads)
+(function initializeLanguageEarly() {
+  // Initialize language immediately for all pages based on saved preference
+  // This ensures language is applied before any content is visible
+  const saved = localStorage.getItem(LANG_KEY);
+  const lang = (saved && I18N[saved]) ? saved : "en";
+  document.documentElement.lang = lang;
+  
+  // Apply basic translations immediately if DOM is ready (full initialization happens later)
+  if (document.readyState !== "loading") {
+    const dict = I18N[lang] || I18N.en;
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (dict[key]) {
+        const translation = dict[key];
+        if (translation.includes("<") && translation.includes(">")) {
+          el.innerHTML = sanitizeHTML(translation);
+        } else {
+          el.textContent = translation;
+        }
+      }
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+      const key = el.getAttribute("data-i18n-placeholder");
+      if (dict[key]) {
+        el.placeholder = dict[key];
+      }
+    });
+    document.querySelectorAll("[data-i18n-value]").forEach(el => {
+      const key = el.getAttribute("data-i18n-value");
+      if (dict[key]) {
+        el.value = dict[key];
+      }
+    });
+    setPressedButtons(lang);
+  }
+})();
+
 document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();
   initYear();
@@ -4709,7 +4849,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSidebarNav();
   }, 100);
 
-  // Initialize language immediately for auth pages (login, signup, forgot) and landing page
+  // Initialize language for all pages immediately
+  // For auth/landing pages, use localStorage; for authenticated pages, will be updated by initLanguageForUser
   const page = document.body?.getAttribute("data-page");
   const isAuthPage = page === "login" || page === "signup" || page === "forgot" || window.location.pathname.includes("/forgot/");
   const isLandingPage = page === "landing" || window.location.pathname === "/" || window.location.pathname.endsWith("/index.html");
@@ -4717,6 +4858,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize language for landing and auth pages (non-authenticated pages)
   if (isAuthPage || isLandingPage) {
     initLanguage();
+  } else {
+    // For authenticated pages, initialize with localStorage first (will be updated by initLanguageForUser if user is logged in)
+    const saved = localStorage.getItem(LANG_KEY);
+    const lang = (saved && I18N[saved]) ? saved : "en";
+    applyTranslations(lang);
+    // Set up toggle listeners
+    if (!languageToggleListenersAttached) {
+      document.addEventListener("click", async (e) => {
+        const toggleBtn = e.target.closest("[data-lang]");
+        if (!toggleBtn) return;
+        
+        // Skip if this is a Settings page button (handled by account.js)
+        if (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn") {
+          return;
+        }
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const selectedLang = toggleBtn.getAttribute("data-lang");
+        applyTranslations(selectedLang);
+      });
+      languageToggleListenersAttached = true;
+    }
   }
 
   const ok = await initFirebase();

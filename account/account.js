@@ -337,12 +337,19 @@ function setupEventListeners() {
     $("taxForm").addEventListener("submit", handleTaxUpdate);
   }
   
-  // Language preference buttons
+  // Language preference buttons (Settings page only)
+  // Stop propagation to prevent global handler from also firing
   if ($("langEnBtn")) {
-    $("langEnBtn").addEventListener("click", () => handleLanguageChange("en"));
+    $("langEnBtn").addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent global handler from firing
+      handleLanguageChange("en");
+    });
   }
   if ($("langEsBtn")) {
-    $("langEsBtn").addEventListener("click", () => handleLanguageChange("es"));
+    $("langEsBtn").addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent global handler from firing
+      handleLanguageChange("es");
+    });
   }
 }
 
@@ -738,6 +745,9 @@ async function handleLanguageChange(lang) {
     
     // Update current profile
     currentProfile.language = lang;
+    
+    // Update localStorage to ensure consistency
+    localStorage.setItem("listo_lang", lang);
     
     // Update button states
     if ($("langEnBtn") && $("langEsBtn")) {
