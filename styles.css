@@ -10,6 +10,7 @@ body:not(.auth-page) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height where supported for better mobile support */
 }
 
 /* Pages with app-layout */
@@ -3649,6 +3650,7 @@ body[data-page="bookkeeping"] .page-title {
 .app-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height where supported for better mobile support */
 }
 
 /* ========== Sidebar Navigation (Desktop Only) ========== */
@@ -4070,17 +4072,22 @@ body[data-page="bookkeeping"] .page-title {
   /* Global fix: Add bottom padding to main content to prevent cutoff by bottom nav */
   /* This ensures all pages have enough space so content (including footer) is never hidden behind the nav */
   .app-layout > main {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 16px);
   }
   
   /* Also apply to pages without app-layout */
   body:not(.auth-page) > main {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 16px);
   }
   
-  /* Also apply to page-wrap containers for pages that use them directly */
-  .page-wrap {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
+  /* Ensure page-wrap also has bottom padding for pages that use it */
+  .app-layout > main .page-wrap {
+    padding-bottom: 0; /* Remove duplicate padding - main already has it */
+  }
+  
+  /* For pages without app-layout that use page-wrap directly */
+  body:not(.auth-page) > main .page-wrap {
+    padding-bottom: 0; /* Remove duplicate padding - main already has it */
   }
   
   /* Update existing page-specific fixes to use the CSS variable for consistency */
@@ -4196,6 +4203,7 @@ body[data-page="bookkeeping"] .page-title {
     display: block;
     width: 100%;
     margin-top: 24px;
+    margin-bottom: 0; /* Let main's padding-bottom handle spacing above nav */
     padding: 20px 16px;
     background: var(--panel);
     border-top: 1px solid var(--border);
