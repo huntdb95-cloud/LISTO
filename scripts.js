@@ -1685,18 +1685,33 @@ async function renderCoiCurrent(user) {
   const coiCurrent = coiData.current || null;
   
   // Prefer new path, fallback to old path
+  // Handle both old format (nested objects) and new format (simple date strings)
   const coi = prequalCoi || (coiCurrent ? {
     fileName: coiCurrent.storagePath ? coiCurrent.storagePath.split("/").pop() : "—",
     filePath: coiCurrent.storagePath || null,
     expiresOn: null, // Will be calculated from coverages
-    uploadedAtMs: coiCurrent.extractedAt ? coiCurrent.extractedAt.toMillis() : null,
+    uploadedAtMs: coiCurrent.extractedAt ? (coiCurrent.extractedAt.toMillis ? coiCurrent.extractedAt.toMillis() : new Date(coiCurrent.extractedAt).getTime()) : null,
     policies: coiCurrent.coverages ? {
-      workersCompensation: coiCurrent.coverages.workersComp?.expirationDate || null,
-      automobileLiability: coiCurrent.coverages.autoLiability?.expirationDate || null,
-      commercialGeneralLiability: coiCurrent.coverages.generalLiability?.expirationDate || null,
-      workersCompensationSource: coiCurrent.coverages.workersComp?.source || "ocr",
-      automobileLiabilitySource: coiCurrent.coverages.autoLiability?.source || "ocr",
-      commercialGeneralLiabilitySource: coiCurrent.coverages.generalLiability?.source || "ocr",
+      // Support both formats: new (simple strings) and old (nested objects)
+      workersCompensation: typeof coiCurrent.coverages.workersComp === "string" 
+        ? coiCurrent.coverages.workersComp 
+        : (coiCurrent.coverages.workersComp?.expirationDate || null),
+      automobileLiability: typeof coiCurrent.coverages.autoLiability === "string"
+        ? coiCurrent.coverages.autoLiability
+        : (coiCurrent.coverages.autoLiability?.expirationDate || null),
+      commercialGeneralLiability: typeof coiCurrent.coverages.generalLiability === "string"
+        ? coiCurrent.coverages.generalLiability
+        : (coiCurrent.coverages.generalLiability?.expirationDate || null),
+      // Source defaults to "ocr" for new format, or from old format if present
+      workersCompensationSource: typeof coiCurrent.coverages.workersComp === "object" && coiCurrent.coverages.workersComp?.source 
+        ? coiCurrent.coverages.workersComp.source 
+        : (coiCurrent.coverages.workersComp ? "ocr" : null),
+      automobileLiabilitySource: typeof coiCurrent.coverages.autoLiability === "object" && coiCurrent.coverages.autoLiability?.source
+        ? coiCurrent.coverages.autoLiability.source
+        : (coiCurrent.coverages.autoLiability ? "ocr" : null),
+      commercialGeneralLiabilitySource: typeof coiCurrent.coverages.generalLiability === "object" && coiCurrent.coverages.generalLiability?.source
+        ? coiCurrent.coverages.generalLiability.source
+        : (coiCurrent.coverages.generalLiability ? "ocr" : null),
     } : null,
   } : null);
 
@@ -1943,12 +1958,18 @@ async function initCoiPage(user) {
           ocrCoverages = ocrResponse.data.coverages || ocrResponse.data.policies;
           ocrResults = ocrResponse.data.policies || ocrResponse.data.coverages;
           
-          // Map coverages to policies format for backward compatibility
+          // Map coverages to policies format (handle both new simple format and old nested format)
           if (ocrResponse.data.coverages) {
             ocrResults = {
-              workersCompensation: ocrResponse.data.coverages.workersComp?.expirationDate || null,
-              automobileLiability: ocrResponse.data.coverages.autoLiability?.expirationDate || null,
-              commercialGeneralLiability: ocrResponse.data.coverages.generalLiability?.expirationDate || null,
+              workersCompensation: typeof ocrResponse.data.coverages.workersComp === "string"
+                ? ocrResponse.data.coverages.workersComp
+                : (ocrResponse.data.coverages.workersComp?.expirationDate || null),
+              automobileLiability: typeof ocrResponse.data.coverages.autoLiability === "string"
+                ? ocrResponse.data.coverages.autoLiability
+                : (ocrResponse.data.coverages.autoLiability?.expirationDate || null),
+              commercialGeneralLiability: typeof ocrResponse.data.coverages.generalLiability === "string"
+                ? ocrResponse.data.coverages.generalLiability
+                : (ocrResponse.data.coverages.generalLiability?.expirationDate || null),
             };
           }
           
@@ -2035,27 +2056,20 @@ async function initCoiPage(user) {
       }, { merge: true });
       
       // 2. Save to canonical path: /users/{uid}/prequal/coi
-      const coverages = {
-        workersComp: {
-          expirationDate: policies.workersCompensation || null,
-          source: policies.workersCompensationSource || (policies.workersCompensation ? "ocr" : null),
-        },
-        autoLiability: {
-          expirationDate: policies.automobileLiability || null,
-          source: policies.automobileLiabilitySource || (policies.automobileLiability ? "ocr" : null),
-        },
-        generalLiability: {
-          expirationDate: policies.commercialGeneralLiability || null,
-          source: policies.commercialGeneralLiabilitySource || (policies.commercialGeneralLiability ? "ocr" : null),
-        },
-      };
+      // Use simplified format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null, generalLiability: "2026-01-31" | null }
       
       // Save to canonical path: /users/{uid}/prequal/coi (only if OCR succeeded)
       if (ocrCoverages || ocrResults) {
         const coiRef = doc(db, "users", user.uid, "prequal", "coi");
+        // Convert to simplified format: { workersComp: "2026-01-31" | null, ... }
+        const simplifiedCoverages = {
+          workersComp: policies.workersCompensation || null,
+          autoLiability: policies.automobileLiability || null,
+          generalLiability: policies.commercialGeneralLiability || null,
+        };
         await setDoc(coiRef, {
           current: {
-            coverages: coverages,
+            coverages: simplifiedCoverages, // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null, generalLiability: "2026-01-31" | null }
             extractedAt: serverTimestamp(),
             storagePath: path,
             extractedTextLength: ocrResults ? Object.keys(ocrResults).filter(k => ocrResults[k] !== null).length : 0,
@@ -2141,20 +2155,33 @@ function setupManualEntryHandlers(user) {
 
 // Update COI UI from coverages (called immediately after OCR)
 function updateCoiUIFromCoverages(coverages) {
-  // Handle both formats: coverages object or policies object
+  // Handle both formats: simplified coverages (date strings) or nested objects, or policies object
   let policies = null;
-  if (coverages && coverages.workersComp) {
-    // New format: coverages object
+  if (coverages && (coverages.workersComp || coverages.autoLiability || coverages.generalLiability)) {
+    // New simplified format: { workersComp: "2026-01-31" | null, ... }
+    // Or old nested format: { workersComp: { expirationDate: "2026-01-31", source: "ocr" }, ... }
     policies = {
-      workersCompensation: coverages.workersComp?.expirationDate || null,
-      automobileLiability: coverages.autoLiability?.expirationDate || null,
-      commercialGeneralLiability: coverages.generalLiability?.expirationDate || null,
-      workersCompensationSource: coverages.workersComp?.source || "ocr",
-      automobileLiabilitySource: coverages.autoLiability?.source || "ocr",
-      commercialGeneralLiabilitySource: coverages.generalLiability?.source || "ocr",
+      workersCompensation: typeof coverages.workersComp === "string" 
+        ? coverages.workersComp 
+        : (coverages.workersComp?.expirationDate || null),
+      automobileLiability: typeof coverages.autoLiability === "string"
+        ? coverages.autoLiability
+        : (coverages.autoLiability?.expirationDate || null),
+      commercialGeneralLiability: typeof coverages.generalLiability === "string"
+        ? coverages.generalLiability
+        : (coverages.generalLiability?.expirationDate || null),
+      workersCompensationSource: typeof coverages.workersComp === "object" && coverages.workersComp?.source
+        ? coverages.workersComp.source
+        : (coverages.workersComp ? "ocr" : null),
+      automobileLiabilitySource: typeof coverages.autoLiability === "object" && coverages.autoLiability?.source
+        ? coverages.autoLiability.source
+        : (coverages.autoLiability ? "ocr" : null),
+      commercialGeneralLiabilitySource: typeof coverages.generalLiability === "object" && coverages.generalLiability?.source
+        ? coverages.generalLiability.source
+        : (coverages.generalLiability ? "ocr" : null),
     };
-  } else if (coverages) {
-    // Old format: policies object
+  } else if (coverages && (coverages.workersCompensation || coverages.automobileLiability || coverages.commercialGeneralLiability)) {
+    // Old format: policies object with workersCompensation, automobileLiability, etc.
     policies = coverages;
   }
   
