@@ -4199,19 +4199,6 @@ body[data-page="bookkeeping"] .page-title {
     padding-bottom: calc(var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom, 0px));
   }
   
-  /* Tools page specific fix: Ensure footer is fully visible above bottom nav */
-  /* Tools page has bottom nav inside main, so we need to ensure padding is applied correctly */
-  body[data-page="tools"] .app-layout > main,
-  body[data-page="tools"] main {
-    padding-bottom: calc(var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom, 0px)) !important;
-  }
-  
-  /* Ensure Tools page footer has proper spacing and isn't clipped */
-  body[data-page="tools"] .site-footer {
-    margin-bottom: 0;
-    padding-bottom: 0;
-  }
-  
   /* Ensure page-wrap also has bottom padding for pages that use it */
   .app-layout > main .page-wrap {
     padding-bottom: 0; /* Remove duplicate padding - main already has it */
