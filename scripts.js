@@ -455,6 +455,8 @@ const I18N = {
     "dashboard.payrollDesc": "Track employee payments",
     "dashboard.invoiceDesc": "Create and send invoices",
     "dashboard.auditDesc": "Prepare for insurance audits",
+    "dashboard.laborDesc": "Manage employees and subcontractors",
+    "dashboard.translatorDesc": "OCR and translate documents",
 
     "employees.title": "Labor Management",
     "employees.subtitle": "Add and manage your employees and subcontractors. Upload W9s, COIs, and Workers Compensation documents.",
@@ -971,6 +973,8 @@ const I18N = {
     "dashboard.payrollDesc": "Rastrea pagos de empleados",
     "dashboard.invoiceDesc": "Crea y envía facturas",
     "dashboard.auditDesc": "Prepárate para auditorías de seguro",
+    "dashboard.laborDesc": "Gestiona empleados y subcontratistas",
+    "dashboard.translatorDesc": "OCR y traduce documentos",
 
     "employees.title": "Gestión de Trabajadores",
     "employees.subtitle": "Agrega y gestiona tus empleados y subcontratistas. Sube W9s, COIs y documentos de Compensación de Trabajadores.",

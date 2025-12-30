@@ -696,6 +696,11 @@ body[data-page="landing"] .lang-switch-mobile {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+  
+  /* Hide desktop-only quick link cards on mobile */
+  .dashboard-grid .dashboard-card.desktop-only {
+    display: none;
+  }
 }
 
 .checklist{
