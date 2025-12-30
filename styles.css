@@ -4119,13 +4119,14 @@ body[data-page="bookkeeping"] .page-title {
   
   /* Global fix: Add bottom padding to main content to prevent cutoff by bottom nav */
   /* This ensures all pages have enough space so content (including footer) is never hidden behind the nav */
+  /* Note: Uses --bottom-nav-height (not --bottom-nav-h) because JavaScript sets this variable name */
   .app-layout > main {
-    padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom, 0px));
   }
   
   /* Also apply to pages without app-layout */
   body:not(.auth-page) > main {
-    padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom, 0px));
   }
   
   /* Ensure page-wrap also has bottom padding for pages that use it */
