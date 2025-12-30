@@ -12,8 +12,8 @@
   <link rel="stylesheet" href="../styles.css" />
 
   <style>
-    .page-wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
-    .card { background: rgba(255,255,255,0.92); border-radius: 14px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .page-wrap { max-width: 1400px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
+    .card { background: rgba(255,255,255,0.92); border-radius: 14px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); box-sizing: border-box; }
     .muted { opacity: 0.75; }
     .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .btn { cursor: pointer; border: none; border-radius: 10px; padding: 10px 14px; font-weight: 600; transition: all 0.2s; }
@@ -28,8 +28,8 @@
     .small { font-size: 12px; }
 
     /* Upload Section */
-    .upload-section { margin-bottom: 24px; }
-    .upload-header { text-align: center; }
+    .upload-section { margin-bottom: 24px; width: 100%; max-width: 100%; box-sizing: border-box; }
+    .upload-header { text-align: center; width: 100%; max-width: 100%; box-sizing: border-box; }
     .upload-label {
       display: inline-flex;
       align-items: center;
@@ -42,6 +42,8 @@
       transition: all 0.2s;
       font-weight: 600;
       color: var(--brand-dark, #2F8B4A);
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .upload-label:hover {
       background: var(--brand-hover, rgba(77,167,99,0.12));
@@ -62,9 +64,30 @@
     
     /* Mobile: Single column, show both boxes stacked */
     @media (max-width: 768px) {
+      /* Prevent horizontal scrolling */
+      body[data-page="document-translator"] {
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100%;
+      }
+      .page-wrap {
+        width: 100%;
+        max-width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      .card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
       .pane-container {
         grid-template-columns: 1fr;
         gap: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       .mobile-language-toggle {
         display: none !important;
@@ -72,6 +95,9 @@
       .mobile-pane {
         display: flex !important;
         margin-bottom: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       .desktop-pane-header {
         display: none !important;
@@ -79,6 +105,9 @@
       .pane {
         min-height: 400px;
         max-height: 70vh;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       /* On mobile, hide document view toggle - only show text */
       #documentView {
@@ -94,6 +123,74 @@
       #mobileEnglishHeader,
       #mobileSpanishHeader {
         display: block !important;
+      }
+      /* Hide "Take Photo" button on mobile - main upload button handles both files and camera */
+      .mobile-camera-label {
+        display: none !important;
+      }
+      /* Show mobile-specific hint text */
+      .mobile-file-hint {
+        display: block !important;
+      }
+      /* Hide desktop hint text on mobile */
+      [data-i18n="documentTranslator.fileHint"] {
+        display: none !important;
+      }
+      
+      /* Button layout: center and stack vertically */
+      .btn-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+      .btn-row .btn {
+        width: 100%;
+        max-width: 280px;
+      }
+      
+      /* Ensure text content wraps and doesn't overflow */
+      .text-content {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .pane-content {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .view-content {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* Ensure upload section doesn't overflow */
+      .upload-section {
+        width: 100%;
+        max-width: 100%;
+      }
+      .upload-header {
+        width: 100%;
+        max-width: 100%;
+      }
+      .upload-label {
+        max-width: calc(100% - 48px);
+        word-break: break-word;
+      }
+      
+      /* Action buttons on mobile */
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      .action-buttons .btn {
+        width: 100%;
+        max-width: 280px;
       }
     }
     
@@ -222,10 +319,13 @@
     .text-content {
       white-space: pre-wrap;
       word-wrap: break-word;
+      overflow-wrap: break-word;
       line-height: 1.6;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
       color: var(--text, #151F1C);
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     /* Action Buttons */
@@ -238,6 +338,9 @@
       background: var(--bg, #f7faf8);
       border-radius: 12px;
       border: 1px solid var(--border, rgba(0,0,0,0.1));
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     /* Loading States */
@@ -285,8 +388,7 @@
       <h1 style="margin-top:0;" data-i18n="documentTranslator.title">Document Translator</h1>
       <div class="pill" data-i18n="documentTranslator.subtitle">OCR • English ↔ Spanish Translation</div>
       <p class="muted" style="margin-bottom:0;" data-i18n="documentTranslator.description">
-        Upload a document (PDF, JPG, or PNG) or capture an image to extract text using OCR and translate it into Spanish. 
-        View the original text alongside the Spanish translation side-by-side.
+        Upload or take a photo of your document to translate it from English to Spanish, side by side.
       </p>
     </div>
 
@@ -298,13 +400,16 @@
           <span data-i18n="documentTranslator.uploadLabel">Upload Document</span>
         </label>
         <input id="contractFile" type="file" accept="image/*,application/pdf" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
-        <label for="cameraFile" class="upload-label" style="margin-top: 8px; display: none;" id="cameraLabel">
+        <label for="cameraFile" class="upload-label mobile-camera-label" style="margin-top: 8px; display: none;" id="cameraLabel">
           <span class="upload-icon">📷</span>
           <span>Take Photo</span>
         </label>
         <input id="cameraFile" type="file" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
         <div class="small muted" style="margin-top:8px;" data-i18n="documentTranslator.fileHint">
           Supported formats: PDF, JPG, JPEG, PNG. On mobile, use "Take Photo" to capture directly.
+        </div>
+        <div class="small muted mobile-file-hint" style="margin-top:8px; display: none;">
+          Supported formats: PDF, JPG, JPEG, PNG. Tap the button above to upload a file or take a photo.
         </div>
       </div>
       <div class="btn-row" style="margin-top: 16px;">

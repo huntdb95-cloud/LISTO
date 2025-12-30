@@ -553,36 +553,40 @@ function init() {
     }
   });
   
-  // Camera input change handler (for mobile photo capture)
+  // Camera input change handler (for desktop photo capture only - hidden on mobile)
   const cameraFile = $("cameraFile");
   const cameraLabel = $("cameraLabel");
   if (cameraFile && cameraLabel) {
-    // Show camera button on mobile only
+    // Show camera button on desktop only (mobile uses main upload button)
     function updateCameraVisibility() {
       const isMobile = window.innerWidth <= 768;
-      cameraLabel.style.display = isMobile ? "inline-flex" : "none";
+      // On mobile, hide the camera button - main upload button handles both files and camera
+      cameraLabel.style.display = isMobile ? "none" : "inline-flex";
     }
     updateCameraVisibility();
     window.addEventListener("resize", updateCameraVisibility);
     
-    cameraFile.addEventListener("change", (e) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        // Transfer file to main input for processing
-        const contractFile = $("contractFile");
-        if (contractFile) {
-          // Create a new FileList-like object (can't directly set files, so use DataTransfer)
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(file);
-          contractFile.files = dataTransfer.files;
-          // Trigger change event
-          contractFile.dispatchEvent(new Event("change", { bubbles: true }));
+    // Only attach event listener if camera input exists (for desktop)
+    if (cameraFile) {
+      cameraFile.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          // Transfer file to main input for processing
+          const contractFile = $("contractFile");
+          if (contractFile) {
+            // Create a new FileList-like object (can't directly set files, so use DataTransfer)
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            contractFile.files = dataTransfer.files;
+            // Trigger change event
+            contractFile.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          hideResults();
+          setMsg("statusMsg", "");
+          setMsg("errorMsg", "");
         }
-        hideResults();
-        setMsg("statusMsg", "");
-        setMsg("errorMsg", "");
-      }
-    });
+      });
+    }
   }
   
   // Toggle view buttons (desktop)
