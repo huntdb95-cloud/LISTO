@@ -2031,7 +2031,19 @@ body[data-page="bookkeeping"] .page-title {
   /* Contract Scanner/Translator */
   body[data-page="document-translator"] .page-wrap {
     max-width: 1400px !important;
+    width: 100%;
+    margin: 0 auto;
     padding: 24px 20px !important;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent any layout shift when content loads or changes state */
+  body[data-page="document-translator"] .comparison-container,
+  body[data-page="document-translator"] .pane-container,
+  body[data-page="document-translator"] .upload-section,
+  body[data-page="document-translator"] .action-buttons {
+    width: 100%;
+    box-sizing: border-box;
   }
   
   /* Pre-Qualification Dashboard */
