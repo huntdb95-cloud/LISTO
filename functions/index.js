@@ -2085,20 +2085,11 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
     // Parse COI expiration dates from extracted text
     const parsedPolicies = parseCoiTextImproved(extractedText, data.debug || false);
     
-    // Build coverages object in the format expected by frontend
+    // Build coverages object in simplified format: { workersComp: "2026-01-31" | null, ... }
     const coverages = {
-      workersComp: {
-        expirationDate: parsedPolicies.workersCompensation || null,
-        source: parsedPolicies.workersCompensation ? "ocr" : null,
-      },
-      autoLiability: {
-        expirationDate: parsedPolicies.automobileLiability || null,
-        source: parsedPolicies.automobileLiability ? "ocr" : null,
-      },
-      generalLiability: {
-        expirationDate: parsedPolicies.commercialGeneralLiability || null,
-        source: parsedPolicies.commercialGeneralLiability ? "ocr" : null,
-      },
+      workersComp: parsedPolicies.workersCompensation || null,
+      autoLiability: parsedPolicies.automobileLiability || null,
+      generalLiability: parsedPolicies.commercialGeneralLiability || null,
     };
 
     // Save to Firestore: /users/{uid}/prequal/coi (document with current data)
@@ -2111,7 +2102,7 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
 
     await coiRef.set({
       current: {
-        coverages: coverages,
+        coverages: coverages, // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null, generalLiability: "2026-01-31" | null }
         extractedAt: admin.firestore.FieldValue.serverTimestamp(),
         storagePath: data.storagePath,
         extractedTextLength: extractedText.length,
@@ -2123,7 +2114,7 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
     console.log(JSON.stringify({
       requestId,
       operation: "processCOIForCompliance_saved",
-      coveragesFound: Object.values(coverages).filter(c => c.expirationDate !== null).length,
+      coveragesFound: Object.values(coverages).filter(c => c !== null && typeof c === "string").length,
       uid: userId,
       timestamp: new Date().toISOString(),
     }));
