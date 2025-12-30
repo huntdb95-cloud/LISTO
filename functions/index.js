@@ -797,12 +797,16 @@ async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   };
 
-  // Only update filePath if this is the current file
-  if (filePath && (!existingCoi.filePath || filePath.includes(existingCoi.filePath) || !existingCoi.filePath.includes("prequal/coi"))) {
+  // Always update filePath to the newly uploaded file (this function is only called for new uploads)
+  // Verify the filePath is in the expected prequal/coi directory
+  if (filePath && filePath.includes(`users/${userId}/prequal/coi/`)) {
     // Extract filename from path
     const fileName = filePath.split("/").pop();
     updateData.coi.filePath = filePath;
     updateData.coi.fileName = fileName;
+  } else if (filePath) {
+    // Log warning if filePath doesn't match expected pattern (shouldn't happen, but log for debugging)
+    console.warn(`Unexpected COI filePath format: ${filePath}. Expected: users/${userId}/prequal/coi/...`);
   }
 
   await prequalRef.set(updateData, {merge: true});
