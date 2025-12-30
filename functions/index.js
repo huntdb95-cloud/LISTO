@@ -581,27 +581,36 @@ function parseW9Text(text) {
 function parseCoiTextImproved(text, debug = false) {
   const matchedAnchors = {};
   
-  // Date regex: MM/DD/YYYY, MM-DD-YYYY, or YYYY-MM-DD (handles 2-digit year)
-  // Pattern: (month)(separator)(day)(separator)(year)
-  const DATE_PATTERN = "(0?[1-9]|1[0-2])[\\/\\-.]?(0?[1-9]|[12]\\d|3[01])[\\/\\-.]?((?:19|20)?\\d{2})";
-  const DATE_RE = new RegExp(`\\b${DATE_PATTERN}\\b`, "g");
+  // Normalize text: create uppercase version for matching, keep original
+  const textUpper = text.toUpperCase();
+  // Replace multiple spaces with single space, keep line breaks
+  const textNormalized = text.replace(/\s+/g, " ");
+  const textFlattened = text.replace(/\s+/g, " ").replace(/\n/g, " ");
+  
+  // Date regex: MM/DD/YYYY, MM-DD-YYYY (handles 2-digit year)
+  const DATE_RE = /\b(0?[1-9]|1[0-2])[\/\-.](0?[1-9]|[12]\d|3[01])[\/\-.]((?:19|20)?\d{2})\b/g;
 
   // Anchor patterns for each coverage type
   const WC_ANCHOR_RE = /\bWORK(?:ER)?S?\s*(?:COMP(?:ENSATION)?|COMP)\b|\bW[\s\/-]?C\b|\bWORK\s*COMP\b/i;
   const AUTO_ANCHOR_RE = /\bAUTOMOBILE\s*LIABILITY\b|\bAUTO\s*LIAB(?:ILITY)?\b|\bAUTO\s*INS\b/i;
   const CGL_ANCHOR_RE = /\bCOMMERCIAL\s*GENERAL\s*LIABILITY\b|\bCGL\b|\bGENERAL\s*LIAB(?:ILITY)?\b/i;
 
-  // Date extraction patterns
+  // Date extraction patterns (using DATE_RE source)
+  const DATE_PATTERN_SOURCE = "(0?[1-9]|1[0-2])[\\/\\-.]?(0?[1-9]|[12]\\d|3[01])[\\/\\-.]?((?:19|20)?\\d{2})";
   const EFF_EXP_PAIR_RE = new RegExp(
-    `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN}[\\s\\S]{0,25}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN}`,
+    `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN_SOURCE}[\\s\\S]{0,40}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
     "i",
   );
   const EXP_DATE_NEAR_RE = new RegExp(
-    `\\b(?:EXP(?:IRATION)?|EXPIRES?|POLICY\\s*EXP|EXP\\s*DATE)\\b[\\s:]*${DATE_PATTERN}`,
+    `\\b(?:EXP(?:IRATION)?|EXPIRES?|POLICY\\s*EXP|EXP\\s*DATE)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
     "ig",
   );
   const DATE_BEFORE_EXP_RE = new RegExp(
-    `${DATE_PATTERN}[\\s\\S]{0,18}\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b`,
+    `${DATE_PATTERN_SOURCE}[\\s\\S]{0,25}\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b`,
+    "ig",
+  );
+  const TWO_DATES_CLOSE_RE = new RegExp(
+    `${DATE_PATTERN_SOURCE}[\\s\\S]{0,60}?${DATE_PATTERN_SOURCE}`,
     "ig",
   );
 
@@ -630,68 +639,106 @@ function parseCoiTextImproved(text, debug = false) {
 
   // Find expiration date for a coverage type
   function findExpirationDate(anchorRe, coverageName) {
-    const anchorMatch = text.match(anchorRe);
+    // Search in uppercase text for anchor
+    const anchorMatch = textUpper.match(anchorRe);
     if (!anchorMatch) {
       if (debug) matchedAnchors[coverageName] = "not_found";
       return null;
     }
 
+    // Find anchor in original text (preserve case for context)
     const anchorIndex = text.indexOf(anchorMatch[0]);
+    if (anchorIndex === -1) {
+      if (debug) matchedAnchors[coverageName] = "anchor_not_found_in_original";
+      return null;
+    }
+
     if (debug) matchedAnchors[coverageName] = {index: anchorIndex, text: anchorMatch[0]};
 
-    // Search window: 600 chars before to 1200 chars after anchor
-    const searchStart = Math.max(0, anchorIndex - 600);
-    const searchEnd = Math.min(text.length, anchorIndex + 1200);
+    // Search window: 800 chars before to 1600 chars after anchor
+    const searchStart = Math.max(0, anchorIndex - 800);
+    const searchEnd = Math.min(text.length, anchorIndex + 1600);
     const window = text.substring(searchStart, searchEnd);
 
     const dates = [];
 
-    // 1. Try EFF_EXP_PAIR_RE (use group 2 - expiration date, groups 4,5,6)
+    // 1. Try EFF_EXP_PAIR_RE (use group 2 - expiration date)
     const effExpMatch = window.match(EFF_EXP_PAIR_RE);
     if (effExpMatch && effExpMatch.length >= 7) {
       // Groups: 0=full match, 1-3=effective date, 4-6=expiration date
       const expDate = normalizeDate(effExpMatch[4], effExpMatch[5], effExpMatch[6]);
       if (expDate) {
-        dates.push({date: expDate, priority: 1, method: "eff_exp_pair"});
+        dates.push({date: expDate, priority: 1, method: "eff_exp_pair", rawMatch: effExpMatch[0]});
+        if (debug) console.log(`[${coverageName}] Found via EFF_EXP_PAIR: ${expDate}`);
       }
     }
 
     // 2. Try EXP_DATE_NEAR_RE
-    const expNearMatches = [...window.matchAll(EXP_DATE_NEAR_RE)];
-    for (const match of expNearMatches) {
-      if (match.length >= 4) {
-        const expDate = normalizeDate(match[1], match[2], match[3]);
-        if (expDate) {
-          dates.push({date: expDate, priority: 2, method: "exp_date_near"});
-        }
-      }
-    }
-
-    // 3. Try DATE_BEFORE_EXP_RE
-    const dateBeforeExpMatches = [...window.matchAll(DATE_BEFORE_EXP_RE)];
-    for (const match of dateBeforeExpMatches) {
-      if (match.length >= 4) {
-        const expDate = normalizeDate(match[1], match[2], match[3]);
-        if (expDate) {
-          dates.push({date: expDate, priority: 3, method: "date_before_exp"});
-        }
-      }
-    }
-
-    // 4. Fallback: find all dates in window and pick latest
     if (dates.length === 0) {
-      const allDateMatches = [...window.matchAll(DATE_RE)];
-      for (const match of allDateMatches) {
+      const expNearMatches = [...window.matchAll(EXP_DATE_NEAR_RE)];
+      for (const match of expNearMatches) {
         if (match.length >= 4) {
           const expDate = normalizeDate(match[1], match[2], match[3]);
           if (expDate) {
-            dates.push({date: expDate, priority: 4, method: "latest_in_window"});
+            dates.push({date: expDate, priority: 2, method: "exp_date_near", rawMatch: match[0]});
+            if (debug) console.log(`[${coverageName}] Found via EXP_DATE_NEAR: ${expDate}`);
+            break; // Take first match
           }
         }
       }
     }
 
+    // 3. Try DATE_BEFORE_EXP_RE
     if (dates.length === 0) {
+      const dateBeforeExpMatches = [...window.matchAll(DATE_BEFORE_EXP_RE)];
+      for (const match of dateBeforeExpMatches) {
+        if (match.length >= 4) {
+          const expDate = normalizeDate(match[1], match[2], match[3]);
+          if (expDate) {
+            dates.push({date: expDate, priority: 3, method: "date_before_exp", rawMatch: match[0]});
+            if (debug) console.log(`[${coverageName}] Found via DATE_BEFORE_EXP: ${expDate}`);
+            break; // Take first match
+          }
+        }
+      }
+    }
+
+    // 4. Try TWO_DATES_CLOSE_RE (heuristic: second date is likely expiration)
+    if (dates.length === 0) {
+      const twoDatesMatches = [...window.matchAll(TWO_DATES_CLOSE_RE)];
+      for (const match of twoDatesMatches) {
+        if (match.length >= 7) {
+          // Groups: 0=full match, 1-3=first date, 4-6=second date
+          const expDate = normalizeDate(match[4], match[5], match[6]);
+          if (expDate) {
+            dates.push({date: expDate, priority: 4, method: "two_dates_close", rawMatch: match[0]});
+            if (debug) console.log(`[${coverageName}] Found via TWO_DATES_CLOSE: ${expDate}`);
+            break; // Take first match
+          }
+        }
+      }
+    }
+
+    // 5. Fallback: find all dates in window and pick latest
+    if (dates.length === 0) {
+      // Reset regex lastIndex
+      DATE_RE.lastIndex = 0;
+      const allDateMatches = [...window.matchAll(DATE_RE)];
+      for (const match of allDateMatches) {
+        if (match.length >= 4) {
+          const expDate = normalizeDate(match[1], match[2], match[3]);
+          if (expDate) {
+            dates.push({date: expDate, priority: 5, method: "latest_in_window", rawMatch: match[0]});
+          }
+        }
+      }
+      if (dates.length > 0 && debug) {
+        console.log(`[${coverageName}] Found ${dates.length} dates in window, using latest`);
+      }
+    }
+
+    if (dates.length === 0) {
+      if (debug) console.log(`[${coverageName}] No dates found in window`);
       return null;
     }
 
@@ -701,7 +748,12 @@ function parseCoiTextImproved(text, debug = false) {
       return b.date.localeCompare(a.date);
     });
 
-    return dates[0].date;
+    const selected = dates[0];
+    if (debug) {
+      console.log(`[${coverageName}] Selected: ${selected.date} (method: ${selected.method})`);
+    }
+
+    return selected.date;
   }
 
   const policies = {
@@ -1843,8 +1895,9 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
     );
   }
 
-  const bucketName = admin.storage().bucket().name;
-  const bucket = getBucket();
+  // Get bucket correctly
+  const bucket = admin.storage().bucket();
+  const bucketName = bucket.name;
   const file = bucket.file(data.storagePath);
 
   console.log(JSON.stringify({
@@ -2004,13 +2057,16 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
       timestamp: new Date().toISOString(),
     }));
 
-    // Check if text was extracted
-    if (!extractedText || extractedText.trim().length === 0) {
+    // Check if text was extracted (must be at least 20 characters)
+    if (!extractedText || extractedText.trim().length < 20) {
       console.error(JSON.stringify({
         requestId,
         operation: "COI_OCR_EMPTY",
         contentType,
         fileSize,
+        extractedTextLength: extractedText ? extractedText.length : 0,
+        bucketName: bucket.name,
+        storagePath: data.storagePath,
         uid: userId,
         timestamp: new Date().toISOString(),
       }));
@@ -2021,28 +2077,74 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
             requestId,
             errorCode: "OCR_EMPTY",
             message: "OCR returned no text",
-            debug: {contentType, fileSize},
+            debug: {contentType, fileSize, bucketName: bucket.name, storagePath: data.storagePath},
           },
       );
     }
 
     // Parse COI expiration dates from extracted text
     const parsedPolicies = parseCoiTextImproved(extractedText, data.debug || false);
+    
+    // Build coverages object in the format expected by frontend
+    const coverages = {
+      workersComp: {
+        expirationDate: parsedPolicies.workersCompensation || null,
+        source: parsedPolicies.workersCompensation ? "ocr" : null,
+      },
+      autoLiability: {
+        expirationDate: parsedPolicies.automobileLiability || null,
+        source: parsedPolicies.automobileLiability ? "ocr" : null,
+      },
+      generalLiability: {
+        expirationDate: parsedPolicies.commercialGeneralLiability || null,
+        source: parsedPolicies.commercialGeneralLiability ? "ocr" : null,
+      },
+    };
+
+    // Save to Firestore: /users/{uid}/prequal/coi (document with current data)
+    const coiRef = admin
+        .firestore()
+        .collection("users")
+        .doc(userId)
+        .collection("prequal")
+        .doc("coi");
+
+    await coiRef.set({
+      current: {
+        coverages: coverages,
+        extractedAt: admin.firestore.FieldValue.serverTimestamp(),
+        storagePath: data.storagePath,
+        extractedTextLength: extractedText.length,
+        requestId: requestId,
+      },
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processCOIForCompliance_saved",
+      coveragesFound: Object.values(coverages).filter(c => c.expirationDate !== null).length,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
 
     // Return results
     const duration = Date.now() - startTime;
     const response = {
       ok: true,
-      policies: parsedPolicies,
+      coverages: coverages,
+      policies: parsedPolicies, // Keep for backward compatibility
       extractedTextLength: extractedText.length,
+      extractedAt: new Date().toISOString(),
       requestId,
     };
 
     // Include debug info if requested
     if (data.debug) {
       response.debug = {
-        preview: extractedText.substring(0, 500),
+        preview: extractedText.substring(0, 300),
         matchedAnchors: parsedPolicies.matchedAnchors || {},
+        textLength: extractedText.length,
       };
     }
 
