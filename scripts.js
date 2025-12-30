@@ -16,7 +16,8 @@ import {
   doc,
   getDoc,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  collection
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
@@ -1672,9 +1673,32 @@ if (typeof window !== 'undefined') {
 
 /* ========= COI page logic ========= */
 async function renderCoiCurrent(user) {
-  const snap = await getDoc(getPrequalDocRef(user.uid));
-  const data = snap.exists() ? (snap.data() || {}) : {};
-  const coi = data.coi || null;
+  // Read from both paths for backward compatibility
+  const prequalSnap = await getDoc(getPrequalDocRef(user.uid));
+  const prequalData = prequalSnap.exists() ? (prequalSnap.data() || {}) : {};
+  const prequalCoi = prequalData.coi || null;
+  
+  // Read from new canonical path: /users/{uid}/prequal/coi
+  const coiRef = doc(db, "users", user.uid, "prequal", "coi");
+  const coiSnap = await getDoc(coiRef);
+  const coiData = coiSnap.exists() ? (coiSnap.data() || {}) : {};
+  const coiCurrent = coiData.current || null;
+  
+  // Prefer new path, fallback to old path
+  const coi = prequalCoi || (coiCurrent ? {
+    fileName: coiCurrent.storagePath ? coiCurrent.storagePath.split("/").pop() : "—",
+    filePath: coiCurrent.storagePath || null,
+    expiresOn: null, // Will be calculated from coverages
+    uploadedAtMs: coiCurrent.extractedAt ? coiCurrent.extractedAt.toMillis() : null,
+    policies: coiCurrent.coverages ? {
+      workersCompensation: coiCurrent.coverages.workersComp?.expirationDate || null,
+      automobileLiability: coiCurrent.coverages.autoLiability?.expirationDate || null,
+      commercialGeneralLiability: coiCurrent.coverages.generalLiability?.expirationDate || null,
+      workersCompensationSource: coiCurrent.coverages.workersComp?.source || "ocr",
+      automobileLiabilitySource: coiCurrent.coverages.autoLiability?.source || "ocr",
+      commercialGeneralLiabilitySource: coiCurrent.coverages.generalLiability?.source || "ocr",
+    } : null,
+  } : null);
 
   const fileEl = document.getElementById("coiCurrentFile");
   const expEl = document.getElementById("coiCurrentExp");
@@ -1704,6 +1728,43 @@ async function renderCoiCurrent(user) {
   if (fileEl) fileEl.textContent = coi.fileName || "—";
   if (expEl) expEl.textContent = formatDate(coi.expiresOn);
   if (upEl) upEl.textContent = coi.uploadedAtMs ? new Date(coi.uploadedAtMs).toLocaleString() : "—";
+  
+  // Show last extracted timestamp if available
+  const lastExtractedRow = document.getElementById("coiLastExtractedRow");
+  const lastExtracted = document.getElementById("coiLastExtracted");
+  if (coiData.current && coiData.current.extractedAt) {
+    if (lastExtractedRow) lastExtractedRow.style.display = "flex";
+    if (lastExtracted) {
+      const extractedAt = coiData.current.extractedAt.toDate ? coiData.current.extractedAt.toDate() : new Date(coiData.current.extractedAt);
+      lastExtracted.textContent = extractedAt.toLocaleString();
+    }
+  } else {
+    if (lastExtractedRow) lastExtractedRow.style.display = "none";
+  }
+  
+  // Setup debug toggle
+  const debugToggle = document.getElementById("coiDebugToggle");
+  const debugRow = document.getElementById("coiDebugRow");
+  const debugInfo = document.getElementById("coiDebugInfo");
+  if (debugToggle && coiData.current) {
+    debugToggle.style.display = "block";
+    let debugVisible = false;
+    debugToggle.addEventListener("click", () => {
+      debugVisible = !debugVisible;
+      if (debugRow) debugRow.style.display = debugVisible ? "flex" : "none";
+      if (debugInfo && debugVisible && coiData.current) {
+        const info = {
+          extractedAt: coiData.current.extractedAt ? (coiData.current.extractedAt.toDate ? coiData.current.extractedAt.toDate().toISOString() : coiData.current.extractedAt) : null,
+          coveragesFound: coiData.current.coverages ? Object.keys(coiData.current.coverages).filter(k => coiData.current.coverages[k]?.expirationDate).length : 0,
+          storagePath: coiData.current.storagePath || null,
+          extractedTextLength: coiData.current.extractedTextLength || 0,
+        };
+        debugInfo.textContent = JSON.stringify(info, null, 2);
+      }
+    });
+  } else if (debugToggle) {
+    debugToggle.style.display = "none";
+  }
 
   // Display individual policy expiration dates if available
   const policies = coi.policies || {};
@@ -1863,10 +1924,12 @@ async function initCoiPage(user) {
       await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
 
       // Call OCR function to extract policy dates
+      console.log("COI uploaded -> calling processCOIForCompliance", path);
       if (msg) msg.textContent = "Processing COI with OCR…";
       
       let ocrResults = null;
       let ocrErrorMsg = null;
+      let ocrCoverages = null;
       try {
         const ocrResponse = await processCOIForCompliance({
           storagePath: path,
@@ -1874,9 +1937,26 @@ async function initCoiPage(user) {
           debug: false
         });
         
+        console.log("processCOIForCompliance response:", ocrResponse.data);
+        
         if (ocrResponse.data && ocrResponse.data.ok) {
-          ocrResults = ocrResponse.data.policies;
+          ocrCoverages = ocrResponse.data.coverages || ocrResponse.data.policies;
+          ocrResults = ocrResponse.data.policies || ocrResponse.data.coverages;
+          
+          // Map coverages to policies format for backward compatibility
+          if (ocrResponse.data.coverages) {
+            ocrResults = {
+              workersCompensation: ocrResponse.data.coverages.workersComp?.expirationDate || null,
+              automobileLiability: ocrResponse.data.coverages.autoLiability?.expirationDate || null,
+              commercialGeneralLiability: ocrResponse.data.coverages.generalLiability?.expirationDate || null,
+            };
+          }
+          
           console.log("OCR results:", ocrResults);
+          
+          // Update UI immediately with extracted dates
+          updateCoiUIFromCoverages(ocrCoverages || ocrResults);
+          
           const ocrStatus = document.getElementById("coiOcrStatus");
           if (ocrStatus) {
             const foundCount = Object.values(ocrResults).filter(v => v !== null && typeof v === "string").length;
@@ -1940,6 +2020,8 @@ async function initCoiPage(user) {
         overallExpiration = validDates[0];
       }
 
+      // Save to both paths for backward compatibility
+      // 1. Save to existing prequal doc
       await setDoc(getPrequalDocRef(user.uid), {
         coiCompleted: true,
         coi: {
@@ -1951,6 +2033,37 @@ async function initCoiPage(user) {
         },
         updatedAt: serverTimestamp()
       }, { merge: true });
+      
+      // 2. Save to canonical path: /users/{uid}/prequal/coi
+      const coverages = {
+        workersComp: {
+          expirationDate: policies.workersCompensation || null,
+          source: policies.workersCompensationSource || (policies.workersCompensation ? "ocr" : null),
+        },
+        autoLiability: {
+          expirationDate: policies.automobileLiability || null,
+          source: policies.automobileLiabilitySource || (policies.automobileLiability ? "ocr" : null),
+        },
+        generalLiability: {
+          expirationDate: policies.commercialGeneralLiability || null,
+          source: policies.commercialGeneralLiabilitySource || (policies.commercialGeneralLiability ? "ocr" : null),
+        },
+      };
+      
+      // Save to canonical path: /users/{uid}/prequal/coi (only if OCR succeeded)
+      if (ocrCoverages || ocrResults) {
+        const coiRef = doc(db, "users", user.uid, "prequal", "coi");
+        await setDoc(coiRef, {
+          current: {
+            coverages: coverages,
+            extractedAt: serverTimestamp(),
+            storagePath: path,
+            extractedTextLength: ocrResults ? Object.keys(ocrResults).filter(k => ocrResults[k] !== null).length : 0,
+            requestId: null, // Will be set by backend
+          },
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
 
       if (msg) msg.textContent = "Saved. Your COI is now on file.";
       form.reset();
@@ -2024,6 +2137,30 @@ function setupManualEntryHandlers(user) {
       });
     }
   });
+}
+
+// Update COI UI from coverages (called immediately after OCR)
+function updateCoiUIFromCoverages(coverages) {
+  // Handle both formats: coverages object or policies object
+  let policies = null;
+  if (coverages && coverages.workersComp) {
+    // New format: coverages object
+    policies = {
+      workersCompensation: coverages.workersComp?.expirationDate || null,
+      automobileLiability: coverages.autoLiability?.expirationDate || null,
+      commercialGeneralLiability: coverages.generalLiability?.expirationDate || null,
+      workersCompensationSource: coverages.workersComp?.source || "ocr",
+      automobileLiabilitySource: coverages.autoLiability?.source || "ocr",
+      commercialGeneralLiabilitySource: coverages.generalLiability?.source || "ocr",
+    };
+  } else if (coverages) {
+    // Old format: policies object
+    policies = coverages;
+  }
+  
+  if (!policies) return;
+  
+  updateCoiPolicyUI(policies);
 }
 
 // Update COI policy UI with extracted dates
