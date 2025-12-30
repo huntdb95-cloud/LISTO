@@ -26,22 +26,16 @@ body:not(.auth-page) .app-layout {
 /* Desktop: Use CSS Grid for reliable sidebar + main side-by-side layout */
 @media (min-width: 1024px) {
   body:not(.auth-page) .app-layout {
-    display: grid;
-    grid-template-columns: var(--sidebar-width, 260px) 1fr; /* Sidebar 260px, main takes remaining space */
-    grid-template-rows: auto; /* Let content determine height */
-    align-items: start;
-    gap: 0; /* No gap between sidebar and main */
-    width: 100%; /* Full width container */
-    /* Ensure no overflow that breaks sticky positioning */
+    display: block; /* Changed from grid to block since sidebar is now fixed */
+    width: 100%;
+    /* Ensure no overflow that breaks fixed positioning */
     overflow: visible;
   }
   
-  /* Main content sits in grid column 2, no margin needed */
+  /* Main content has left margin to account for fixed sidebar */
   body:not(.auth-page) .app-layout > main {
-    grid-column: 2;
-    grid-row: 1; /* Same row as sidebar */
-    margin-left: 0; /* Remove margin since grid handles spacing */
-    width: 100%; /* Full width of grid column */
+    margin-left: var(--sidebar-width, 260px); /* Offset for fixed sidebar */
+    width: calc(100% - var(--sidebar-width, 260px)); /* Full width minus sidebar */
     min-width: 0; /* Allow content to shrink if needed */
     /* Ensure main is flex column for footer positioning */
     display: flex;
@@ -50,28 +44,26 @@ body:not(.auth-page) .app-layout {
     overflow: visible;
   }
   
-  /* Sidebar container sits in grid column 1 */
+  /* Sidebar container - fixed positioning */
   body:not(.auth-page) .app-layout > #sidebar {
-    grid-column: 1;
-    grid-row: 1; /* Same row as main */
-    width: var(--sidebar-width, 260px); /* Fixed width for sidebar */
-    min-width: var(--sidebar-width, 260px); /* Prevent shrinking */
-    /* Critical: align-self start ensures sticky works correctly */
-    align-self: start;
-    /* Ensure no overflow that breaks sticky positioning */
+    position: fixed;
+    top: var(--header-height, 72px); /* Below fixed header */
+    left: 0;
+    width: var(--sidebar-width, 260px);
+    height: calc(100vh - var(--header-height, 72px)); /* Full viewport minus header */
+    z-index: 900; /* Below header but above content */
+    /* Ensure no overflow that breaks fixed positioning */
     overflow: visible;
-    /* Ensure sidebar container doesn't interfere with sticky */
-    position: relative;
-    height: fit-content;
+    /* Background and border handled by .app-sidebar inside */
   }
   
-  /* Ensure sidebar element inside container is properly sized and sticky */
+  /* Ensure sidebar element inside container is properly sized and scrollable */
   body:not(.auth-page) .app-layout > #sidebar > .app-sidebar {
     width: 100%;
-    /* Sidebar is sticky within its grid container */
-    position: sticky;
-    top: var(--header-height, 72px);
-    align-self: start;
+    height: 100%;
+    /* Sidebar content can scroll internally if needed */
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 }
 
@@ -83,13 +75,13 @@ body:not(.auth-page) main {
   min-height: 0; /* Allow content to determine height */
 }
 
-/* Desktop: Override flex properties for grid layout */
+/* Desktop: Override flex properties - main content already has margin-left and width set above */
 @media (min-width: 1024px) {
   body:not(.auth-page) .app-layout > main {
     flex: 1 0 auto; /* Keep flex to allow footer margin-top:auto to work */
     display: flex; /* Keep flex display for footer positioning */
     flex-direction: column; /* Keep column direction for footer */
-    width: auto; /* Let grid column control width */
+    /* Width and margin-left are set in the app-layout desktop rules above */
     /* Set min-height so footer can use margin-top:auto on short pages */
     /* On long pages, content will exceed min-height and footer appears naturally at end */
     min-height: calc(100vh - var(--header-height, 72px));
@@ -240,6 +232,26 @@ img { max-width: 100%; display: block; }
     position: relative;
     /* Don't override width - let .container class handle width: min(1120px, calc(100% - 40px)) */
     box-sizing: border-box;
+  }
+}
+
+/* Desktop only: Fixed header that stays visible while scrolling */
+@media (min-width: 1024px) {
+  body:not(.auth-page) .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000; /* High z-index to stay above content */
+    /* Ensure header spans full width */
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  /* Offset body/app-layout to account for fixed header */
+  body:not(.auth-page) {
+    padding-top: var(--header-height, 72px);
   }
 }
 
@@ -3613,17 +3625,13 @@ body[data-page="bookkeeping"] .page-title {
 
 /* ========== Sidebar Navigation (Desktop Only) ========== */
 .app-sidebar {
-  position: fixed;
-  top: var(--header-height, 72px);
-  left: 0;
-  width: 260px;
-  height: calc(100vh - var(--header-height, 72px));
+  /* Base styles - positioning handled by parent #sidebar container on desktop */
   background: var(--panel);
   border-right: 1px solid var(--border-strong);
-  z-index: 40;
-  overflow-y: auto;
-  overflow-x: hidden;
   display: none; /* Hidden by default, shown on desktop */
+  /* Mobile: keep old fixed positioning for mobile-only scenarios if needed */
+  position: relative;
+  width: 260px;
 }
 
 /* Hide scrollbar but keep functionality */
@@ -3644,26 +3652,18 @@ body[data-page="bookkeeping"] .page-title {
   background: var(--border-strong);
 }
 
-/* Desktop: Show sidebar and use sticky positioning so it stays aligned with header during scroll */
+/* Desktop: Show sidebar - positioning handled by parent #sidebar container */
 @media (min-width: 1024px) {
   .app-sidebar {
     display: block;
-    position: sticky; /* Sticky so it stays aligned with header during scroll */
-    top: var(--header-height, 72px);
-    height: calc(100vh - var(--header-height, 72px));
-    max-height: calc(100vh - var(--header-height, 72px));
+    /* Position is handled by parent #sidebar container which is fixed */
+    position: relative;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Critical: align-self start ensures sticky works within grid */
-    align-self: start;
-    /* Ensure sticky is not broken by transforms or filters */
+    /* Ensure sidebar is not broken by transforms or filters */
     transform: none !important;
     filter: none !important;
-    /* Ensure proper z-index */
-    z-index: 40;
-    /* Remove fixed positioning that might interfere */
-    left: auto;
-    /* Ensure sidebar stays within its grid column */
     width: 100%;
   }
 }
