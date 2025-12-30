@@ -1,5 +1,5 @@
 // scripts.js (ES Module)
-import { firebaseConfig, app } from "./config.js";
+import { firebaseConfig, app, auth as configAuth } from "./config.js";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
@@ -4606,7 +4606,14 @@ function initMobileLogoutButton(user, authInstance) {
 }
 
 /* ========== Logout Confirmation Modal ========== */
+let isLoggingOut = false; // Guard to prevent multiple logout attempts
+
 function showLogoutConfirmation() {
+  // Prevent multiple logout attempts
+  if (isLoggingOut) {
+    return;
+  }
+  
   // Create modal if it doesn't exist
   let modal = document.getElementById("logoutConfirmationModal");
   if (!modal) {
@@ -4635,37 +4642,57 @@ function showLogoutConfirmation() {
     
     cancelBtn.addEventListener("click", hideLogoutConfirmation);
     confirmBtn.addEventListener("click", async () => {
+      // Prevent multiple logout attempts
+      if (isLoggingOut) {
+        return;
+      }
+      
+      isLoggingOut = true;
+      
       // Disable button to prevent double-clicks
       confirmBtn.disabled = true;
       const originalText = confirmBtn.textContent;
       confirmBtn.textContent = "Signing out...";
       
       try {
-        // Sign out from Firebase
-        if (auth) {
-          await signOut(auth);
+        // Sign out from Firebase - get auth instance
+        // Try local auth first, then configAuth, then get from app
+        let authInstance = auth;
+        if (!authInstance && typeof app !== 'undefined') {
+          try {
+            authInstance = getAuth(app);
+          } catch (e) {
+            // If getAuth fails, try configAuth
+            authInstance = configAuth;
+          }
+        } else if (!authInstance) {
+          authInstance = configAuth;
         }
+        
+        if (!authInstance) {
+          throw new Error("Authentication not initialized. Please refresh the page.");
+        }
+        
+        await signOut(authInstance);
         
         // Clear any auth-related localStorage
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         sessionStorage.clear();
         
-        // Calculate relative path to login page from current location
-        const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
+        // Calculate relative path to login page - match requireAuthGuard logic
+        const pathname = window.location.pathname;
+        const pathSegments = pathname.split("/").filter(p => p && !p.endsWith(".html"));
         const depth = pathSegments.length;
-        let loginPath = "login/login.html";
-        
-        if (depth > 0) {
-          loginPath = "../".repeat(depth) + "login/login.html";
-        } else if (window.location.pathname.includes("/settings/")) {
-          loginPath = "../login/login.html";
-        }
+        // Use same logic as requireAuthGuard for consistency
+        const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : "login/login.html";
         
         // Redirect to login page
         window.location.href = loginPath;
       } catch (e) {
         console.error("Logout error:", e);
+        // Reset logout flag on error
+        isLoggingOut = false;
         // Re-enable button on error
         confirmBtn.disabled = false;
         confirmBtn.textContent = originalText;
@@ -4789,8 +4816,13 @@ if (typeof window !== 'undefined') {
 
 // Global logout handler using event delegation (works even if buttons are re-rendered)
 document.addEventListener("click", async (e) => {
-  // Check if click target is a logout button (by data-action, id, or class)
-  const logoutBtn = e.target.closest('[data-action="logout"], #mobileLogoutBtn, #sidebarLogoutBtn, .logout-btn');
+  // Check if click target is a logout button
+  // All logout buttons have data-action="logout", so use that as primary selector
+  // closest() only accepts a single selector, so check data-action first (covers all cases)
+  const logoutBtn = e.target.closest('[data-action="logout"]') || 
+                    e.target.closest('#mobileLogoutBtn') || 
+                    e.target.closest('#sidebarLogoutBtn') || 
+                    e.target.closest('.logout-btn');
   if (!logoutBtn) return;
   
   // Prevent default and stop propagation
