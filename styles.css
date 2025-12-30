@@ -1985,9 +1985,21 @@ body[data-page="bookkeeping"] .page-title {
 
 /* Desktop-only: Make Bookkeeping page wider to match Contracts page */
 @media (min-width: 769px) {
+  /* Override page-wrap default width for bookkeeping page */
   body[data-page="bookkeeping"] .page-wrap {
-    max-width: 1400px;
+    max-width: 1400px !important;
+    width: 100%;
+    margin: 0 auto;
     padding: 24px 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent any layout shift when laborer is selected or content loads */
+  body[data-page="bookkeeping"] .bookkeeping-main-layout,
+  body[data-page="bookkeeping"] .bookkeeping-summary-cards,
+  body[data-page="bookkeeping"] .bookkeeping-date-range {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -5923,7 +5935,7 @@ body[data-page="bookkeeping"] .page-title {
     max-width: 100%;
   }
   
-  /* Fix page-wrap padding when combined with contracts-dashboard */
+  /* Fix page-wrap padding when combined with contracts-dashboard (mobile only) */
   body[data-page="contracts"] .page-wrap.contracts-dashboard {
     padding: 16px;
     max-width: 100%;
@@ -6099,8 +6111,55 @@ body[data-page="bookkeeping"] .page-title {
   
   .contracts-toast {
     bottom: 80px;
+  }
+}
+
+/* Desktop: Ensure consistent width from initial load (after mobile rules) */
+@media (min-width: 769px) {
+  /* Override page-wrap default width for contracts page */
+  body[data-page="contracts"] .page-wrap.contracts-dashboard {
+    max-width: 1400px !important;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure the container maintains width regardless of content state */
+  body[data-page="contracts"] .contracts-dashboard {
+    max-width: 1400px !important;
+    width: 100%;
+    margin: 0 auto;
+  }
+  
+  /* Prevent any layout shift when builder is selected */
+  body[data-page="contracts"] .contracts-page-builders-box,
+  body[data-page="contracts"] .contracts-page-jobs-section {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .contracts-toast {
     right: 16px;
     left: 16px;
+  }
+  
+  /* Bookkeeping page: Ensure consistent width from initial load (after mobile rules) */
+  /* Override page-wrap default width for bookkeeping page */
+  body[data-page="bookkeeping"] .page-wrap {
+    max-width: 1400px !important;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent any layout shift when laborer is selected or content loads */
+  body[data-page="bookkeeping"] .bookkeeping-main-layout,
+  body[data-page="bookkeeping"] .bookkeeping-summary-cards,
+  body[data-page="bookkeeping"] .bookkeeping-date-range {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
