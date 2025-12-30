@@ -4193,9 +4193,8 @@ body[data-page="bookkeeping"] .page-title {
     padding: 20px 16px;
     background: var(--panel);
     border-top: 1px solid var(--border);
-    position: sticky;
-    bottom: 60px; /* Position above mobile bottom nav */
-    z-index: 10;
+    position: static; /* Normal document flow - scrolls with page */
+    z-index: auto;
   }
   
   .mobile-logout-btn .btn {
