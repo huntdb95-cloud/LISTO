@@ -392,7 +392,9 @@ exports.processCoiUpload = functions
 
         await coiRef.set({
           current: {
-            coverages: simplifiedCoverages, // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null, generalLiability: "2026-01-31" | null }
+            // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null,
+            // generalLiability: "2026-01-31" | null }
+            coverages: simplifiedCoverages,
             extractedAt: admin.firestore.FieldValue.serverTimestamp(),
             storagePath: filePath,
             extractedTextLength: fullText.length,
@@ -609,22 +611,20 @@ function parseCoiTextImproved(text, debug = false) {
 
   // Normalize text: create uppercase version for matching, keep original
   const textUpper = text.toUpperCase();
-  // Replace multiple spaces with single space, keep line breaks
-  const textNormalized = text.replace(/\s+/g, " ");
-  const textFlattened = text.replace(/\s+/g, " ").replace(/\n/g, " ");
 
   // Date regex: MM/DD/YYYY, MM-DD-YYYY (handles 2-digit year)
-  const DATE_RE = /\b(0?[1-9]|1[0-2])[\/\-.](0?[1-9]|[12]\d|3[01])[\/\-.]((?:19|20)?\d{2})\b/g;
+  const DATE_RE = /\b(0?[1-9]|1[0-2])[/\-.]?(0?[1-9]|[12]\d|3[01])[/\-.]?((?:19|20)?\d{2})\b/g;
 
   // Anchor patterns for each coverage type
-  const WC_ANCHOR_RE = /\bWORK(?:ER)?S?\s*(?:COMP(?:ENSATION)?|COMP)\b|\bW[\s\/-]?C\b|\bWORK\s*COMP\b/i;
+  const WC_ANCHOR_RE = /\bWORK(?:ER)?S?\s*(?:COMP(?:ENSATION)?|COMP)\b|\bW[\s/-]?C\b|\bWORK\s*COMP\b/i;
   const AUTO_ANCHOR_RE = /\bAUTOMOBILE\s*LIABILITY\b|\bAUTO\s*LIAB(?:ILITY)?\b|\bAUTO\s*INS\b/i;
   const CGL_ANCHOR_RE = /\bCOMMERCIAL\s*GENERAL\s*LIABILITY\b|\bCGL\b|\bGENERAL\s*LIAB(?:ILITY)?\b/i;
 
   // Date extraction patterns (using DATE_RE source)
-  const DATE_PATTERN_SOURCE = "(0?[1-9]|1[0-2])[\\/\\-.]?(0?[1-9]|[12]\\d|3[01])[\\/\\-.]?((?:19|20)?\\d{2})";
+  const DATE_PATTERN_SOURCE = "(0?[1-9]|1[0-2])[/\\-.]?(0?[1-9]|[12]\\d|3[01])[/\\-.]?((?:19|20)?\\d{2})";
   const EFF_EXP_PAIR_RE = new RegExp(
-      `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN_SOURCE}[\\s\\S]{0,40}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
+      `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN_SOURCE}` +
+      `[\\s\\S]{0,40}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
       "i",
   );
   const EXP_DATE_NEAR_RE = new RegExp(
@@ -655,12 +655,6 @@ function parseCoiTextImproved(text, debug = false) {
       return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     }
     return null;
-  }
-
-  // Extract date from match groups
-  function extractDateFromMatch(match) {
-    if (!match || match.length < 4) return null;
-    return normalizeDate(match[1], match[2], match[3]);
   }
 
   // Find expiration date for a coverage type
@@ -796,189 +790,6 @@ function parseCoiTextImproved(text, debug = false) {
 }
 
 /**
- * Parse COI text to extract policy expiration dates (legacy - kept for backward compatibility)
- * Looks for Workers Compensation, Automobile Liability, and Commercial General Liability
- */
-function parseCoiText(text) {
-  const policies = {
-    workersCompensation: null,
-    automobileLiability: null,
-    commercialGeneralLiability: null,
-  };
-
-  // Normalize text for searching
-  const normalizedText = text.toLowerCase();
-  const lines = text.split(/\n/).map((line) => line.trim()).filter(Boolean);
-
-  // Common patterns for policy types
-  const policyPatterns = {
-    workersCompensation: [
-      /workers['\s]*comp(?:ensation)?/i,
-      /workmen['\s]*comp(?:ensation)?/i,
-      /wc/i,
-      /workers['\s]*comp/i,
-    ],
-    automobileLiability: [
-      /automobile\s*liability/i,
-      /auto\s*liability/i,
-      /vehicle\s*liability/i,
-      /commercial\s*auto/i,
-      /business\s*auto/i,
-    ],
-    commercialGeneralLiability: [
-      /commercial\s*general\s*liability/i,
-      /general\s*liability/i,
-      /cgl/i,
-      /commercial\s*liability/i,
-    ],
-  };
-
-  // Date patterns - various formats
-  const datePatterns = [
-    // MM/DD/YYYY or M/D/YYYY
-    /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g,
-    // MM-DD-YYYY or M-D-YYYY
-    /\b(\d{1,2})-(\d{1,2})-(\d{4})\b/g,
-    // YYYY-MM-DD
-    /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/g,
-    // Month DD, YYYY
-    /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),?\s+(\d{4})\b/gi,
-  ];
-
-  // Helper to parse date string to YYYY-MM-DD format
-  function parseDateToYyyyMmDd(a, b, c) {
-    // Check if it's YYYY-MM-DD format (first part is 4 digits and > 1900)
-    if (a && a.length === 4 && parseInt(a) > 1900) {
-      const year = parseInt(a);
-      const month = parseInt(b);
-      const day = parseInt(c);
-      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      }
-    } else {
-      // MM/DD/YYYY or MM-DD-YYYY
-      const month = parseInt(a);
-      const day = parseInt(b);
-      const year = parseInt(c);
-      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year > 1900) {
-        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      }
-    }
-    return null;
-  }
-
-  // Helper to parse month name date
-  function parseMonthNameDate(match, monthName, day, year) {
-    const monthNames = [
-      "january", "february", "march", "april", "may", "june",
-      "july", "august", "september", "october", "november", "december",
-    ];
-    const monthIndex = monthNames.indexOf(monthName.toLowerCase());
-    if (monthIndex >= 0) {
-      const month = monthIndex + 1;
-      const dayNum = parseInt(day);
-      const yearNum = parseInt(year);
-      if (dayNum >= 1 && dayNum <= 31 && yearNum > 1900) {
-        return `${yearNum}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-      }
-    }
-    return null;
-  }
-
-  // Search for each policy type and find expiration dates
-  for (const [policyKey, patterns] of Object.entries(policyPatterns)) {
-    let foundPolicy = false;
-    let expirationDate = null;
-
-    // Search for policy type in text
-    for (const pattern of patterns) {
-      const policyMatch = text.match(pattern);
-      if (policyMatch) {
-        foundPolicy = true;
-        const matchIndex = text.indexOf(policyMatch[0]);
-
-        // Look for expiration date near the policy type
-        // Search in a window around the policy match (within 500 characters)
-        const searchStart = Math.max(0, matchIndex - 100);
-        const searchEnd = Math.min(text.length, matchIndex + 500);
-        const searchWindow = text.substring(searchStart, searchEnd);
-
-        // Look for "expires", "expiration", "exp date", etc.
-        const expirationKeywords = [
-          /expires?\s*(?:on|date)?/i,
-          /expiration\s*(?:date)?/i,
-          /exp\s*date/i,
-          /valid\s*until/i,
-          /valid\s*through/i,
-          /coverage\s*until/i,
-        ];
-
-        let expirationKeywordIndex = -1;
-        for (const keyword of expirationKeywords) {
-          const keywordMatch = searchWindow.match(keyword);
-          if (keywordMatch) {
-            expirationKeywordIndex = searchWindow.indexOf(keywordMatch[0]);
-            break;
-          }
-        }
-
-        // If we found an expiration keyword, search for date after it
-        // Otherwise, search in the entire window
-        const dateSearchStart = expirationKeywordIndex >= 0 ?
-          expirationKeywordIndex : 0;
-        const dateSearchWindow = searchWindow.substring(dateSearchStart, dateSearchStart + 200);
-
-        // Try to find dates in various formats
-        const dates = [];
-        for (const datePattern of datePatterns) {
-          const matches = [...dateSearchWindow.matchAll(datePattern)];
-          for (const match of matches) {
-            let parsedDate = null;
-            if (match[0].match(/^(january|february|march|april|may|june|july|august|september|october|november|december)/i)) {
-              parsedDate = parseMonthNameDate(match[0], match[1], match[2], match[3]);
-            } else {
-              // Pass only the capture groups (match[1], match[2], match[3]), not the full match string
-              parsedDate = parseDateToYyyyMmDd(match[1], match[2], match[3]);
-            }
-            if (parsedDate) {
-              dates.push(parsedDate);
-            }
-          }
-        }
-
-        // Use the most likely expiration date (usually the latest date in the future)
-        if (dates.length > 0) {
-          const now = new Date();
-          const futureDates = dates.filter((d) => {
-            const date = new Date(d);
-            return date > now;
-          });
-
-          if (futureDates.length > 0) {
-            // Sort and take the latest future date
-            futureDates.sort();
-            expirationDate = futureDates[futureDates.length - 1];
-          } else {
-            // If no future dates, take the latest date overall
-            dates.sort();
-            expirationDate = dates[dates.length - 1];
-          }
-        }
-
-        break; // Found the policy, stop searching
-      }
-    }
-
-    if (foundPolicy && expirationDate) {
-      policies[policyKey] = expirationDate;
-      console.log(`Found ${policyKey} expiration: ${expirationDate}`);
-    }
-  }
-
-  return policies;
-}
-
-/**
  * Update prequal document with COI OCR data
  */
 async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
@@ -996,9 +807,12 @@ async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
   // Build policies object, preserving existing data if OCR didn't find a date
   // Only update if OCR found a new date (don't overwrite manual entries)
   const policies = {
-    workersCompensation: parsedPolicies.workersCompensation || existingCoi.policies?.workersCompensation || null,
-    automobileLiability: parsedPolicies.automobileLiability || existingCoi.policies?.automobileLiability || null,
-    commercialGeneralLiability: parsedPolicies.commercialGeneralLiability || existingCoi.policies?.commercialGeneralLiability || null,
+    workersCompensation: parsedPolicies.workersCompensation ||
+        existingCoi.policies?.workersCompensation || null,
+    automobileLiability: parsedPolicies.automobileLiability ||
+        existingCoi.policies?.automobileLiability || null,
+    commercialGeneralLiability: parsedPolicies.commercialGeneralLiability ||
+        existingCoi.policies?.commercialGeneralLiability || null,
   };
 
   // Preserve source flags - don't overwrite manual entries
@@ -1017,7 +831,8 @@ async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
       policies.automobileLiabilitySource = "ocr";
     }
 
-    if (existingCoi.policies.commercialGeneralLiabilitySource === "manual" && existingCoi.policies.commercialGeneralLiability) {
+    if (existingCoi.policies.commercialGeneralLiabilitySource === "manual" &&
+        existingCoi.policies.commercialGeneralLiability) {
       policies.commercialGeneralLiability = existingCoi.policies.commercialGeneralLiability;
       policies.commercialGeneralLiabilitySource = "manual";
     } else if (parsedPolicies.commercialGeneralLiability) {
@@ -2132,7 +1947,9 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
 
     await coiRef.set({
       current: {
-        coverages: coverages, // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null, generalLiability: "2026-01-31" | null }
+        // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null,
+        // generalLiability: "2026-01-31" | null }
+        coverages: coverages,
         extractedAt: admin.firestore.FieldValue.serverTimestamp(),
         storagePath: data.storagePath,
         extractedTextLength: extractedText.length,
@@ -2173,7 +1990,8 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
       requestId,
       operation: "processCOIForCompliance_success",
       duration,
-      policiesFound: Object.keys(parsedPolicies).filter((k) => k !== "matchedAnchors" && parsedPolicies[k] !== null).length,
+      policiesFound: Object.keys(parsedPolicies).filter(
+          (k) => k !== "matchedAnchors" && parsedPolicies[k] !== null).length,
       uid: userId,
       timestamp: new Date().toISOString(),
     }));
