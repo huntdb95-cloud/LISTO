@@ -206,6 +206,34 @@
       #mobileSpanishHeader {
         display: none !important;
       }
+      
+      /* Hide Take Photo button on desktop */
+      .mobile-camera-label,
+      #cameraLabel {
+        display: none !important;
+      }
+      
+      /* Stack buttons vertically and center on desktop */
+      .upload-section .btn-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+      
+      .upload-section .btn-row .btn {
+        width: 100%;
+        max-width: 300px;
+      }
+      
+      /* Center upload label on desktop */
+      .upload-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
     }
     
     /* Desktop: Ensure side-by-side layout at 1024px+ */
