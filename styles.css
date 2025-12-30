@@ -41,6 +41,9 @@ body:not(.auth-page) .site-footer-global {
   --brand-dark: #2F8B4A;
   --brand-light: rgba(77,167,99,0.08);
   --brand-hover: rgba(77,167,99,0.12);
+  
+  /* Header height - updated dynamically via JS, default fallback */
+  --header-height: 72px;
 
   /* Light theme */
   --text: #151F1C;          /* near-black */
@@ -3686,10 +3689,22 @@ body[data-page="bookkeeping"] .page-title {
   background: var(--border-strong);
 }
 
-/* Desktop: Show sidebar */
+/* Desktop: Show sidebar and use sticky positioning so it stays aligned with header during scroll */
 @media (min-width: 1024px) {
   .app-sidebar {
     display: block;
+    position: sticky; /* Change from fixed to sticky so it stays aligned with header */
+    top: var(--header-height, 72px);
+    align-self: flex-start; /* Align to top of flex container */
+    height: calc(100vh - var(--header-height, 72px));
+    max-height: calc(100vh - var(--header-height, 72px));
+  }
+  
+  /* Ensure app-layout is a horizontal flex container for sticky to work */
+  .app-layout {
+    display: flex;
+    flex-direction: row; /* Sidebar and main side-by-side */
+    align-items: flex-start; /* Align items to top */
   }
   
   /* Adjust main content to account for sidebar */
