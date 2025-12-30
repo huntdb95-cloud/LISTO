@@ -72,7 +72,7 @@ body:not(.auth-page) main {
 }
 
 /* Ensure footer is at bottom when content is short */
-body:not(.auth-page) .site-footer-global {
+body:not(.auth-page) .site-footer {
   margin-top: auto;
   flex-shrink: 0;
 }
@@ -124,8 +124,9 @@ body:not(.auth-page) .site-footer-global {
   /* Mobile bottom navigation height */
   /* Note: If nav height changes dynamically, update via JS:
      document.documentElement.style.setProperty('--bottom-nav-height', `${navElement.offsetHeight}px`);
-     The default 60px matches .mobile-bottom-nav-items height */
-  --bottom-nav-height: 60px;
+     The default 72px matches .mobile-bottom-nav-items height */
+  --bottom-nav-h: 72px;
+  --bottom-nav-height: 72px; /* Legacy support */
 }
 
 body {
@@ -1076,17 +1077,8 @@ body[data-page="landing"] .lang-switch-mobile {
   color: var(--text);
 }
 
-/* Old Footer - Hidden (replaced by global footer) */
+/* Footer - Global footer for all non-auth pages */
 .site-footer {
-  display: none !important;
-}
-
-.footer-links {
-  display: none !important;
-}
-
-/* Global Footer (New) */
-.site-footer-global {
   padding: 40px 20px 24px 20px;
   border-top: 1px solid var(--border);
   background: var(--bg);
@@ -1096,34 +1088,22 @@ body[data-page="landing"] .lang-switch-mobile {
   flex-shrink: 0; /* Prevent footer from shrinking */
   position: relative; /* Ensure footer is in normal flow */
   z-index: 1; /* Above background but below nav */
-  display: block; /* Ensure it's displayed */
-  visibility: visible; /* Ensure it's visible */
+  display: block;
+  visibility: visible;
 }
 
-.site-footer-global-content {
-  max-width: 600px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.site-footer-global-logo {
-  height: 32px;
+/* Footer logo - small centered logo */
+.site-footer .footer-logo {
+  display: block;
+  margin: 0 auto 8px auto;
+  max-height: 28px;
   width: auto;
   opacity: 0.8;
 }
 
-/* Desktop: Slightly larger logo */
-@media (min-width: 1024px) {
-  .site-footer-global-logo {
-    height: 36px;
-  }
-}
-
-.site-footer-global-tagline {
-  margin: 0;
+/* Footer text - tagline */
+.site-footer .footer-text {
+  margin: 0 auto 8px auto;
   font-size: 0.95rem;
   color: var(--muted);
   line-height: 1.6;
@@ -1131,24 +1111,33 @@ body[data-page="landing"] .lang-switch-mobile {
   text-align: center;
 }
 
-.site-footer-global-copyright {
+/* Footer copyright */
+.site-footer .footer-copyright {
   margin: 0;
   font-size: 0.85rem;
   color: var(--muted);
   text-align: center;
 }
 
-/* Mobile: Ensure footer has proper spacing above bottom nav */
-@media (max-width: 1023px) {
-  .site-footer-global {
-    padding-bottom: 24px; /* Normal footer padding - main element provides space above nav */
-    margin-bottom: 0;
+/* Desktop: Slightly larger logo */
+@media (min-width: 1024px) {
+  .site-footer .footer-logo {
+    max-height: 36px;
   }
-  
-  /* Ensure old .site-footer (if visible) also has proper spacing */
-  .site-footer {
-    margin-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
-  }
+}
+
+/* Hide old footer elements */
+.footer-links {
+  display: none !important;
+}
+
+.footer-bottom {
+  display: none !important;
+}
+
+/* Legacy support for old footer structure */
+.site-footer-global {
+  display: none !important;
 }
 
 /* Old footer styles removed - footer links are hidden */
@@ -3412,7 +3401,7 @@ body[data-page="bookkeeping"] .page-title {
   }
   
   /* Ensure footer logo on W-9 page matches standard footer logo size */
-  body.page-w9 .site-footer-global-logo {
+  body.page-w9 .site-footer .footer-logo {
     height: 32px !important;
     width: auto !important;
     max-width: none !important;
@@ -4051,7 +4040,7 @@ body[data-page="bookkeeping"] .page-title {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 60px;
+  height: 72px;
   padding: 0 8px;
 }
 
@@ -4123,12 +4112,12 @@ body[data-page="bookkeeping"] .page-title {
   /* Global fix: Add bottom padding to main content to prevent cutoff by bottom nav */
   /* This ensures all pages have enough space so content (including footer) is never hidden behind the nav */
   .app-layout > main {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom, 0px));
   }
   
   /* Also apply to pages without app-layout */
   body:not(.auth-page) > main {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom, 0px));
   }
   
   /* Ensure page-wrap also has bottom padding for pages that use it */
@@ -4141,20 +4130,24 @@ body[data-page="bookkeeping"] .page-title {
     padding-bottom: 0; /* Remove duplicate padding - main already has it */
   }
   
-  /* Ensure Settings page logout button has proper spacing above bottom nav */
-  body[data-page="settings"] .mobile-logout-btn {
-    margin-bottom: 0; /* No extra margin - main padding handles spacing */
+  /* Mobile footer styling - simple, centered, predictable */
+  .site-footer {
+    padding: 16px 12px;
+    text-align: center;
   }
   
-  /* Update existing page-specific fixes to use the CSS variable for consistency */
-  /* These pages may have had custom padding, now standardized */
-  body[data-page="landing"] {
-    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  .site-footer .footer-logo {
+    display: block;
+    margin: 0 auto 8px auto;
+    max-height: 28px;
   }
   
-  body[data-page="1099"] main,
-  body[data-page="job-estimator"] main {
-    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  .site-footer .footer-text {
+    margin: 0 auto 8px auto;
+  }
+  
+  .site-footer .footer-copyright {
+    margin: 0;
   }
   
   .mobile-only {
@@ -4249,32 +4242,23 @@ body[data-page="bookkeeping"] .page-title {
   }
 }
 
-/* Mobile logout button (only visible on mobile) */
-.mobile-logout-btn {
+/* Settings page logout row (mobile only) - above footer, in normal flow */
+.settings-logout-row {
   display: none;
 }
 
-@media (max-width: 920px) {
-  .mobile-logout-btn {
-    display: block;
-    width: 100%;
-    margin-top: 24px;
-    margin-bottom: 0; /* Let main's padding-bottom handle spacing above nav */
-    padding: 20px 16px;
-    background: var(--panel);
-    border-top: 1px solid var(--border);
-    position: static; /* Normal document flow - scrolls with page */
-    z-index: 1; /* Ensure it's above background but below modals */
-    pointer-events: auto; /* Ensure clicks work */
+@media (max-width: 768px) {
+  .settings-logout-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+    margin-bottom: 12px;
+    padding: 0 16px;
   }
   
-  .mobile-logout-btn .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 14px 20px;
-    font-size: 1rem;
-    pointer-events: auto; /* Ensure button is clickable */
-    position: relative; /* Create stacking context */
+  .settings-logout-row .btn {
+    pointer-events: auto;
+    position: relative;
     z-index: 1;
   }
 }
