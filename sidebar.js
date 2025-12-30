@@ -34,7 +34,7 @@ function createSidebarHTML(basePath = '') {
             <button class="sidebar-link sidebar-submenu-toggle" type="button" aria-expanded="false" data-nav="tools">
               <span class="sidebar-icon"><i class="bx bx-wrench"></i></span>
               <span class="sidebar-label">Tools</span>
-              <span class="sidebar-arrow" aria-hidden="true">▶</span>
+              <img src="${pathPrefix}images/arrow.png" class="sidebar-dropdown-arrow" alt="Expand" aria-hidden="true" />
             </button>
             <ul class="sidebar-submenu">
               <li class="sidebar-submenu-item">
