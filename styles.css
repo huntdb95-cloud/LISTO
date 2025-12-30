@@ -1837,177 +1837,27 @@ input:focus, select:focus, textarea:focus{
   margin: 0 !important;
 }
 
-/* Elfsight Social Feed widget container */
-.elfsight-app-aebac189-c6ff-4d3e-b24e-e5f9fa23632a {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-height: 600px !important;
-  overflow-x: hidden !important; /* Prevent horizontal overflow on iPhone */
-  box-sizing: border-box !important;
-  position: relative !important;
+/* SociableKIT Facebook Page Posts widget container */
+.sk-ww-facebook-page-posts {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Loading placeholder */
-.news-updates-loading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  min-height: 600px !important; /* Match container height to fully cover widget area */
-  z-index: 1;
-  background: var(--panel, #fff);
-}
-
-/* FIX: Dedicated mount node styling - never gets wiped */
-#fbTimelineMount {
-  width: 100% !important;
-  min-height: 600px !important;
-  position: relative !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  overflow: visible !important;
-  box-sizing: border-box !important;
-  /* Prevent mount from being hidden or collapsed */
-  padding: 0 !important;
-  margin: 0 !important;
-  /* Ensure no transform on mount that could break iOS rendering */
-  transform: none !important;
-}
-
-/* Ensure container is never hidden during or after load */
-.facebook-feed-container:not([style*="display: none"]) {
-  display: block !important;
-}
-
-/* Facebook iframe styling - ensure it's always visible and properly sized */
-.facebook-feed-container iframe {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 100% !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  border: none !important;
-  position: relative !important;
-  /* Ensure iframe has minimum dimensions */
-  min-height: 600px !important;
-  height: 600px !important;
-  /* Prevent iframe from being hidden */
-  pointer-events: auto !important;
-}
-
-/* Loading and error states */
-.facebook-loading-state,
-.facebook-error-state {
-  width: 100% !important;
-  min-height: 600px !important;
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  /* Ensure states are never hidden */
-  position: relative !important;
-}
-
-/* Mobile: Ensure Elfsight widget is responsive and doesn't overflow */
+/* Mobile: Ensure SociableKIT widget is responsive and doesn't overflow */
 @media (max-width: 768px) {
   .facebook-feed-container {
-    min-height: 600px !important;
-    height: auto !important;
-    overflow-x: hidden !important; /* Critical: prevent horizontal scroll on iPhone */
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: touch;
-    position: relative !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 1;
-    /* Ensure container is never hidden on mobile */
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
+    overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
-  /* Elfsight widget on mobile */
-  .elfsight-app-aebac189-c6ff-4d3e-b24e-e5f9fa23632a {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important; /* Critical: prevent horizontal scroll */
-    box-sizing: border-box !important;
-  }
-  
-  /* FIX: Mount node styling for iOS Safari */
-  #fbTimelineMount {
-    min-height: 600px !important;
-    height: auto !important;
-    overflow: visible !important;
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: touch;
-    position: relative !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 1;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-  }
-  
-  /* Prevent parent from hiding container */
-  .facebook-feed-card {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    /* FIX: Prevent transform on parent that could break iOS rendering */
-    transform: none !important;
-  }
-  
-  .facebook-feed-container iframe {
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    height: 600px !important;
-    min-height: 600px !important;
-    border: none !important;
-    position: relative !important;
-    z-index: 1;
-    /* Prevent iframe from being hidden */
-    pointer-events: auto !important;
-    /* FIX: Ensure no transform on iframe */
-    transform: none !important;
-  }
-  
-  .facebook-loading-state,
-  .facebook-error-state {
-    min-height: 600px !important;
-  }
-}
-
-/* Additional mobile-specific fixes for smaller screens (iPhone) */
-@media (max-width: 480px) {
-  .facebook-feed-container {
-    min-height: 600px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    overflow-x: hidden !important; /* Critical: prevent horizontal scroll on iPhone */
-  }
-  
-  /* Elfsight widget on iPhone */
-  .elfsight-app-aebac189-c6ff-4d3e-b24e-e5f9fa23632a {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important; /* Critical: prevent horizontal scroll */
-    box-sizing: border-box !important;
+  .sk-ww-facebook-page-posts {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 }
 

@@ -16,8 +16,8 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ============================================================================
-// NOTE: Facebook embed code has been removed and replaced with Elfsight Social Feed
-// The Elfsight widget is loaded directly in dashboard.html with lazy loading
+// NOTE: Social feed uses SociableKIT Facebook Page Posts widget
+// The SociableKIT widget is loaded directly in dashboard.html
 // ============================================================================
 
 // ============================================================================
