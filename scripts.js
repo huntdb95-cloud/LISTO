@@ -4499,11 +4499,12 @@ function initMobileLogoutButton(user, authInstance) {
     mobileLogoutBtn.hidden = !user;
     
     // Set up mobile logout handler only once, but only if Firebase auth is initialized
-    // Use event delegation to ensure it works even if button is re-rendered
     if (!mobileLogoutBtn.dataset.handlerAttached && authInstance) {
       mobileLogoutBtn.dataset.handlerAttached = "true";
       
-      // Use both click and touchstart for better mobile compatibility
+      // Flag to prevent double-firing on touch devices (touchstart + synthetic click)
+      let touchHandled = false;
+      
       const handleLogout = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -4511,8 +4512,29 @@ function initMobileLogoutButton(user, authInstance) {
         showLogoutConfirmation();
       };
       
-      mobileLogoutBtn.addEventListener("click", handleLogout, { passive: false });
-      mobileLogoutBtn.addEventListener("touchstart", handleLogout, { passive: false });
+      // Handle touchstart for mobile devices
+      mobileLogoutBtn.addEventListener("touchstart", (e) => {
+        touchHandled = true;
+        handleLogout(e);
+        // Clear flag after a short delay to allow for rapid successive taps
+        setTimeout(() => {
+          touchHandled = false;
+        }, 300);
+      }, { passive: false });
+      
+      // Handle click (for desktop and as fallback)
+      // On touch devices, prevent synthetic click from firing after touchstart
+      mobileLogoutBtn.addEventListener("click", (e) => {
+        if (touchHandled) {
+          // This is a synthetic click after touchstart, ignore it
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return;
+        }
+        // This is a real click (desktop or mouse), handle it
+        handleLogout(e);
+      }, { passive: false });
       
       // Ensure button is clickable
       mobileLogoutBtn.style.pointerEvents = "auto";
