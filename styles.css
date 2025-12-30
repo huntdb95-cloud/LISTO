@@ -17,9 +17,8 @@ body:not(.auth-page) {
 body:not(.auth-page) .app-layout {
   display: flex;
   flex-direction: column; /* Mobile: stack vertically */
-  min-height: 100vh;
-  min-height: 100dvh; /* Use dynamic viewport height where supported for better mobile support */
-  flex: 1;
+  flex: 1 0 auto; /* Grow to fill available space, don't shrink */
+  min-height: 0; /* Allow content to determine height naturally */
 }
 
 /* Desktop: Use CSS Grid for reliable sidebar + main side-by-side layout */
@@ -58,21 +57,25 @@ body:not(.auth-page) .app-layout {
 
 body:not(.auth-page) .app-layout > main,
 body:not(.auth-page) main {
-  flex: 1;
+  flex: 1 0 auto; /* Grow to fill space, don't shrink, auto basis */
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Allow content to determine height */
 }
 
 /* Desktop: Override flex properties for grid layout */
 @media (min-width: 1024px) {
   body:not(.auth-page) .app-layout > main {
-    flex: none; /* Remove flex since grid handles sizing */
+    flex: 1 0 auto; /* Keep flex to allow footer margin-top:auto to work */
+    display: flex; /* Keep flex display for footer positioning */
+    flex-direction: column; /* Keep column direction for footer */
     width: auto; /* Let grid column control width */
   }
 }
 
 /* Ensure footer is at bottom when content is short */
-body:not(.auth-page) .site-footer {
+/* Footer is now inside main, so margin-top:auto pushes it to end of main content */
+body:not(.auth-page) main .site-footer {
   margin-top: auto;
   flex-shrink: 0;
 }
@@ -1083,13 +1086,18 @@ body[data-page="landing"] .lang-switch-mobile {
   border-top: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  margin-top: auto; /* Push to bottom with flexbox */
   text-align: center;
   flex-shrink: 0; /* Prevent footer from shrinking */
-  position: relative; /* Ensure footer is in normal flow */
+  position: static; /* Normal document flow - not fixed/sticky/absolute */
   z-index: 1; /* Above background but below nav */
   display: block;
   visibility: visible;
+  /* Remove any positioning that could cause floating */
+  inset: auto;
+  bottom: auto;
+  top: auto;
+  left: auto;
+  right: auto;
 }
 
 /* Footer logo - small centered logo */
