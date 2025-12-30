@@ -369,8 +369,8 @@ exports.processCoiUpload = functions
 
         console.log(`Extracted text length: ${fullText.length} characters`);
 
-        // Parse COI expiration dates from extracted text
-        const parsedPolicies = parseCoiText(fullText);
+        // Parse COI expiration dates from extracted text (use improved version)
+        const parsedPolicies = parseCoiTextImproved(fullText, false);
 
         // Update prequal document with extracted policy dates
         await updatePrequalWithCoiData(userId, parsedPolicies, filePath);
@@ -574,7 +574,151 @@ function parseW9Text(text) {
 }
 
 /**
- * Parse COI text to extract policy expiration dates
+ * Parse COI text to extract policy expiration dates (improved version)
+ * Uses anchor-based approach with date windows
+ * Looks for Workers Compensation, Automobile Liability, and Commercial General Liability
+ */
+function parseCoiTextImproved(text, debug = false) {
+  const matchedAnchors = {};
+  
+  // Date regex: MM/DD/YYYY, MM-DD-YYYY, or YYYY-MM-DD (handles 2-digit year)
+  // Pattern: (month)(separator)(day)(separator)(year)
+  const DATE_PATTERN = "(0?[1-9]|1[0-2])[\\/\\-.]?(0?[1-9]|[12]\\d|3[01])[\\/\\-.]?((?:19|20)?\\d{2})";
+  const DATE_RE = new RegExp(`\\b${DATE_PATTERN}\\b`, "g");
+
+  // Anchor patterns for each coverage type
+  const WC_ANCHOR_RE = /\bWORK(?:ER)?S?\s*(?:COMP(?:ENSATION)?|COMP)\b|\bW[\s\/-]?C\b|\bWORK\s*COMP\b/i;
+  const AUTO_ANCHOR_RE = /\bAUTOMOBILE\s*LIABILITY\b|\bAUTO\s*LIAB(?:ILITY)?\b|\bAUTO\s*INS\b/i;
+  const CGL_ANCHOR_RE = /\bCOMMERCIAL\s*GENERAL\s*LIABILITY\b|\bCGL\b|\bGENERAL\s*LIAB(?:ILITY)?\b/i;
+
+  // Date extraction patterns
+  const EFF_EXP_PAIR_RE = new RegExp(
+    `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN}[\\s\\S]{0,25}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN}`,
+    "i",
+  );
+  const EXP_DATE_NEAR_RE = new RegExp(
+    `\\b(?:EXP(?:IRATION)?|EXPIRES?|POLICY\\s*EXP|EXP\\s*DATE)\\b[\\s:]*${DATE_PATTERN}`,
+    "ig",
+  );
+  const DATE_BEFORE_EXP_RE = new RegExp(
+    `${DATE_PATTERN}[\\s\\S]{0,18}\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b`,
+    "ig",
+  );
+
+  // Helper to normalize date to YYYY-MM-DD
+  function normalizeDate(month, day, year) {
+    const m = parseInt(month, 10);
+    const d = parseInt(day, 10);
+    let y = parseInt(year, 10);
+    
+    // Handle 2-digit year
+    if (y < 100) {
+      y = y < 50 ? 2000 + y : 1900 + y;
+    }
+    
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+      return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+    return null;
+  }
+
+  // Extract date from match groups
+  function extractDateFromMatch(match) {
+    if (!match || match.length < 4) return null;
+    return normalizeDate(match[1], match[2], match[3]);
+  }
+
+  // Find expiration date for a coverage type
+  function findExpirationDate(anchorRe, coverageName) {
+    const anchorMatch = text.match(anchorRe);
+    if (!anchorMatch) {
+      if (debug) matchedAnchors[coverageName] = "not_found";
+      return null;
+    }
+
+    const anchorIndex = text.indexOf(anchorMatch[0]);
+    if (debug) matchedAnchors[coverageName] = {index: anchorIndex, text: anchorMatch[0]};
+
+    // Search window: 600 chars before to 1200 chars after anchor
+    const searchStart = Math.max(0, anchorIndex - 600);
+    const searchEnd = Math.min(text.length, anchorIndex + 1200);
+    const window = text.substring(searchStart, searchEnd);
+
+    const dates = [];
+
+    // 1. Try EFF_EXP_PAIR_RE (use group 2 - expiration date, groups 4,5,6)
+    const effExpMatch = window.match(EFF_EXP_PAIR_RE);
+    if (effExpMatch && effExpMatch.length >= 7) {
+      // Groups: 0=full match, 1-3=effective date, 4-6=expiration date
+      const expDate = normalizeDate(effExpMatch[4], effExpMatch[5], effExpMatch[6]);
+      if (expDate) {
+        dates.push({date: expDate, priority: 1, method: "eff_exp_pair"});
+      }
+    }
+
+    // 2. Try EXP_DATE_NEAR_RE
+    const expNearMatches = [...window.matchAll(EXP_DATE_NEAR_RE)];
+    for (const match of expNearMatches) {
+      if (match.length >= 4) {
+        const expDate = normalizeDate(match[1], match[2], match[3]);
+        if (expDate) {
+          dates.push({date: expDate, priority: 2, method: "exp_date_near"});
+        }
+      }
+    }
+
+    // 3. Try DATE_BEFORE_EXP_RE
+    const dateBeforeExpMatches = [...window.matchAll(DATE_BEFORE_EXP_RE)];
+    for (const match of dateBeforeExpMatches) {
+      if (match.length >= 4) {
+        const expDate = normalizeDate(match[1], match[2], match[3]);
+        if (expDate) {
+          dates.push({date: expDate, priority: 3, method: "date_before_exp"});
+        }
+      }
+    }
+
+    // 4. Fallback: find all dates in window and pick latest
+    if (dates.length === 0) {
+      const allDateMatches = [...window.matchAll(DATE_RE)];
+      for (const match of allDateMatches) {
+        if (match.length >= 4) {
+          const expDate = normalizeDate(match[1], match[2], match[3]);
+          if (expDate) {
+            dates.push({date: expDate, priority: 4, method: "latest_in_window"});
+          }
+        }
+      }
+    }
+
+    if (dates.length === 0) {
+      return null;
+    }
+
+    // Sort by priority (lower is better), then by date (latest first)
+    dates.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return b.date.localeCompare(a.date);
+    });
+
+    return dates[0].date;
+  }
+
+  const policies = {
+    workersCompensation: findExpirationDate(WC_ANCHOR_RE, "workersCompensation"),
+    automobileLiability: findExpirationDate(AUTO_ANCHOR_RE, "automobileLiability"),
+    commercialGeneralLiability: findExpirationDate(CGL_ANCHOR_RE, "commercialGeneralLiability"),
+  };
+
+  if (debug) {
+    policies.matchedAnchors = matchedAnchors;
+  }
+
+  return policies;
+}
+
+/**
+ * Parse COI text to extract policy expiration dates (legacy - kept for backward compatibility)
  * Looks for Workers Compensation, Automobile Liability, and Commercial General Liability
  */
 function parseCoiText(text) {
@@ -772,11 +916,41 @@ async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
   const existingCoi = existingData.coi || {};
 
   // Build policies object, preserving existing data if OCR didn't find a date
+  // Only update if OCR found a new date (don't overwrite manual entries)
   const policies = {
     workersCompensation: parsedPolicies.workersCompensation || existingCoi.policies?.workersCompensation || null,
     automobileLiability: parsedPolicies.automobileLiability || existingCoi.policies?.automobileLiability || null,
     commercialGeneralLiability: parsedPolicies.commercialGeneralLiability || existingCoi.policies?.commercialGeneralLiability || null,
   };
+
+  // Preserve source flags - don't overwrite manual entries
+  if (existingCoi.policies) {
+    if (existingCoi.policies.workersCompensationSource === "manual" && existingCoi.policies.workersCompensation) {
+      policies.workersCompensation = existingCoi.policies.workersCompensation;
+      policies.workersCompensationSource = "manual";
+    } else if (parsedPolicies.workersCompensation) {
+      policies.workersCompensationSource = "ocr";
+    }
+
+    if (existingCoi.policies.automobileLiabilitySource === "manual" && existingCoi.policies.automobileLiability) {
+      policies.automobileLiability = existingCoi.policies.automobileLiability;
+      policies.automobileLiabilitySource = "manual";
+    } else if (parsedPolicies.automobileLiability) {
+      policies.automobileLiabilitySource = "ocr";
+    }
+
+    if (existingCoi.policies.commercialGeneralLiabilitySource === "manual" && existingCoi.policies.commercialGeneralLiability) {
+      policies.commercialGeneralLiability = existingCoi.policies.commercialGeneralLiability;
+      policies.commercialGeneralLiabilitySource = "manual";
+    } else if (parsedPolicies.commercialGeneralLiability) {
+      policies.commercialGeneralLiabilitySource = "ocr";
+    }
+  } else {
+    // Set source flags for new OCR results
+    if (parsedPolicies.workersCompensation) policies.workersCompensationSource = "ocr";
+    if (parsedPolicies.automobileLiability) policies.automobileLiabilitySource = "ocr";
+    if (parsedPolicies.commercialGeneralLiability) policies.commercialGeneralLiabilitySource = "ocr";
+  }
 
   // Determine overall expiration (earliest of the three, or use existing expiresOn if set)
   let overallExpiration = existingCoi.expiresOn || null;
@@ -1603,6 +1777,307 @@ exports.processDocumentForTranslation = functions.region("us-central1").https.on
     throw new functions.https.HttpsError(
         "internal",
         error.message || "An unexpected error occurred during document processing.",
+        {requestId, errorCode: "UNEXPECTED_ERROR", originalError: error.message},
+    );
+  }
+});
+
+/**
+ * COI Compliance: processCOIForCompliance
+ * Callable function to process COI uploads and extract policy expiration dates
+ * Can be called from frontend after file upload
+ */
+exports.processCOIForCompliance = functions.region("us-central1").https.onCall(async (data, context) => {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+
+  // Check authentication
+  if (!context.auth) {
+    console.error(JSON.stringify({
+      requestId,
+      operation: "processCOIForCompliance_auth_error",
+      error: "Unauthenticated",
+      timestamp: new Date().toISOString(),
+    }));
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Please sign in to use this feature.",
+        {requestId, errorCode: "UNAUTHENTICATED"},
+    );
+  }
+
+  const userId = context.auth.uid;
+
+  // Validate input
+  if (!data || !data.storagePath) {
+    console.error(JSON.stringify({
+      requestId,
+      operation: "processCOIForCompliance_validation_error",
+      error: "Missing storagePath",
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Storage path is required",
+        {requestId, errorCode: "BAD_REQUEST"},
+    );
+  }
+
+  // Validate storage path: must start with users/{uid}/prequal/coi/
+  const expectedPathPrefix = `users/${userId}/prequal/coi/`;
+  if (!data.storagePath.startsWith(expectedPathPrefix)) {
+    console.error(JSON.stringify({
+      requestId,
+      operation: "processCOIForCompliance_validation_error",
+      error: "Invalid storage path",
+      storagePath: data.storagePath,
+      expectedPrefix: expectedPathPrefix,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+    throw new functions.https.HttpsError(
+        "permission-denied",
+        `Invalid storage path. Files must be in ${expectedPathPrefix}`,
+        {requestId, errorCode: "PERMISSION_DENIED"},
+    );
+  }
+
+  const bucketName = admin.storage().bucket().name;
+  const bucket = getBucket();
+  const file = bucket.file(data.storagePath);
+
+  console.log(JSON.stringify({
+    requestId,
+    operation: "processCOIForCompliance_start",
+    bucketName: bucket.name,
+    storagePath: data.storagePath,
+    uid: userId,
+    timestamp: new Date().toISOString(),
+  }));
+
+  try {
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      console.error(JSON.stringify({
+        requestId,
+        operation: "processCOIForCompliance_file_not_found",
+        storagePath: data.storagePath,
+        bucketName: bucket.name,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+      throw new functions.https.HttpsError(
+          "not-found",
+          "File not found in storage",
+          {requestId, errorCode: "FILE_NOT_FOUND"},
+      );
+    }
+
+    // Get file metadata
+    const [metadata] = await file.getMetadata();
+    const contentType = metadata.contentType || data.mimeType || "unknown";
+    const fileSize = metadata.size ? parseInt(metadata.size, 10) : 0;
+
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processCOIForCompliance_file_info",
+      contentType,
+      fileSize,
+      storagePath: data.storagePath,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Perform OCR
+    let extractedText = "";
+    const visionClient = getVisionClient();
+
+    if (contentType === "application/pdf") {
+      // PDF: Use asyncBatchAnnotateFiles
+      const gcsInputUri = `gs://${bucketName}/${data.storagePath}`;
+      const outputPrefix = `gs://${bucketName}/users/${userId}/ocr-output/coi/${requestId}/`;
+      const outputPrefixPath = `users/${userId}/ocr-output/coi/${requestId}/`;
+
+      console.log(JSON.stringify({
+        requestId,
+        operation: "COI_PDF_OCR_START",
+        gcsInputUri: gcsInputUri,
+        outputPrefix: outputPrefix,
+        mimeType: contentType,
+        size: fileSize,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+
+      // Start async batch operation
+      const [operation] = await visionClient.asyncBatchAnnotateFiles({
+        requests: [{
+          inputConfig: {
+            gcsSource: {uri: gcsInputUri},
+            mimeType: "application/pdf",
+          },
+          features: [{type: "DOCUMENT_TEXT_DETECTION"}],
+          outputConfig: {
+            gcsDestination: {uri: outputPrefix},
+          },
+        }],
+      });
+
+      // Wait for operation to complete
+      await operation.promise();
+
+      // Read output files from GCS
+      const [files] = await bucket.getFiles({prefix: outputPrefixPath});
+      const jsonFiles = files.filter((f) => f.name.endsWith(".json"));
+
+      console.log(JSON.stringify({
+        requestId,
+        operation: "COI_PDF_OCR_OUTPUT_FILES",
+        count: jsonFiles.length,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+
+      // Extract text from each JSON file
+      const pageTexts = [];
+      for (const outputFile of jsonFiles) {
+        const [fileBuffer] = await outputFile.download();
+        const parsed = JSON.parse(fileBuffer.toString());
+
+        // Extract text from responses
+        if (parsed.responses && parsed.responses.length > 0) {
+          for (const response of parsed.responses) {
+            if (response.fullTextAnnotation && response.fullTextAnnotation.text) {
+              pageTexts.push(response.fullTextAnnotation.text);
+            } else if (response.textAnnotations && response.textAnnotations.length > 0 &&
+                response.textAnnotations[0].description) {
+              pageTexts.push(response.textAnnotations[0].description);
+            }
+          }
+        }
+      }
+
+      extractedText = pageTexts.join("\n\n").trim();
+    } else if (contentType.startsWith("image/")) {
+      // Image: Use documentTextDetection
+      console.log(JSON.stringify({
+        requestId,
+        operation: "COI_IMAGE_OCR_START",
+        mimeType: contentType,
+        storagePath: data.storagePath,
+        size: fileSize,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+
+      const [fileBuffer] = await file.download();
+      const [result] = await visionClient.documentTextDetection({
+        image: {content: fileBuffer},
+      });
+
+      // Extract text - prefer fullTextAnnotation
+      if (result.fullTextAnnotation && result.fullTextAnnotation.text) {
+        extractedText = result.fullTextAnnotation.text;
+      } else if (result.textAnnotations && result.textAnnotations.length > 0 &&
+          result.textAnnotations[0].description) {
+        extractedText = result.textAnnotations[0].description;
+      }
+
+      extractedText = extractedText.trim();
+    } else {
+      throw new functions.https.HttpsError(
+          "invalid-argument",
+          `Unsupported file type: ${contentType}. Please upload a PDF or image.`,
+          {requestId, errorCode: "UNSUPPORTED_FILE_TYPE"},
+      );
+    }
+
+    // Log OCR completion
+    console.log(JSON.stringify({
+      requestId,
+      operation: "COI_OCR_DONE",
+      extractedTextLength: extractedText.length,
+      preview: extractedText.substring(0, 200),
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Check if text was extracted
+    if (!extractedText || extractedText.trim().length === 0) {
+      console.error(JSON.stringify({
+        requestId,
+        operation: "COI_OCR_EMPTY",
+        contentType,
+        fileSize,
+        uid: userId,
+        timestamp: new Date().toISOString(),
+      }));
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "OCR returned no text. The document may not contain readable text.",
+          {
+            requestId,
+            errorCode: "OCR_EMPTY",
+            message: "OCR returned no text",
+            debug: {contentType, fileSize},
+          },
+      );
+    }
+
+    // Parse COI expiration dates from extracted text
+    const parsedPolicies = parseCoiTextImproved(extractedText, data.debug || false);
+
+    // Return results
+    const duration = Date.now() - startTime;
+    const response = {
+      ok: true,
+      policies: parsedPolicies,
+      extractedTextLength: extractedText.length,
+      requestId,
+    };
+
+    // Include debug info if requested
+    if (data.debug) {
+      response.debug = {
+        preview: extractedText.substring(0, 500),
+        matchedAnchors: parsedPolicies.matchedAnchors || {},
+      };
+    }
+
+    console.log(JSON.stringify({
+      requestId,
+      operation: "processCOIForCompliance_success",
+      duration,
+      policiesFound: Object.keys(parsedPolicies).filter((k) => k !== "matchedAnchors" && parsedPolicies[k] !== null).length,
+      uid: userId,
+      timestamp: new Date().toISOString(),
+    }));
+
+    return response;
+  } catch (error) {
+    const errorDetails = {
+      requestId,
+      operation: "processCOIForCompliance_error",
+      error: error.message || String(error),
+      stack: error.stack || "no stack",
+      uid: userId,
+      storagePath: data?.storagePath || "missing",
+      timestamp: new Date().toISOString(),
+    };
+
+    console.error(JSON.stringify(errorDetails));
+
+    // If it's already an HttpsError, re-throw it
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    // Wrap in HttpsError
+    throw new functions.https.HttpsError(
+        "internal",
+        error.message || "An unexpected error occurred during COI processing.",
         {requestId, errorCode: "UNEXPECTED_ERROR", originalError: error.message},
     );
   }
