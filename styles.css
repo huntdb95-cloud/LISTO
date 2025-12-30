@@ -19,6 +19,8 @@ body:not(.auth-page) .app-layout {
   flex-direction: column; /* Mobile: stack vertically */
   flex: 1 0 auto; /* Grow to fill available space, don't shrink */
   min-height: 0; /* Allow content to determine height naturally */
+  /* Ensure no overflow that breaks sticky positioning */
+  overflow: visible;
 }
 
 /* Desktop: Use CSS Grid for reliable sidebar + main side-by-side layout */
@@ -58,11 +60,18 @@ body:not(.auth-page) .app-layout {
     align-self: start;
     /* Ensure no overflow that breaks sticky positioning */
     overflow: visible;
+    /* Ensure sidebar container doesn't interfere with sticky */
+    position: relative;
+    height: fit-content;
   }
   
-  /* Ensure sidebar element inside container is properly sized */
+  /* Ensure sidebar element inside container is properly sized and sticky */
   body:not(.auth-page) .app-layout > #sidebar > .app-sidebar {
     width: 100%;
+    /* Sidebar is sticky within its grid container */
+    position: sticky;
+    top: var(--header-height, 72px);
+    align-self: start;
   }
 }
 
@@ -81,8 +90,9 @@ body:not(.auth-page) main {
     display: flex; /* Keep flex display for footer positioning */
     flex-direction: column; /* Keep column direction for footer */
     width: auto; /* Let grid column control width */
-    /* Ensure main content flows naturally - footer at end */
-    min-height: 0; /* Allow content to determine height */
+    /* Set min-height so footer can use margin-top:auto on short pages */
+    /* On long pages, content will exceed min-height and footer appears naturally at end */
+    min-height: calc(100vh - var(--header-height, 72px));
     /* Prevent any overflow that could cause layout issues */
     overflow: visible;
   }
@@ -90,8 +100,9 @@ body:not(.auth-page) main {
 
 /* Ensure footer is at bottom when content is short */
 /* Footer is now inside main, so margin-top:auto pushes it to end of main content */
+/* On desktop: Only use margin-top:auto if we want footer at viewport bottom on short pages */
+/* On long pages: Footer appears naturally at end of content without margin-top:auto */
 body:not(.auth-page) main .site-footer {
-  margin-top: auto;
   flex-shrink: 0;
   /* Ensure footer is in normal flow - no positioning that causes floating */
   position: static !important;
@@ -101,6 +112,17 @@ body:not(.auth-page) main .site-footer {
   right: auto !important;
   transform: none !important;
   z-index: auto !important;
+}
+
+/* Desktop: Footer should only use margin-top:auto if main has min-height set */
+/* This ensures footer at bottom on short pages, but normal flow on long pages */
+/* Note: min-height is set in the main desktop rules above */
+@media (min-width: 1024px) {
+  body:not(.auth-page) .app-layout > main .site-footer {
+    /* Only push to bottom if main content is shorter than viewport */
+    /* On long pages, content exceeds min-height and footer appears naturally at end */
+    margin-top: auto;
+  }
 }
 
 :root{
@@ -151,8 +173,7 @@ body:not(.auth-page) main .site-footer {
   /* Note: If nav height changes dynamically, update via JS:
      document.documentElement.style.setProperty('--bottom-nav-height', `${navElement.offsetHeight}px`);
      The default 72px matches .mobile-bottom-nav-items height */
-  --bottom-nav-h: 72px;
-  --bottom-nav-height: 72px; /* Legacy support */
+  --bottom-nav-height: 72px;
 }
 
 body {
@@ -3786,10 +3807,14 @@ body[data-page="bookkeeping"] .page-title {
     /* Critical: align-self start ensures sticky works within grid */
     align-self: start;
     /* Ensure sticky is not broken by transforms or filters */
-    transform: none;
-    filter: none;
+    transform: none !important;
+    filter: none !important;
     /* Ensure proper z-index */
     z-index: 40;
+    /* Remove fixed positioning that might interfere */
+    left: auto;
+    /* Ensure sidebar stays within its grid column */
+    width: 100%;
   }
 }
 
