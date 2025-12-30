@@ -26,16 +26,19 @@ let currentEstimateId = null;
 let currentBuilderId = null;
 let currentJobId = null;
 let isQuickEstimateMode = false;
+let authInitialized = false;
 
-// Initialize
+// Initialize - wait for auth state
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUid = user.uid;
+    authInitialized = true;
     await loadBuilders();
     setupEventListeners();
     // Initialize save button state
     updateSaveButtonForMode();
   } else {
+    authInitialized = true;
     window.location.href = "../login/login.html";
   }
 });
@@ -688,17 +691,24 @@ function updateSaveButtonForMode() {
 
 // Save estimate
 async function saveEstimate(isCopy = false) {
+  // Wait for auth to initialize
+  if (!authInitialized) {
+    showMessage("Please wait for authentication to complete.", true);
+    return;
+  }
+  
   // Check if in Quick Estimate mode
   if (isQuickEstimateMode) {
     showMessage("Cannot save in Quick Estimate mode. Please select a builder and job, or exit Quick Estimate mode.", true);
     return;
   }
   
-  // Check auth state
+  // Verify auth state
   if (!currentUid) {
     const user = auth.currentUser;
     if (!user) {
       showMessage("Please sign in to save estimates.", true);
+      window.location.href = "../login/login.html";
       return;
     }
     currentUid = user.uid;
@@ -750,16 +760,34 @@ async function saveEstimate(isCopy = false) {
     }
   } catch (err) {
     console.error("Error saving estimate:", err);
-    const errorMsg = err?.code === "permission-denied" 
-      ? "Permission denied. Please sign out and sign back in."
-      : err?.message || "Error saving estimate. Please try again.";
+    console.error("Error code:", err?.code);
+    console.error("Error message:", err?.message);
+    
+    let errorMsg = "Error saving estimate. Please try again.";
+    if (err?.code === "permission-denied") {
+      // Check if it's actually an auth issue
+      const user = auth.currentUser;
+      if (!user || user.uid !== currentUid) {
+        errorMsg = "Authentication expired. Please sign out and sign back in.";
+      } else {
+        errorMsg = "Permission denied. Please check that you have access to this builder and job.";
+      }
+    } else if (err?.message) {
+      errorMsg = err.message;
+    }
     showMessage(errorMsg, true);
   }
 }
 
 // Load estimates for job
 async function loadEstimatesForJob(jobId) {
-  // Check auth state
+  // Wait for auth to initialize
+  if (!authInitialized) {
+    console.warn("Cannot load estimates: auth not initialized");
+    return;
+  }
+  
+  // Verify auth state
   if (!currentUid) {
     const user = auth.currentUser;
     if (!user) {
@@ -799,8 +827,8 @@ async function loadEstimatesForJob(jobId) {
     if (!listContainer) return;
     
     if (estimates.length === 0) {
-      listContainer.innerHTML = '<div class="muted">No saved estimates for this job.</div>';
-      $("estimatesListCard").style.display = "none";
+      listContainer.innerHTML = '<div class="muted">No saved estimates for this job yet.</div>';
+      $("estimatesListCard").style.display = "block"; // Show card even when empty
       return;
     }
     
@@ -861,8 +889,8 @@ async function loadEstimatesForJob(jobId) {
         if (!listContainer) return;
         
         if (estimates.length === 0) {
-          listContainer.innerHTML = '<div class="muted">No saved estimates for this job.</div>';
-          $("estimatesListCard").style.display = "none";
+          listContainer.innerHTML = '<div class="muted">No saved estimates for this job yet.</div>';
+          $("estimatesListCard").style.display = "block"; // Show card even when empty
           return;
         }
         
@@ -870,10 +898,43 @@ async function loadEstimatesForJob(jobId) {
         renderEstimatesList(estimates, listContainer);
       } catch (err2) {
         console.error("Error loading estimates (fallback):", err2);
-        showMessage("Error loading estimates.", true);
+        console.error("Error code:", err2?.code);
+        console.error("Error message:", err2?.message);
+        
+        const listContainer = $("estimatesList");
+        if (listContainer) {
+          if (err2?.code === "permission-denied") {
+            const user = auth.currentUser;
+            if (!user || user.uid !== currentUid) {
+              listContainer.innerHTML = '<div class="form-error">Authentication expired. Please refresh the page.</div>';
+            } else {
+              listContainer.innerHTML = '<div class="form-error">Permission denied. Please check your access.</div>';
+            }
+          } else {
+            listContainer.innerHTML = '<div class="form-error">Error loading estimates. Please refresh the page.</div>';
+          }
+          $("estimatesListCard").style.display = "block";
+        }
       }
     } else {
-      showMessage("Error loading estimates.", true);
+      console.error("Error loading estimates:", err);
+      console.error("Error code:", err?.code);
+      console.error("Error message:", err?.message);
+      
+      const listContainer = $("estimatesList");
+      if (listContainer) {
+        if (err?.code === "permission-denied") {
+          const user = auth.currentUser;
+          if (!user || user.uid !== currentUid) {
+            listContainer.innerHTML = '<div class="form-error">Authentication expired. Please refresh the page.</div>';
+          } else {
+            listContainer.innerHTML = '<div class="form-error">Permission denied. Please check your access.</div>';
+          }
+        } else {
+          listContainer.innerHTML = '<div class="form-error">Error loading estimates. Please refresh the page.</div>';
+        }
+        $("estimatesListCard").style.display = "block";
+      }
     }
   }
 }
@@ -916,7 +977,12 @@ function renderEstimatesList(estimates, container) {
 
 // Load latest estimate for job (auto-load on job selection)
 async function loadLatestEstimateForJob(jobId) {
-  // Check auth state
+  // Wait for auth to initialize
+  if (!authInitialized || !currentUid) {
+    return;
+  }
+  
+  // Verify auth state
   if (!currentUid) {
     const user = auth.currentUser;
     if (!user) return;
@@ -995,11 +1061,18 @@ async function loadEstimateData(estimateId, estimate) {
 
 // Load estimate
 window.loadEstimate = async function(estimateId) {
-  // Check auth state
+  // Wait for auth to initialize
+  if (!authInitialized) {
+    showMessage("Please wait for authentication to complete.", true);
+    return;
+  }
+  
+  // Verify auth state
   if (!currentUid) {
     const user = auth.currentUser;
     if (!user) {
       showMessage("Please sign in to load estimates.", true);
+      window.location.href = "../login/login.html";
       return;
     }
     currentUid = user.uid;
@@ -1029,9 +1102,20 @@ window.loadEstimate = async function(estimateId) {
     showMessage("Estimate loaded.", false);
   } catch (err) {
     console.error("Error loading estimate:", err);
-    const errorMsg = err?.code === "permission-denied" 
-      ? "Permission denied. Please sign out and sign back in."
-      : err?.message || "Error loading estimate.";
+    console.error("Error code:", err?.code);
+    console.error("Error message:", err?.message);
+    
+    let errorMsg = "Error loading estimate.";
+    if (err?.code === "permission-denied") {
+      const user = auth.currentUser;
+      if (!user || user.uid !== currentUid) {
+        errorMsg = "Authentication expired. Please refresh the page.";
+      } else {
+        errorMsg = "Permission denied. Please check your access.";
+      }
+    } else if (err?.message) {
+      errorMsg = err.message;
+    }
     showMessage(errorMsg, true);
   }
 };
@@ -1087,11 +1171,18 @@ window.deleteEstimate = async function(estimateId, estimateName) {
     return;
   }
   
-  // Check auth state
+  // Wait for auth to initialize
+  if (!authInitialized) {
+    showMessage("Please wait for authentication to complete.", true);
+    return;
+  }
+  
+  // Verify auth state
   if (!currentUid) {
     const user = auth.currentUser;
     if (!user) {
       showMessage("Please sign in to delete estimates.", true);
+      window.location.href = "../login/login.html";
       return;
     }
     currentUid = user.uid;
@@ -1119,9 +1210,20 @@ window.deleteEstimate = async function(estimateId, estimateName) {
     }
   } catch (err) {
     console.error("Error deleting estimate:", err);
-    const errorMsg = err?.code === "permission-denied" 
-      ? "Permission denied. Please sign out and sign back in."
-      : err?.message || "Error deleting estimate.";
+    console.error("Error code:", err?.code);
+    console.error("Error message:", err?.message);
+    
+    let errorMsg = "Error deleting estimate.";
+    if (err?.code === "permission-denied") {
+      const user = auth.currentUser;
+      if (!user || user.uid !== currentUid) {
+        errorMsg = "Authentication expired. Please refresh the page.";
+      } else {
+        errorMsg = "Permission denied. Please check your access.";
+      }
+    } else if (err?.message) {
+      errorMsg = err.message;
+    }
     showMessage(errorMsg, true);
   }
 };
