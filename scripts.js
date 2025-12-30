@@ -1,5 +1,5 @@
 // scripts.js (ES Module)
-import { firebaseConfig } from "./config.js";
+import { firebaseConfig, app } from "./config.js";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
@@ -26,6 +26,11 @@ import {
   getDownloadURL,
   deleteObject
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+
+import {
+  getFunctions,
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-functions.js";
 
 /* ========= i18n ========= */
 const I18N = {
@@ -1681,6 +1686,13 @@ async function renderCoiCurrent(user) {
     if (link) link.hidden = true;
     if (note) note.hidden = true;
     if (coiCurrent) coiCurrent.hidden = true;
+    // Hide all policy rows if no COI
+    const wcRow = document.getElementById("coiWorkersCompRow");
+    const autoRow = document.getElementById("coiAutoLiabilityRow");
+    const genRow = document.getElementById("coiGenLiabilityRow");
+    if (wcRow) wcRow.style.display = "none";
+    if (autoRow) autoRow.style.display = "none";
+    if (genRow) genRow.style.display = "none";
     return;
   }
 
@@ -1693,35 +1705,62 @@ async function renderCoiCurrent(user) {
   const policies = coi.policies || {};
   const workersCompRow = document.getElementById("coiWorkersCompRow");
   const workersCompExp = document.getElementById("coiWorkersCompExp");
+  const workersCompOverride = document.getElementById("coiWorkersCompOverride");
+  const workersCompManual = document.getElementById("coiWorkersCompManual");
   const autoLiabilityRow = document.getElementById("coiAutoLiabilityRow");
   const autoLiabilityExp = document.getElementById("coiAutoLiabilityExp");
+  const autoLiabilityOverride = document.getElementById("coiAutoLiabilityOverride");
+  const autoLiabilityManual = document.getElementById("coiAutoLiabilityManual");
   const genLiabilityRow = document.getElementById("coiGenLiabilityRow");
   const genLiabilityExp = document.getElementById("coiGenLiabilityExp");
+  const genLiabilityOverride = document.getElementById("coiGenLiabilityOverride");
+  const genLiabilityManual = document.getElementById("coiGenLiabilityManual");
 
+  // Workers Compensation
   if (workersCompRow && workersCompExp) {
     if (policies.workersCompensation) {
       workersCompRow.style.display = "flex";
-      workersCompExp.textContent = formatDate(policies.workersCompensation);
+      const source = policies.workersCompensationSource === "manual" ? " (manual)" : "";
+      workersCompExp.textContent = formatDate(policies.workersCompensation) + source;
+      if (workersCompOverride) workersCompOverride.style.display = "inline";
+      if (workersCompManual) workersCompManual.style.display = "none";
     } else {
-      workersCompRow.style.display = "none";
+      workersCompRow.style.display = "flex";
+      workersCompExp.textContent = "Not found";
+      if (workersCompOverride) workersCompOverride.style.display = "none";
+      if (workersCompManual) workersCompManual.style.display = "block";
     }
   }
 
+  // Automobile Liability
   if (autoLiabilityRow && autoLiabilityExp) {
     if (policies.automobileLiability) {
       autoLiabilityRow.style.display = "flex";
-      autoLiabilityExp.textContent = formatDate(policies.automobileLiability);
+      const source = policies.automobileLiabilitySource === "manual" ? " (manual)" : "";
+      autoLiabilityExp.textContent = formatDate(policies.automobileLiability) + source;
+      if (autoLiabilityOverride) autoLiabilityOverride.style.display = "inline";
+      if (autoLiabilityManual) autoLiabilityManual.style.display = "none";
     } else {
-      autoLiabilityRow.style.display = "none";
+      autoLiabilityRow.style.display = "flex";
+      autoLiabilityExp.textContent = "Not found";
+      if (autoLiabilityOverride) autoLiabilityOverride.style.display = "none";
+      if (autoLiabilityManual) autoLiabilityManual.style.display = "block";
     }
   }
 
+  // Commercial General Liability
   if (genLiabilityRow && genLiabilityExp) {
     if (policies.commercialGeneralLiability) {
       genLiabilityRow.style.display = "flex";
-      genLiabilityExp.textContent = formatDate(policies.commercialGeneralLiability);
+      const source = policies.commercialGeneralLiabilitySource === "manual" ? " (manual)" : "";
+      genLiabilityExp.textContent = formatDate(policies.commercialGeneralLiability) + source;
+      if (genLiabilityOverride) genLiabilityOverride.style.display = "inline";
+      if (genLiabilityManual) genLiabilityManual.style.display = "none";
     } else {
-      genLiabilityRow.style.display = "none";
+      genLiabilityRow.style.display = "flex";
+      genLiabilityExp.textContent = "Not found";
+      if (genLiabilityOverride) genLiabilityOverride.style.display = "none";
+      if (genLiabilityManual) genLiabilityManual.style.display = "block";
     }
   }
 
@@ -1791,16 +1830,23 @@ async function initCoiPage(user) {
   const err = document.getElementById("coiErr");
   const btn = document.getElementById("coiUploadBtn");
 
+  // Initialize Functions
+  const functions = getFunctions(app, "us-central1");
+  const processCOIForCompliance = httpsCallable(functions, "processCOIForCompliance");
+
+  // Setup manual entry handlers
+  setupManualEntryHandlers(user);
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (msg) msg.textContent = "";
     if (err) err.textContent = "";
 
     const file = fileInput?.files?.[0];
-    const expiresOn = expInput?.value;
-
-    if (!file) { if (err) err.textContent = "Please choose a file."; return; }
-    if (!expiresOn) { if (err) err.textContent = "Please choose an expiration date."; return; }
+    if (!file) { 
+      if (err) err.textContent = "Please choose a file."; 
+      return; 
+    }
 
     const safeName = file.name.replace(/[^\w.\-]+/g, "_");
     const path = `users/${user.uid}/prequal/coi/${Date.now()}_${safeName}`;
@@ -1812,20 +1858,92 @@ async function initCoiPage(user) {
 
       await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
 
-      // Get existing COI data to preserve OCR-extracted policy dates
+      // Call OCR function to extract policy dates
+      if (msg) msg.textContent = "Processing COI with OCR…";
+      
+      let ocrResults = null;
+      let ocrErrorMsg = null;
+      try {
+        const ocrResponse = await processCOIForCompliance({
+          storagePath: path,
+          mimeType: file.type,
+          debug: false
+        });
+        
+        if (ocrResponse.data && ocrResponse.data.ok) {
+          ocrResults = ocrResponse.data.policies;
+          console.log("OCR results:", ocrResults);
+          const ocrStatus = document.getElementById("coiOcrStatus");
+          if (ocrStatus) {
+            const foundCount = Object.values(ocrResults).filter(v => v !== null && typeof v === "string").length;
+            ocrStatus.textContent = `OCR extracted ${foundCount} policy expiration date(s).`;
+            ocrStatus.style.display = "block";
+            ocrStatus.className = "success small";
+          }
+        }
+      } catch (ocrError) {
+        console.warn("OCR failed, will allow manual entry:", ocrError);
+        ocrErrorMsg = ocrError.message || "OCR processing failed";
+        const ocrStatus = document.getElementById("coiOcrStatus");
+        if (ocrStatus) {
+          ocrStatus.textContent = "OCR could not extract dates. Please enter them manually below.";
+          ocrStatus.style.display = "block";
+          ocrStatus.className = "muted small";
+        }
+        // Continue - allow manual entry
+      }
+
+      // Get existing COI data
       const existingSnap = await getDoc(getPrequalDocRef(user.uid));
       const existingData = existingSnap.exists() ? existingSnap.data() : {};
       const existingCoi = existingData.coi || {};
+      const existingPolicies = existingCoi.policies || {};
+
+      // Build policies object - use OCR results, preserve manual overrides
+      const policies = {
+        workersCompensation: ocrResults?.workersCompensation || existingPolicies.workersCompensation || null,
+        automobileLiability: ocrResults?.automobileLiability || existingPolicies.automobileLiability || null,
+        commercialGeneralLiability: ocrResults?.commercialGeneralLiability || existingPolicies.commercialGeneralLiability || null,
+      };
+
+      // Preserve source flags for manual overrides
+      if (existingPolicies.workersCompensation && existingPolicies.workersCompensationSource === "manual") {
+        policies.workersCompensation = existingPolicies.workersCompensation;
+        policies.workersCompensationSource = "manual";
+      } else if (ocrResults?.workersCompensation) {
+        policies.workersCompensationSource = "ocr";
+      }
+
+      if (existingPolicies.automobileLiability && existingPolicies.automobileLiabilitySource === "manual") {
+        policies.automobileLiability = existingPolicies.automobileLiability;
+        policies.automobileLiabilitySource = "manual";
+      } else if (ocrResults?.automobileLiability) {
+        policies.automobileLiabilitySource = "ocr";
+      }
+
+      if (existingPolicies.commercialGeneralLiability && existingPolicies.commercialGeneralLiabilitySource === "manual") {
+        policies.commercialGeneralLiability = existingPolicies.commercialGeneralLiability;
+        policies.commercialGeneralLiabilitySource = "manual";
+      } else if (ocrResults?.commercialGeneralLiability) {
+        policies.commercialGeneralLiabilitySource = "ocr";
+      }
+
+      // Calculate overall expiration (earliest of the three)
+      let overallExpiration = expInput?.value || null;
+      const validDates = Object.values(policies).filter((d) => d !== null && typeof d === "string");
+      if (validDates.length > 0 && !overallExpiration) {
+        validDates.sort();
+        overallExpiration = validDates[0];
+      }
 
       await setDoc(getPrequalDocRef(user.uid), {
         coiCompleted: true,
         coi: {
           fileName: file.name,
           filePath: path,
-          expiresOn,
+          expiresOn: overallExpiration,
           uploadedAtMs: Date.now(),
-          // Preserve OCR-extracted policy dates if they exist
-          policies: existingCoi.policies || null
+          policies: policies
         },
         updatedAt: serverTimestamp()
       }, { merge: true });
@@ -1833,6 +1951,9 @@ async function initCoiPage(user) {
       if (msg) msg.textContent = "Saved. Your COI is now on file.";
       form.reset();
       await renderCoiCurrent(user);
+      
+      // Update UI to show extracted dates and manual entry options
+      updateCoiPolicyUI(policies);
     } catch (e2) {
       console.error(e2);
       if (err) err.textContent = "Upload failed. Please try again.";
@@ -1840,6 +1961,131 @@ async function initCoiPage(user) {
       if (btn) btn.disabled = false;
     }
   });
+}
+
+// Setup manual entry handlers for each policy
+function setupManualEntryHandlers(user) {
+  const policies = ["WorkersComp", "AutoLiability", "GenLiability"];
+  
+  policies.forEach(policy => {
+    const overrideLink = document.getElementById(`coi${policy}Override`);
+    const manualDiv = document.getElementById(`coi${policy}Manual`);
+    const manualInput = document.getElementById(`coi${policy}ManualInput`);
+    const saveBtn = document.getElementById(`coi${policy}SaveManual`);
+    
+    if (overrideLink) {
+      overrideLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (manualDiv) manualDiv.style.display = "block";
+      });
+    }
+    
+    if (saveBtn && manualInput) {
+      saveBtn.addEventListener("click", async () => {
+        const date = manualInput.value;
+        if (!date) return;
+        
+        const policyKey = policy === "WorkersComp" ? "workersCompensation" :
+                         policy === "AutoLiability" ? "automobileLiability" :
+                         "commercialGeneralLiability";
+        
+        // Get existing data
+        const existingSnap = await getDoc(getPrequalDocRef(user.uid));
+        const existingData = existingSnap.exists() ? existingSnap.data() : {};
+        const existingCoi = existingData.coi || {};
+        const existingPolicies = existingCoi.policies || {};
+        
+        // Update with manual date
+        const updatedPolicies = {
+          ...existingPolicies,
+          [policyKey]: date,
+          [`${policyKey}Source`]: "manual"
+        };
+        
+        await setDoc(getPrequalDocRef(user.uid), {
+          coi: {
+            ...existingCoi,
+            policies: updatedPolicies
+          },
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        
+        // Update UI
+        const expEl = document.getElementById(`coi${policy}Exp`);
+        if (expEl) expEl.textContent = formatDate(date) + " (manual)";
+        if (manualDiv) manualDiv.style.display = "none";
+        if (overrideLink) overrideLink.style.display = "none";
+        
+        await renderCoiCurrent(user);
+      });
+    }
+  });
+}
+
+// Update COI policy UI with extracted dates
+function updateCoiPolicyUI(policies) {
+  // Workers Compensation
+  const wcRow = document.getElementById("coiWorkersCompRow");
+  const wcExp = document.getElementById("coiWorkersCompExp");
+  const wcOverride = document.getElementById("coiWorkersCompOverride");
+  const wcManual = document.getElementById("coiWorkersCompManual");
+  
+  if (wcRow && wcExp) {
+    if (policies.workersCompensation) {
+      wcRow.style.display = "flex";
+      const source = policies.workersCompensationSource === "manual" ? " (manual)" : "";
+      wcExp.textContent = formatDate(policies.workersCompensation) + source;
+      if (wcOverride) wcOverride.style.display = "inline";
+      if (wcManual) wcManual.style.display = "none";
+    } else {
+      wcRow.style.display = "flex";
+      wcExp.textContent = "Not found";
+      if (wcOverride) wcOverride.style.display = "none";
+      if (wcManual) wcManual.style.display = "block";
+    }
+  }
+  
+  // Automobile Liability
+  const autoRow = document.getElementById("coiAutoLiabilityRow");
+  const autoExp = document.getElementById("coiAutoLiabilityExp");
+  const autoOverride = document.getElementById("coiAutoLiabilityOverride");
+  const autoManual = document.getElementById("coiAutoLiabilityManual");
+  
+  if (autoRow && autoExp) {
+    if (policies.automobileLiability) {
+      autoRow.style.display = "flex";
+      const source = policies.automobileLiabilitySource === "manual" ? " (manual)" : "";
+      autoExp.textContent = formatDate(policies.automobileLiability) + source;
+      if (autoOverride) autoOverride.style.display = "inline";
+      if (autoManual) autoManual.style.display = "none";
+    } else {
+      autoRow.style.display = "flex";
+      autoExp.textContent = "Not found";
+      if (autoOverride) autoOverride.style.display = "none";
+      if (autoManual) autoManual.style.display = "block";
+    }
+  }
+  
+  // Commercial General Liability
+  const genRow = document.getElementById("coiGenLiabilityRow");
+  const genExp = document.getElementById("coiGenLiabilityExp");
+  const genOverride = document.getElementById("coiGenLiabilityOverride");
+  const genManual = document.getElementById("coiGenLiabilityManual");
+  
+  if (genRow && genExp) {
+    if (policies.commercialGeneralLiability) {
+      genRow.style.display = "flex";
+      const source = policies.commercialGeneralLiabilitySource === "manual" ? " (manual)" : "";
+      genExp.textContent = formatDate(policies.commercialGeneralLiability) + source;
+      if (genOverride) genOverride.style.display = "inline";
+      if (genManual) genManual.style.display = "none";
+    } else {
+      genRow.style.display = "flex";
+      genExp.textContent = "Not found";
+      if (genOverride) genOverride.style.display = "none";
+      if (genManual) genManual.style.display = "block";
+    }
+  }
 }
 
 async function getAgreementDocRef(uid) {

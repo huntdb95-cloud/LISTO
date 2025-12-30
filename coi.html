@@ -51,10 +51,12 @@
 <input accept=".pdf,.png,.jpg,.jpeg" id="coiFile" required="" type="file"/>
 <span class="muted small" data-i18n="coi.fileHint">Accepted: PDF, PNG, JPG</span>
 </label>
-<label class="field">
-<span class="field-label" data-i18n="coi.expLabel">Expiration date</span>
-<input id="coiExpires" required="" type="date"/>
+<label class="field" id="coiOverallExpField" style="display: none;">
+<span class="field-label" data-i18n="coi.expLabel">Overall Expiration date</span>
+<input id="coiExpires" type="date"/>
+<span class="muted small">(Optional - will use earliest policy expiration if not set)</span>
 </label>
+<div id="coiOcrStatus" class="muted small" style="margin-top: 8px; display: none;"></div>
 <button class="btn primary" data-i18n="coi.uploadBtn" id="coiUploadBtn" type="submit">
                 Upload &amp; Save
               </button>
@@ -80,15 +82,36 @@
 </div>
 <div class="kv-row" id="coiWorkersCompRow" style="display: none;">
 <div class="muted">Workers Compensation</div>
-<div class="kv-val" id="coiWorkersCompExp">—</div>
+<div class="kv-val">
+<span id="coiWorkersCompExp">—</span>
+<a href="#" class="mini-link" id="coiWorkersCompOverride" style="display: none; margin-left: 8px;">Override</a>
+</div>
+<div class="field" id="coiWorkersCompManual" style="display: none; margin-top: 8px;">
+<input type="date" id="coiWorkersCompManualInput" placeholder="Enter expiration manually"/>
+<button type="button" class="btn small" id="coiWorkersCompSaveManual">Save</button>
+</div>
 </div>
 <div class="kv-row" id="coiAutoLiabilityRow" style="display: none;">
 <div class="muted">Automobile Liability</div>
-<div class="kv-val" id="coiAutoLiabilityExp">—</div>
+<div class="kv-val">
+<span id="coiAutoLiabilityExp">—</span>
+<a href="#" class="mini-link" id="coiAutoLiabilityOverride" style="display: none; margin-left: 8px;">Override</a>
+</div>
+<div class="field" id="coiAutoLiabilityManual" style="display: none; margin-top: 8px;">
+<input type="date" id="coiAutoLiabilityManualInput" placeholder="Enter expiration manually"/>
+<button type="button" class="btn small" id="coiAutoLiabilitySaveManual">Save</button>
+</div>
 </div>
 <div class="kv-row" id="coiGenLiabilityRow" style="display: none;">
 <div class="muted">Commercial General Liability</div>
-<div class="kv-val" id="coiGenLiabilityExp">—</div>
+<div class="kv-val">
+<span id="coiGenLiabilityExp">—</span>
+<a href="#" class="mini-link" id="coiGenLiabilityOverride" style="display: none; margin-left: 8px;">Override</a>
+</div>
+<div class="field" id="coiGenLiabilityManual" style="display: none; margin-top: 8px;">
+<input type="date" id="coiGenLiabilityManualInput" placeholder="Enter expiration manually"/>
+<button type="button" class="btn small" id="coiGenLiabilitySaveManual">Save</button>
+</div>
 </div>
 <div class="kv-row">
 <div class="muted" data-i18n="coi.currentUploaded">Uploaded</div>
