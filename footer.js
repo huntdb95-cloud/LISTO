@@ -1,7 +1,7 @@
 // Global Footer Injection Script
 // Injects footer on all non-auth pages and removes old footers
 
-(function() {
+function injectFooter() {
   // Don't inject footer on auth pages
   const isAuthPage = document.body.classList.contains('auth-page') || 
                      (document.body.hasAttribute('data-page') && 
@@ -34,30 +34,39 @@
     logoPath = '../'.repeat(depth) + 'images/logo.png';
   }
   
-  // Find the main element or app-layout to insert footer before closing tag
+  // Find the main element to insert footer into
+  // Footer should be INSIDE main so it works with flexbox sticky footer layout
   const main = document.querySelector('main');
-  const appLayout = document.querySelector('.app-layout');
-  const targetContainer = appLayout || main || document.body;
+  const targetContainer = main || document.body;
+  
+  if (!targetContainer) {
+    // If main/body don't exist yet, try again after a short delay
+    setTimeout(injectFooter, 50);
+    return;
+  }
   
   // Create footer element
   const footer = document.createElement('footer');
   footer.className = 'site-footer-global';
+  const currentYear = new Date().getFullYear();
   footer.innerHTML = `
     <div class="site-footer-global-content">
       <img src="${logoPath}" alt="Listo" class="site-footer-global-logo" />
       <p class="site-footer-global-tagline">Listo Built to help subcontractors look sharp, stay compliant, and win more work.</p>
-      <p class="site-footer-global-copyright">© 2025 Listo Co LLC</p>
+      <p class="site-footer-global-copyright">© ${currentYear} Listo Co LLC</p>
     </div>
   `;
   
-  // Insert footer before mobile bottom nav or at end of target container
-  const mobileNav = document.querySelector('.mobile-bottom-nav');
-  if (mobileNav && mobileNav.parentElement === targetContainer) {
-    targetContainer.insertBefore(footer, mobileNav);
-  } else if (main) {
-    main.appendChild(footer);
-  } else {
-    targetContainer.appendChild(footer);
-  }
-})();
+  // Always append footer to the end of main (or body if no main)
+  // This ensures it appears after all content and works with sticky footer flexbox layout
+  targetContainer.appendChild(footer);
+}
+
+// Run footer injection when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', injectFooter);
+} else {
+  // DOM is already ready
+  injectFooter();
+}
 
