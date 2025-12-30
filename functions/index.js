@@ -372,10 +372,36 @@ exports.processCoiUpload = functions
         // Parse COI expiration dates from extracted text (use improved version)
         const parsedPolicies = parseCoiTextImproved(fullText, false);
 
-        // Update prequal document with extracted policy dates
+        // Build coverages object in simplified format: { workersComp: "2026-01-31" | null, ... }
+        const simplifiedCoverages = {
+          workersComp: parsedPolicies.workersCompensation || null,
+          autoLiability: parsedPolicies.automobileLiability || null,
+          generalLiability: parsedPolicies.commercialGeneralLiability || null,
+        };
+
+        // Update prequal document with extracted policy dates (legacy path)
         await updatePrequalWithCoiData(userId, parsedPolicies, filePath);
 
-        console.log(`Successfully processed COI for user ${userId}`);
+        // Also update canonical path: /users/{uid}/prequal/coi (same as processCOIForCompliance)
+        const coiRef = admin
+            .firestore()
+            .collection("users")
+            .doc(userId)
+            .collection("prequal")
+            .doc("coi");
+
+        await coiRef.set({
+          current: {
+            coverages: simplifiedCoverages, // Format: { workersComp: "2026-01-31" | null, autoLiability: "2026-01-31" | null, generalLiability: "2026-01-31" | null }
+            extractedAt: admin.firestore.FieldValue.serverTimestamp(),
+            storagePath: filePath,
+            extractedTextLength: fullText.length,
+            requestId: `storage-trigger-${Date.now()}`,
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+
+        console.log(`Successfully processed COI for user ${userId} (both legacy and canonical paths updated)`);
         return null;
       } catch (error) {
         console.error(`Error processing COI: ${error.message}`, error);
@@ -1005,8 +1031,12 @@ async function updatePrequalWithCoiData(userId, parsedPolicies, filePath) {
   }
 
   // Determine overall expiration (earliest of the three, or use existing expiresOn if set)
+  // Filter out source flag strings (e.g., "ocr", "manual") - only include date strings (YYYY-MM-DD format)
   let overallExpiration = existingCoi.expiresOn || null;
-  const validDates = Object.values(policies).filter((d) => d !== null);
+  const validDates = Object.values(policies).filter((d) => {
+    // Only include date strings matching YYYY-MM-DD pattern, exclude source flags like "ocr" or "manual"
+    return d !== null && typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  });
   if (validDates.length > 0) {
     validDates.sort();
     overallExpiration = validDates[0]; // Earliest expiration

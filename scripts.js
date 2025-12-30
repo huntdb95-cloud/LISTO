@@ -1770,7 +1770,7 @@ async function renderCoiCurrent(user) {
       if (debugInfo && debugVisible && coiData.current) {
         const info = {
           extractedAt: coiData.current.extractedAt ? (coiData.current.extractedAt.toDate ? coiData.current.extractedAt.toDate().toISOString() : coiData.current.extractedAt) : null,
-          coveragesFound: coiData.current.coverages ? Object.keys(coiData.current.coverages).filter(k => coiData.current.coverages[k]?.expirationDate).length : 0,
+          coveragesFound: coiData.current.coverages ? Object.values(coiData.current.coverages).filter(c => c !== null && typeof c === "string").length : 0,
           storagePath: coiData.current.storagePath || null,
           extractedTextLength: coiData.current.extractedTextLength || 0,
         };
