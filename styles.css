@@ -30,6 +30,8 @@ body:not(.auth-page) .app-layout {
     align-items: start;
     gap: 0; /* No gap between sidebar and main */
     width: 100%; /* Full width container */
+    /* Ensure no overflow that breaks sticky positioning */
+    overflow: visible;
   }
   
   /* Main content sits in grid column 2, no margin needed */
@@ -39,6 +41,11 @@ body:not(.auth-page) .app-layout {
     margin-left: 0; /* Remove margin since grid handles spacing */
     width: 100%; /* Full width of grid column */
     min-width: 0; /* Allow content to shrink if needed */
+    /* Ensure main is flex column for footer positioning */
+    display: flex;
+    flex-direction: column;
+    /* Ensure no overflow that breaks layout */
+    overflow: visible;
   }
   
   /* Sidebar container sits in grid column 1 */
@@ -47,6 +54,10 @@ body:not(.auth-page) .app-layout {
     grid-row: 1; /* Same row as main */
     width: var(--sidebar-width, 260px); /* Fixed width for sidebar */
     min-width: var(--sidebar-width, 260px); /* Prevent shrinking */
+    /* Critical: align-self start ensures sticky works correctly */
+    align-self: start;
+    /* Ensure no overflow that breaks sticky positioning */
+    overflow: visible;
   }
   
   /* Ensure sidebar element inside container is properly sized */
@@ -70,6 +81,10 @@ body:not(.auth-page) main {
     display: flex; /* Keep flex display for footer positioning */
     flex-direction: column; /* Keep column direction for footer */
     width: auto; /* Let grid column control width */
+    /* Ensure main content flows naturally - footer at end */
+    min-height: 0; /* Allow content to determine height */
+    /* Prevent any overflow that could cause layout issues */
+    overflow: visible;
   }
 }
 
@@ -78,6 +93,14 @@ body:not(.auth-page) main {
 body:not(.auth-page) main .site-footer {
   margin-top: auto;
   flex-shrink: 0;
+  /* Ensure footer is in normal flow - no positioning that causes floating */
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  z-index: auto !important;
 }
 
 :root{
@@ -1098,6 +1121,21 @@ body[data-page="landing"] .lang-switch-mobile {
   top: auto;
   left: auto;
   right: auto;
+}
+
+/* Desktop: Ensure footer never floats into content - enforce normal flow */
+@media (min-width: 1024px) {
+  .site-footer {
+    position: static !important;
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+    /* Ensure footer appears only at true end of content */
+    margin-top: auto; /* Only works if parent is flex column */
+  }
 }
 
 /* Footer logo - small centered logo */
@@ -3745,6 +3783,13 @@ body[data-page="bookkeeping"] .page-title {
     max-height: calc(100vh - var(--header-height, 72px));
     overflow-y: auto;
     overflow-x: hidden;
+    /* Critical: align-self start ensures sticky works within grid */
+    align-self: start;
+    /* Ensure sticky is not broken by transforms or filters */
+    transform: none;
+    filter: none;
+    /* Ensure proper z-index */
+    z-index: 40;
   }
 }
 
