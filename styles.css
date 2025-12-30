@@ -16,10 +16,44 @@ body:not(.auth-page) {
 /* Pages with app-layout */
 body:not(.auth-page) .app-layout {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Mobile: stack vertically */
   min-height: 100vh;
   min-height: 100dvh; /* Use dynamic viewport height where supported for better mobile support */
   flex: 1;
+}
+
+/* Desktop: Use CSS Grid for reliable sidebar + main side-by-side layout */
+@media (min-width: 1024px) {
+  body:not(.auth-page) .app-layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-width, 260px) 1fr; /* Sidebar 260px, main takes remaining space */
+    grid-template-rows: auto; /* Let content determine height */
+    align-items: start;
+    gap: 0; /* No gap between sidebar and main */
+    width: 100%; /* Full width container */
+  }
+  
+  /* Main content sits in grid column 2, no margin needed */
+  body:not(.auth-page) .app-layout > main {
+    grid-column: 2;
+    grid-row: 1; /* Same row as sidebar */
+    margin-left: 0; /* Remove margin since grid handles spacing */
+    width: 100%; /* Full width of grid column */
+    min-width: 0; /* Allow content to shrink if needed */
+  }
+  
+  /* Sidebar container sits in grid column 1 */
+  body:not(.auth-page) .app-layout > #sidebar {
+    grid-column: 1;
+    grid-row: 1; /* Same row as main */
+    width: var(--sidebar-width, 260px); /* Fixed width for sidebar */
+    min-width: var(--sidebar-width, 260px); /* Prevent shrinking */
+  }
+  
+  /* Ensure sidebar element inside container is properly sized */
+  body:not(.auth-page) .app-layout > #sidebar > .app-sidebar {
+    width: 100%;
+  }
 }
 
 body:not(.auth-page) .app-layout > main,
@@ -27,6 +61,14 @@ body:not(.auth-page) main {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* Desktop: Override flex properties for grid layout */
+@media (min-width: 1024px) {
+  body:not(.auth-page) .app-layout > main {
+    flex: none; /* Remove flex since grid handles sizing */
+    width: auto; /* Let grid column control width */
+  }
 }
 
 /* Ensure footer is at bottom when content is short */
@@ -44,6 +86,12 @@ body:not(.auth-page) .site-footer-global {
   
   /* Header height - updated dynamically via JS, default fallback */
   --header-height: 72px;
+  
+  /* Sidebar width - consistent across desktop */
+  --sidebar-width: 260px;
+  
+  /* Sidebar width - consistent across desktop */
+  --sidebar-width: 260px;
 
   /* Light theme */
   --text: #151F1C;          /* near-black */
@@ -3650,6 +3698,7 @@ body[data-page="bookkeeping"] .page-title {
 }
 
 /* ========== App Layout ========== */
+/* Base layout - overridden by body:not(.auth-page) .app-layout above */
 .app-layout {
   display: flex;
   min-height: 100vh;
@@ -3693,25 +3742,12 @@ body[data-page="bookkeeping"] .page-title {
 @media (min-width: 1024px) {
   .app-sidebar {
     display: block;
-    position: sticky; /* Change from fixed to sticky so it stays aligned with header */
+    position: sticky; /* Sticky so it stays aligned with header during scroll */
     top: var(--header-height, 72px);
-    align-self: flex-start; /* Align to top of flex container */
     height: calc(100vh - var(--header-height, 72px));
     max-height: calc(100vh - var(--header-height, 72px));
-  }
-  
-  /* Ensure app-layout is a horizontal flex container for sticky to work */
-  .app-layout {
-    display: flex;
-    flex-direction: row; /* Sidebar and main side-by-side */
-    align-items: flex-start; /* Align items to top */
-  }
-  
-  /* Adjust main content to account for sidebar */
-  .app-layout > main {
-    margin-left: 260px;
-    flex: 1;
-    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 }
 
