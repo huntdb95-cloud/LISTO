@@ -17,6 +17,7 @@ body:not(.auth-page) .app-layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height where supported for better mobile support */
   flex: 1;
 }
 
@@ -1090,6 +1091,11 @@ body[data-page="landing"] .lang-switch-mobile {
   .site-footer-global {
     padding-bottom: 24px; /* Normal footer padding - main element provides space above nav */
     margin-bottom: 0;
+  }
+  
+  /* Ensure old .site-footer (if visible) also has proper spacing */
+  .site-footer {
+    margin-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
   }
 }
 
