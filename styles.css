@@ -1041,6 +1041,10 @@ body[data-page="landing"] .lang-switch-mobile {
   margin-top: auto; /* Push to bottom with flexbox */
   text-align: center;
   flex-shrink: 0; /* Prevent footer from shrinking */
+  position: relative; /* Ensure footer is in normal flow */
+  z-index: 1; /* Above background but below nav */
+  display: block; /* Ensure it's displayed */
+  visibility: visible; /* Ensure it's visible */
 }
 
 .site-footer-global-content {
@@ -1081,21 +1085,11 @@ body[data-page="landing"] .lang-switch-mobile {
   text-align: center;
 }
 
-/* Mobile: Add padding above bottom nav */
+/* Mobile: Ensure footer has proper spacing above bottom nav */
 @media (max-width: 1023px) {
   .site-footer-global {
-    padding-bottom: calc(16px + var(--bottom-nav-height, 60px));
+    padding-bottom: 24px; /* Normal footer padding - main element provides space above nav */
     margin-bottom: 0;
-  }
-  
-  /* Ensure main content has bottom padding to prevent footer from being hidden */
-  body:not(.auth-page) main {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + 20px);
-  }
-  
-  /* For pages using app-layout structure */
-  body:not(.auth-page) .app-layout > main {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + 20px);
   }
 }
 
@@ -4056,14 +4050,19 @@ body[data-page="bookkeeping"] .page-title {
   }
   
   /* Global fix: Add bottom padding to main content to prevent cutoff by bottom nav */
-  /* This ensures all pages have enough space so content is never hidden behind the nav */
+  /* This ensures all pages have enough space so content (including footer) is never hidden behind the nav */
   .app-layout > main {
-    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  
+  /* Also apply to pages without app-layout */
+  body:not(.auth-page) > main {
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
   }
   
   /* Also apply to page-wrap containers for pages that use them directly */
   .page-wrap {
-    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 20px);
   }
   
   /* Update existing page-specific fixes to use the CSS variable for consistency */

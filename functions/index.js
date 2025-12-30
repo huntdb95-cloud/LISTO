@@ -606,13 +606,13 @@ function parseW9Text(text) {
  */
 function parseCoiTextImproved(text, debug = false) {
   const matchedAnchors = {};
-  
+
   // Normalize text: create uppercase version for matching, keep original
   const textUpper = text.toUpperCase();
   // Replace multiple spaces with single space, keep line breaks
   const textNormalized = text.replace(/\s+/g, " ");
   const textFlattened = text.replace(/\s+/g, " ").replace(/\n/g, " ");
-  
+
   // Date regex: MM/DD/YYYY, MM-DD-YYYY (handles 2-digit year)
   const DATE_RE = /\b(0?[1-9]|1[0-2])[\/\-.](0?[1-9]|[12]\d|3[01])[\/\-.]((?:19|20)?\d{2})\b/g;
 
@@ -624,20 +624,20 @@ function parseCoiTextImproved(text, debug = false) {
   // Date extraction patterns (using DATE_RE source)
   const DATE_PATTERN_SOURCE = "(0?[1-9]|1[0-2])[\\/\\-.]?(0?[1-9]|[12]\\d|3[01])[\\/\\-.]?((?:19|20)?\\d{2})";
   const EFF_EXP_PAIR_RE = new RegExp(
-    `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN_SOURCE}[\\s\\S]{0,40}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
-    "i",
+      `\\b(?:EFF(?:ECTIVE)?|EFFECTIVE)\\b[\\s:]*${DATE_PATTERN_SOURCE}[\\s\\S]{0,40}?\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
+      "i",
   );
   const EXP_DATE_NEAR_RE = new RegExp(
-    `\\b(?:EXP(?:IRATION)?|EXPIRES?|POLICY\\s*EXP|EXP\\s*DATE)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
-    "ig",
+      `\\b(?:EXP(?:IRATION)?|EXPIRES?|POLICY\\s*EXP|EXP\\s*DATE)\\b[\\s:]*${DATE_PATTERN_SOURCE}`,
+      "ig",
   );
   const DATE_BEFORE_EXP_RE = new RegExp(
-    `${DATE_PATTERN_SOURCE}[\\s\\S]{0,25}\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b`,
-    "ig",
+      `${DATE_PATTERN_SOURCE}[\\s\\S]{0,25}\\b(?:EXP(?:IRATION)?|EXPIRES?)\\b`,
+      "ig",
   );
   const TWO_DATES_CLOSE_RE = new RegExp(
-    `${DATE_PATTERN_SOURCE}[\\s\\S]{0,60}?${DATE_PATTERN_SOURCE}`,
-    "ig",
+      `${DATE_PATTERN_SOURCE}[\\s\\S]{0,60}?${DATE_PATTERN_SOURCE}`,
+      "ig",
   );
 
   // Helper to normalize date to YYYY-MM-DD
@@ -645,12 +645,12 @@ function parseCoiTextImproved(text, debug = false) {
     const m = parseInt(month, 10);
     const d = parseInt(day, 10);
     let y = parseInt(year, 10);
-    
+
     // Handle 2-digit year
     if (y < 100) {
       y = y < 50 ? 2000 + y : 1900 + y;
     }
-    
+
     if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
       return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     }
@@ -2114,7 +2114,7 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
 
     // Parse COI expiration dates from extracted text
     const parsedPolicies = parseCoiTextImproved(extractedText, data.debug || false);
-    
+
     // Build coverages object in simplified format: { workersComp: "2026-01-31" | null, ... }
     const coverages = {
       workersComp: parsedPolicies.workersCompensation || null,
@@ -2144,7 +2144,7 @@ exports.processCOIForCompliance = functions.region("us-central1").https.onCall(a
     console.log(JSON.stringify({
       requestId,
       operation: "processCOIForCompliance_saved",
-      coveragesFound: Object.values(coverages).filter(c => c !== null && typeof c === "string").length,
+      coveragesFound: Object.values(coverages).filter((c) => c !== null && typeof c === "string").length,
       uid: userId,
       timestamp: new Date().toISOString(),
     }));
