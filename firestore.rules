@@ -220,6 +220,19 @@ service cloud.firestore {
           && (!('status' in request.resource.data) || request.resource.data.status in ['not-started', 'in-progress', 'waiting', 'completed', 'invoiced', 'paid']);
         
         allow delete: if isOwner(userId);
+        
+        // Estimates subcollection: /users/{uid}/builders/{builderId}/jobs/{jobId}/estimates/{estimateId}
+        match /estimates/{estimateId} {
+          allow read: if isOwner(userId);
+          
+          allow create: if isOwner(userId);
+          // Note: Estimate structure is flexible (estimateName, notes, categories, totals, etc.)
+          
+          allow update: if isOwner(userId);
+          // Note: Estimate structure may include various fields
+          
+          allow delete: if isOwner(userId);
+        }
       }
       
       // Contracts subcollection: /users/{uid}/builders/{builderId}/contracts/{contractId}
