@@ -553,15 +553,19 @@ function init() {
     }
   });
   
-  // Camera input change handler (for desktop photo capture only - hidden on mobile)
+  // Camera input change handler (for mobile photo capture only - hidden on desktop)
   const cameraFile = $("cameraFile");
   const cameraLabel = $("cameraLabel");
   if (cameraFile && cameraLabel) {
-    // Show camera button on desktop only (mobile uses main upload button)
+    // Show camera button on mobile only (desktop hides it via CSS)
     function updateCameraVisibility() {
       const isMobile = window.innerWidth <= 768;
-      // On mobile, hide the camera button - main upload button handles both files and camera
-      cameraLabel.style.display = isMobile ? "none" : "inline-flex";
+      // On mobile, show the camera button; on desktop, CSS will hide it
+      // CSS handles desktop hiding, so we only need to show on mobile
+      if (isMobile) {
+        cameraLabel.style.display = "inline-flex";
+      }
+      // Desktop hiding is handled by CSS media query
     }
     updateCameraVisibility();
     window.addEventListener("resize", updateCameraVisibility);
