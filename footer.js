@@ -45,7 +45,7 @@
   footer.innerHTML = `
     <div class="site-footer-global-content">
       <img src="${logoPath}" alt="Listo" class="site-footer-global-logo" />
-      <p class="site-footer-global-tagline">Built to help contractors focus on their work by automating the business side of things.</p>
+      <p class="site-footer-global-tagline">Listo Built to help subcontractors look sharp, stay compliant, and win more work.</p>
       <p class="site-footer-global-copyright">© 2025 Listo Co LLC</p>
     </div>
   `;

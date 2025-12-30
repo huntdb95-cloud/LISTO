@@ -1,6 +1,37 @@
 /* ========== Base / Reset ========== */
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html, body { 
+  height: 100%; 
+  min-height: 100vh;
+}
+
+/* Sticky footer layout for non-auth pages */
+body:not(.auth-page) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Pages with app-layout */
+body:not(.auth-page) .app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  flex: 1;
+}
+
+body:not(.auth-page) .app-layout > main,
+body:not(.auth-page) main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure footer is at bottom when content is short */
+body:not(.auth-page) .site-footer-global {
+  margin-top: auto;
+  flex-shrink: 0;
+}
 
 :root{
   /* Brand colors sampled from the new logo */
@@ -992,39 +1023,13 @@ body[data-page="landing"] .lang-switch-mobile {
   color: var(--text);
 }
 
-/* Footer */
-.site-footer{
-  padding: 34px 0 12px;
-  border-top: 1px solid rgba(21,31,28,0.10);
-  color: var(--text);
+/* Old Footer - Hidden (replaced by global footer) */
+.site-footer {
+  display: none !important;
 }
-.footer-inner{
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.footer-links{
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.footer-links a{
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.footer-links a:hover{
-  background: var(--brand-light);
-  border-color: var(--border-brand);
-  color: var(--brand-dark);
-  transform: translateY(-1px);
+
+.footer-links {
+  display: none !important;
 }
 
 /* Global Footer (New) */
@@ -1033,8 +1038,9 @@ body[data-page="landing"] .lang-switch-mobile {
   border-top: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  margin-top: 48px;
+  margin-top: auto; /* Push to bottom with flexbox */
   text-align: center;
+  flex-shrink: 0; /* Prevent footer from shrinking */
 }
 
 .site-footer-global-content {
@@ -1052,18 +1058,27 @@ body[data-page="landing"] .lang-switch-mobile {
   opacity: 0.8;
 }
 
+/* Desktop: Slightly larger logo */
+@media (min-width: 1024px) {
+  .site-footer-global-logo {
+    height: 36px;
+  }
+}
+
 .site-footer-global-tagline {
   margin: 0;
   font-size: 0.95rem;
   color: var(--muted);
   line-height: 1.6;
   max-width: 100%;
+  text-align: center;
 }
 
 .site-footer-global-copyright {
   margin: 0;
   font-size: 0.85rem;
   color: var(--muted);
+  text-align: center;
 }
 
 /* Mobile: Add padding above bottom nav */
@@ -1084,49 +1099,9 @@ body[data-page="landing"] .lang-switch-mobile {
   }
 }
 
-/* Mobile: Force 4-column layout for footer quick links */
-@media (max-width: 768px) {
-  .footer-links {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    flex-wrap: nowrap;
-    width: 100%;
-  }
-  .footer-links a {
-    padding: 10px 4px;
-    font-size: 0.8rem;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0; /* Allow flex shrinking */
-    line-height: 1.2;
-  }
-  /* If more than 4 links, wrap to next row */
-  .footer-links a:nth-child(n+5) {
-    grid-column: span 2;
-  }
-  .footer-tagline {
-    text-align: center;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-width: 100%;
-  }
-}
-
-/* Extra small mobile: slightly smaller font if needed */
-@media (max-width: 375px) {
-  .footer-links a {
-    font-size: 0.75rem;
-    padding: 8px 4px;
-  }
-}
-.footer-bottom{
-  margin-top: 16px;
-  padding-top: 14px;
-  padding-bottom: 8px;
-  border-top: 1px solid rgba(21,31,28,0.10);
+/* Old footer styles removed - footer links are hidden */
+.footer-bottom {
+  display: none !important;
 }
 
 /* ===== Auth Pages ===== */
