@@ -4090,6 +4090,11 @@ body[data-page="bookkeeping"] .page-title {
     padding-bottom: 0; /* Remove duplicate padding - main already has it */
   }
   
+  /* Ensure Settings page logout button has proper spacing above bottom nav */
+  body[data-page="settings"] .mobile-logout-btn {
+    margin-bottom: 0; /* No extra margin - main padding handles spacing */
+  }
+  
   /* Update existing page-specific fixes to use the CSS variable for consistency */
   /* These pages may have had custom padding, now standardized */
   body[data-page="landing"] {
@@ -4208,7 +4213,8 @@ body[data-page="bookkeeping"] .page-title {
     background: var(--panel);
     border-top: 1px solid var(--border);
     position: static; /* Normal document flow - scrolls with page */
-    z-index: auto;
+    z-index: 1; /* Ensure it's above background but below modals */
+    pointer-events: auto; /* Ensure clicks work */
   }
   
   .mobile-logout-btn .btn {
@@ -4216,6 +4222,9 @@ body[data-page="bookkeeping"] .page-title {
     justify-content: center;
     padding: 14px 20px;
     font-size: 1rem;
+    pointer-events: auto; /* Ensure button is clickable */
+    position: relative; /* Create stacking context */
+    z-index: 1;
   }
 }
 

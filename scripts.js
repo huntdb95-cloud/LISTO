@@ -1209,8 +1209,13 @@ function sanitizeHTML(html) {
 }
 
 function applyTranslations(lang) {
+  const DEBUG = false; // Set to true for debugging
   const dict = I18N[lang] || I18N.en;
   document.documentElement.lang = lang;
+  
+  let translatedCount = 0;
+  
+  // Handle text content translations
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     if (dict[key]) {
@@ -1221,17 +1226,40 @@ function applyTranslations(lang) {
       } else {
         el.textContent = translation;
       }
+      translatedCount++;
+    } else if (DEBUG) {
+      console.warn(`[i18n] Missing translation key: ${key}`);
     }
   });
+  
   // Handle placeholder translations
   document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
     const key = el.getAttribute("data-i18n-placeholder");
     if (dict[key]) {
       el.placeholder = dict[key];
+      translatedCount++;
+    } else if (DEBUG) {
+      console.warn(`[i18n] Missing placeholder translation key: ${key}`);
     }
   });
+  
+  // Handle value translations (for buttons, inputs, etc.)
+  document.querySelectorAll("[data-i18n-value]").forEach(el => {
+    const key = el.getAttribute("data-i18n-value");
+    if (dict[key]) {
+      el.value = dict[key];
+      translatedCount++;
+    } else if (DEBUG) {
+      console.warn(`[i18n] Missing value translation key: ${key}`);
+    }
+  });
+  
   setPressedButtons(lang);
   localStorage.setItem(LANG_KEY, lang);
+  
+  if (DEBUG) {
+    console.log(`[i18n] Applied ${lang} translations to ${translatedCount} elements`);
+  }
 }
 
 // Make applyTranslations available globally for account.js
@@ -1256,14 +1284,25 @@ async function loadUserLanguage(user) {
 }
 
 function initLanguage() {
+  const DEBUG = false; // Set to true for debugging
   // For non-authenticated pages (login, signup, forgot password, landing), use localStorage
   const saved = localStorage.getItem(LANG_KEY);
   const lang = (saved && I18N[saved]) ? saved : "en";
+  
+  if (DEBUG) {
+    console.log(`[i18n] Initializing language: ${lang} (saved: ${saved})`);
+  }
+  
   applyTranslations(lang);
   
   // Set up language toggle buttons
-  document.querySelectorAll("[data-lang]").forEach(btn => {
-    // Remove any existing listeners
+  const toggleButtons = document.querySelectorAll("[data-lang]");
+  if (DEBUG) {
+    console.log(`[i18n] Found ${toggleButtons.length} language toggle buttons`);
+  }
+  
+  toggleButtons.forEach(btn => {
+    // Remove any existing listeners by cloning
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
     
@@ -1271,10 +1310,17 @@ function initLanguage() {
       e.preventDefault();
       e.stopPropagation();
       const selectedLang = newBtn.getAttribute("data-lang");
+      if (DEBUG) {
+        console.log(`[i18n] Language toggle clicked: ${selectedLang}`);
+      }
       localStorage.setItem(LANG_KEY, selectedLang);
       applyTranslations(selectedLang);
     });
   });
+  
+  if (DEBUG) {
+    console.log(`[i18n] Language initialization complete`);
+  }
 }
 
 async function initLanguageForUser(user) {
@@ -4453,13 +4499,24 @@ function initMobileLogoutButton(user, authInstance) {
     mobileLogoutBtn.hidden = !user;
     
     // Set up mobile logout handler only once, but only if Firebase auth is initialized
+    // Use event delegation to ensure it works even if button is re-rendered
     if (!mobileLogoutBtn.dataset.handlerAttached && authInstance) {
       mobileLogoutBtn.dataset.handlerAttached = "true";
-      mobileLogoutBtn.addEventListener("click", (e) => {
+      
+      // Use both click and touchstart for better mobile compatibility
+      const handleLogout = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         showLogoutConfirmation();
-      });
+      };
+      
+      mobileLogoutBtn.addEventListener("click", handleLogout, { passive: false });
+      mobileLogoutBtn.addEventListener("touchstart", handleLogout, { passive: false });
+      
+      // Ensure button is clickable
+      mobileLogoutBtn.style.pointerEvents = "auto";
+      mobileLogoutBtn.style.cursor = "pointer";
     }
   }
 }
@@ -4630,10 +4687,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSidebarNav();
   }, 100);
 
-  // Initialize language immediately for auth pages (login, signup, forgot)
+  // Initialize language immediately for auth pages (login, signup, forgot) and landing page
   const page = document.body?.getAttribute("data-page");
   const isAuthPage = page === "login" || page === "signup" || page === "forgot" || window.location.pathname.includes("/forgot/");
-  if (isAuthPage) {
+  const isLandingPage = page === "landing" || window.location.pathname === "/" || window.location.pathname.endsWith("/index.html");
+  
+  // Initialize language for landing and auth pages (non-authenticated pages)
+  if (isAuthPage || isLandingPage) {
     initLanguage();
   }
 
@@ -4641,6 +4701,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!ok) return;
 
   onAuthStateChanged(auth, async (user) => {
+    // Re-check page type in case it's needed
+    const currentPage = document.body?.getAttribute("data-page");
+    const currentIsAuthPage = currentPage === "login" || currentPage === "signup" || currentPage === "forgot" || window.location.pathname.includes("/forgot/");
+    const currentIsLandingPage = currentPage === "landing" || window.location.pathname === "/" || window.location.pathname.endsWith("/index.html");
     // Handle sidebar logout button (desktop)
     const sidebarLogoutBtn = document.getElementById("sidebarLogoutBtn");
     if (sidebarLogoutBtn) {
@@ -4664,8 +4728,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (headerAvatar) headerAvatar.hidden = !user;
     
     // Initialize language based on auth state
-    // Skip for auth pages since initLanguage() was already called
-    if (!isAuthPage) {
+    // Skip for auth pages and landing page since initLanguage() was already called
+    if (!currentIsAuthPage && !currentIsLandingPage) {
       await initLanguageForUser(user);
     }
     
