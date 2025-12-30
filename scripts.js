@@ -4499,13 +4499,24 @@ function initMobileLogoutButton(user, authInstance) {
     mobileLogoutBtn.hidden = !user;
     
     // Set up mobile logout handler only once, but only if Firebase auth is initialized
+    // Use event delegation to ensure it works even if button is re-rendered
     if (!mobileLogoutBtn.dataset.handlerAttached && authInstance) {
       mobileLogoutBtn.dataset.handlerAttached = "true";
-      mobileLogoutBtn.addEventListener("click", (e) => {
+      
+      // Use both click and touchstart for better mobile compatibility
+      const handleLogout = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         showLogoutConfirmation();
-      });
+      };
+      
+      mobileLogoutBtn.addEventListener("click", handleLogout, { passive: false });
+      mobileLogoutBtn.addEventListener("touchstart", handleLogout, { passive: false });
+      
+      // Ensure button is clickable
+      mobileLogoutBtn.style.pointerEvents = "auto";
+      mobileLogoutBtn.style.cursor = "pointer";
     }
   }
 }
