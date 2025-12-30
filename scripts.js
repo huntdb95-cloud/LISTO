@@ -4493,53 +4493,13 @@ if (typeof window !== 'undefined') {
 }
 
 /* ========== Mobile Logout Button Initialization ========== */
+// Legacy function - kept for compatibility but handlers now use event delegation
 function initMobileLogoutButton(user, authInstance) {
   const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
   if (mobileLogoutBtn) {
     mobileLogoutBtn.hidden = !user;
-    
-    // Set up mobile logout handler only once, but only if Firebase auth is initialized
-    if (!mobileLogoutBtn.dataset.handlerAttached && authInstance) {
-      mobileLogoutBtn.dataset.handlerAttached = "true";
-      
-      // Flag to prevent double-firing on touch devices (touchstart + synthetic click)
-      let touchHandled = false;
-      
-      const handleLogout = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        showLogoutConfirmation();
-      };
-      
-      // Handle touchstart for mobile devices
-      mobileLogoutBtn.addEventListener("touchstart", (e) => {
-        touchHandled = true;
-        handleLogout(e);
-        // Clear flag after a short delay to allow for rapid successive taps
-        setTimeout(() => {
-          touchHandled = false;
-        }, 300);
-      }, { passive: false });
-      
-      // Handle click (for desktop and as fallback)
-      // On touch devices, prevent synthetic click from firing after touchstart
-      mobileLogoutBtn.addEventListener("click", (e) => {
-        if (touchHandled) {
-          // This is a synthetic click after touchstart, ignore it
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          return;
-        }
-        // This is a real click (desktop or mouse), handle it
-        handleLogout(e);
-      }, { passive: false });
-      
-      // Ensure button is clickable
-      mobileLogoutBtn.style.pointerEvents = "auto";
-      mobileLogoutBtn.style.cursor = "pointer";
-    }
+    // Handlers are now attached via global event delegation (see document.addEventListener("click", ...))
+    // This function only manages visibility
   }
 }
 
@@ -4573,16 +4533,42 @@ function showLogoutConfirmation() {
     
     cancelBtn.addEventListener("click", hideLogoutConfirmation);
     confirmBtn.addEventListener("click", async () => {
+      // Disable button to prevent double-clicks
+      confirmBtn.disabled = true;
+      const originalText = confirmBtn.textContent;
+      confirmBtn.textContent = "Signing out...";
+      
       try {
-        await signOut(auth);
+        // Sign out from Firebase
+        if (auth) {
+          await signOut(auth);
+        }
+        
+        // Clear any auth-related localStorage
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        sessionStorage.clear();
+        
         // Calculate relative path to login page from current location
         const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
         const depth = pathSegments.length;
-        const loginPath = depth > 0 ? "../".repeat(depth) + "login/login.html" : (window.location.pathname.includes("/settings/") ? "../login/login.html" : "login/login.html");
+        let loginPath = "login/login.html";
+        
+        if (depth > 0) {
+          loginPath = "../".repeat(depth) + "login/login.html";
+        } else if (window.location.pathname.includes("/settings/")) {
+          loginPath = "../login/login.html";
+        }
+        
+        // Redirect to login page
         window.location.href = loginPath;
       } catch (e) {
         console.error("Logout error:", e);
+        // Re-enable button on error
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
         hideLogoutConfirmation();
+        alert("Failed to sign out. Please try again.");
       }
     });
     
@@ -4699,6 +4685,20 @@ if (typeof window !== 'undefined') {
   }
 })();
 
+// Global logout handler using event delegation (works even if buttons are re-rendered)
+document.addEventListener("click", async (e) => {
+  // Check if click target is a logout button (by data-action, id, or class)
+  const logoutBtn = e.target.closest('[data-action="logout"], #mobileLogoutBtn, #sidebarLogoutBtn, .logout-btn');
+  if (!logoutBtn) return;
+  
+  // Prevent default and stop propagation
+  e.preventDefault();
+  e.stopPropagation();
+  
+  // Show logout confirmation modal
+  showLogoutConfirmation();
+}, { passive: false });
+
 document.addEventListener("DOMContentLoaded", async () => {
   initSidebarNav();
   initYear();
@@ -4727,23 +4727,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentPage = document.body?.getAttribute("data-page");
     const currentIsAuthPage = currentPage === "login" || currentPage === "signup" || currentPage === "forgot" || window.location.pathname.includes("/forgot/");
     const currentIsLandingPage = currentPage === "landing" || window.location.pathname === "/" || window.location.pathname.endsWith("/index.html");
-    // Handle sidebar logout button (desktop)
+    // Handle sidebar logout button (desktop) - visibility only
+    // Handlers are attached via global event delegation (see document.addEventListener("click", ...))
     const sidebarLogoutBtn = document.getElementById("sidebarLogoutBtn");
     if (sidebarLogoutBtn) {
       sidebarLogoutBtn.hidden = !user;
-      
-      // Set up logout handler only once per button instance
-      if (!sidebarLogoutBtn.dataset.handlerAttached && auth) {
-        sidebarLogoutBtn.dataset.handlerAttached = "true";
-        sidebarLogoutBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          showLogoutConfirmation();
-        });
-      }
     }
     
-    // Handle mobile logout button (mobile only)
+    // Handle mobile logout button (mobile only) - visibility only
+    // Handlers are attached via global event delegation (see document.addEventListener("click", ...))
     initMobileLogoutButton(user, auth);
     
     const headerAvatar = document.getElementById("headerAvatar");

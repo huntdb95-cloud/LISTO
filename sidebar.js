@@ -89,7 +89,7 @@ function createSidebarHTML(basePath = '') {
           </li>
         </ul>
         <div class="sidebar-footer">
-          <button id="sidebarLogoutBtn" class="sidebar-link sidebar-logout-btn" type="button" data-nav="logout" hidden>
+          <button id="sidebarLogoutBtn" class="sidebar-link sidebar-logout-btn" type="button" data-nav="logout" data-action="logout" hidden>
             <span class="sidebar-icon"><i class="bx bx-log-out"></i></span>
             <span class="sidebar-label" data-i18n="auth.logout">Log out</span>
           </button>
@@ -142,25 +142,34 @@ function initSidebarBehavior() {
   const sidebar = document.querySelector('.app-sidebar');
   if (!sidebar) return;
 
-  // Align sidebar with header
+  // Align sidebar with header - update CSS variable for sticky positioning
   const updateSidebarPosition = () => {
     const header = document.querySelector('.site-header');
     if (header && sidebar) {
       const headerHeight = header.offsetHeight;
+      // Update CSS variable so sticky positioning uses correct top offset
       document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
-      sidebar.style.top = `${headerHeight}px`;
+      // Update height calculation for sticky sidebar (CSS handles top positioning)
       sidebar.style.height = `calc(100vh - ${headerHeight}px)`;
+      sidebar.style.maxHeight = `calc(100vh - ${headerHeight}px)`;
     }
   };
 
   updateSidebarPosition();
   
-  // Update on resize
+  // Update on resize (in case header height changes)
   let resizeTimeout;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(updateSidebarPosition, 100);
   });
+  
+  // Also update on scroll in case header height changes dynamically
+  let scrollTimeout;
+  window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(updateSidebarPosition, 50);
+  }, { passive: true });
 
   // Handle Tools submenu toggle
   const toolsToggle = sidebar.querySelector('.sidebar-submenu-toggle');
