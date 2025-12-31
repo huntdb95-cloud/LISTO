@@ -11,11 +11,14 @@ function setMsg(text) {
 
 function friendlyAuthError(err) {
   const code = err?.code || "";
-  if (code === "auth/invalid-email") return "Please enter a valid email address.";
-  if (code === "auth/invalid-credential") return "Incorrect email or password.";
-  if (code === "auth/user-disabled") return "This account has been disabled.";
-  if (code === "auth/too-many-requests") return "Too many attempts. Please wait a bit and try again.";
-  return err?.message || "Login failed. Please try again.";
+  const lang = localStorage.getItem("listo_lang") || "en";
+  const i18n = window.I18N?.[lang] || window.ListoI18n?.I18N?.[lang] || {};
+  
+  if (code === "auth/invalid-email") return i18n["auth.error.invalidEmail"] || "Please enter a valid email address.";
+  if (code === "auth/invalid-credential") return i18n["auth.error.invalidCredential"] || "Incorrect email or password.";
+  if (code === "auth/user-disabled") return i18n["auth.error.userDisabled"] || "This account has been disabled.";
+  if (code === "auth/too-many-requests") return i18n["auth.error.tooManyRequests"] || "Too many attempts. Please wait a bit and try again.";
+  return err?.message || i18n["auth.error.loginFailed"] || "Login failed. Please try again.";
 }
 
 form.addEventListener("submit", async (e) => {

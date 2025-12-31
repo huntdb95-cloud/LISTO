@@ -19,13 +19,16 @@ function setMsg(text, isSuccess = false) {
 
 function friendlyAuthError(err) {
   const code = err?.code || "";
-  if (code === "auth/invalid-email") return "Please enter a valid email address.";
+  const lang = localStorage.getItem("listo_lang") || "en";
+  const i18n = window.I18N?.[lang] || window.ListoI18n?.I18N?.[lang] || {};
+  
+  if (code === "auth/invalid-email") return i18n["auth.error.invalidEmail"] || "Please enter a valid email address.";
   if (code === "auth/user-not-found") {
     // Security-friendly: don't confirm whether the email exists
-    return "If an account exists for that email, a reset link will be sent.";
+    return i18n["auth.error.userNotFound"] || "If an account exists for that email, a reset link will be sent.";
   }
-  if (code === "auth/too-many-requests") return "Too many attempts. Please wait a bit and try again.";
-  return err?.message || "Could not send reset email. Please try again.";
+  if (code === "auth/too-many-requests") return i18n["auth.error.tooManyRequests"] || "Too many attempts. Please wait a bit and try again.";
+  return err?.message || i18n["auth.error.resetFailed"] || "Could not send reset email. Please try again.";
 }
 
 form.addEventListener("submit", async (e) => {
@@ -42,7 +45,9 @@ form.addEventListener("submit", async (e) => {
 
     await sendPasswordResetEmail(auth, email, actionCodeSettings);
 
-    setMsg("If an account exists for that email, a reset link has been sent.", true);
+    const lang = localStorage.getItem("listo_lang") || "en";
+    const i18n = window.I18N?.[lang] || window.ListoI18n?.I18N?.[lang] || {};
+    setMsg(i18n["auth.error.resetSent"] || "If an account exists for that email, a reset link has been sent.", true);
 
     // Optional: disable submit to prevent spam-clicking
     const btn = form.querySelector("button[type='submit']");

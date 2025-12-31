@@ -15,62 +15,62 @@ function createSidebarHTML(basePath = '') {
           <li class="sidebar-menu-item">
             <a href="${pathPrefix}dashboard.html" class="sidebar-link" data-nav="dashboard">
               <span class="sidebar-icon"><i class="bx bx-home-alt"></i></span>
-              <span class="sidebar-label">Home</span>
+              <span class="sidebar-label" data-i18n="nav.dashboard">Home</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
             <a href="${pathPrefix}contracts/contracts.html" class="sidebar-link" data-nav="contracts">
               <span class="sidebar-icon"><i class="bx bx-file-blank"></i></span>
-              <span class="sidebar-label">Contracts</span>
+              <span class="sidebar-label" data-i18n="nav.contracts">Contracts</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
             <a href="${pathPrefix}bookkeeping/bookkeeping.html" class="sidebar-link" data-nav="bookkeeping">
               <span class="sidebar-icon"><i class="bx bx-book"></i></span>
-              <span class="sidebar-label">Bookkeeping</span>
+              <span class="sidebar-label" data-i18n="nav.bookkeeping">Bookkeeping</span>
             </a>
           </li>
           <li class="sidebar-menu-item sidebar-menu-item-submenu">
             <button class="sidebar-link sidebar-submenu-toggle" type="button" aria-expanded="false" data-nav="tools">
               <span class="sidebar-icon"><i class="bx bx-wrench"></i></span>
-              <span class="sidebar-label">Tools</span>
-              <img src="${pathPrefix}images/arrow.png" class="sidebar-dropdown-arrow" alt="Expand" aria-hidden="true" />
+              <span class="sidebar-label" data-i18n="nav.tools">Tools</span>
+              <img src="${pathPrefix}images/arrow.png" class="sidebar-dropdown-arrow" alt="Expand" aria-hidden="true" data-i18n-alt="common.expand" />
             </button>
             <ul class="sidebar-submenu">
               <li class="sidebar-submenu-item">
                 <a href="${pathPrefix}invoice/invoice.html" class="sidebar-link sidebar-submenu-link" data-nav="invoice">
                   <span class="sidebar-icon"><i class="bx bx-receipt"></i></span>
-                  <span class="sidebar-label">Invoice Builder</span>
+                  <span class="sidebar-label" data-i18n="nav.invoiceBuilder">Invoice Builder</span>
                 </a>
               </li>
               <li class="sidebar-submenu-item">
                 <a href="${pathPrefix}job-estimator/job-estimator.html" class="sidebar-link sidebar-submenu-link" data-nav="job-estimator">
                   <span class="sidebar-icon"><i class="bx bx-calculator"></i></span>
-                  <span class="sidebar-label">Job Cost Estimator</span>
+                  <span class="sidebar-label" data-i18n="nav.jobEstimator">Job Cost Estimator</span>
                 </a>
               </li>
               <li class="sidebar-submenu-item">
                 <a href="${pathPrefix}contract-scanner/contract-scanner.html" class="sidebar-link sidebar-submenu-link" data-nav="document-translator">
                   <span class="sidebar-icon"><i class="bx bx-scan"></i></span>
-                  <span class="sidebar-label">Document Translator</span>
+                  <span class="sidebar-label" data-i18n="nav.documentTranslator">Document Translator</span>
                 </a>
               </li>
               <li class="sidebar-submenu-item">
                 <a href="${pathPrefix}audit/audit.html" class="sidebar-link sidebar-submenu-link" data-nav="audit">
                   <span class="sidebar-icon"><i class="bx bx-clipboard"></i></span>
-                  <span class="sidebar-label">Audit Help</span>
+                  <span class="sidebar-label" data-i18n="nav.audit">Audit Help</span>
                 </a>
               </li>
               <li class="sidebar-submenu-item">
                 <a href="${pathPrefix}tools/1099.html" class="sidebar-link sidebar-submenu-link" data-nav="1099">
                   <span class="sidebar-icon"><i class="bx bx-file"></i></span>
-                  <span class="sidebar-label">1099-NEC Generator</span>
+                  <span class="sidebar-label" data-i18n="nav.1099">1099-NEC Generator</span>
                 </a>
               </li>
               <li class="sidebar-submenu-item">
                 <a href="${pathPrefix}prequal.html" class="sidebar-link sidebar-submenu-link" data-nav="prequal">
                   <span class="sidebar-icon"><i class="bx bx-check-square"></i></span>
-                  <span class="sidebar-label">Pre-Qualification</span>
+                  <span class="sidebar-label" data-i18n="nav.prequal">Pre-Qualification</span>
                 </a>
               </li>
             </ul>
@@ -78,13 +78,13 @@ function createSidebarHTML(basePath = '') {
           <li class="sidebar-menu-item">
             <a href="${pathPrefix}account/account.html" class="sidebar-link" data-nav="account">
               <span class="sidebar-icon"><i class="bx bx-user"></i></span>
-              <span class="sidebar-label">My Account</span>
+              <span class="sidebar-label" data-i18n="nav.account">My Account</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
             <a href="${pathPrefix}support.html" class="sidebar-link" data-nav="support">
               <span class="sidebar-icon"><i class="bx bx-help-circle"></i></span>
-              <span class="sidebar-label">Support</span>
+              <span class="sidebar-label" data-i18n="nav.support">Support</span>
             </a>
           </li>
         </ul>
@@ -136,6 +136,15 @@ function initSidebar() {
   // Initialize sidebar functionality
   initSidebarBehavior();
   markActiveLink();
+  
+  // Apply translations to newly injected sidebar
+  if (typeof window.ListoI18n !== 'undefined' && typeof window.ListoI18n.applyTranslations === 'function') {
+    const lang = window.ListoI18n.getCurrentLang ? window.ListoI18n.getCurrentLang() : (localStorage.getItem("listo_lang") || "en");
+    window.ListoI18n.applyTranslations(lang);
+  } else if (typeof window.applyTranslations === 'function') {
+    const lang = localStorage.getItem("listo_lang") || "en";
+    window.applyTranslations(lang);
+  }
 }
 
 function initSidebarBehavior() {

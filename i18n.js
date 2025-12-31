@@ -171,7 +171,7 @@ function applyTranslations(lang) {
   
   let translatedCount = 0;
   
-  // Translate text content
+  // Translate text content (including option elements in selects)
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     if (dict[key]) {
@@ -179,7 +179,13 @@ function applyTranslations(lang) {
       if (translation.includes("<") && translation.includes(">")) {
         el.innerHTML = sanitizeHTML(translation);
       } else {
-        el.textContent = translation;
+        // Handle option elements specially - only update textContent, not value
+        if (el.tagName === "OPTION" && el.value !== "") {
+          // For option elements with values (not placeholders), keep the value but translate text
+          el.textContent = translation;
+        } else {
+          el.textContent = translation;
+        }
       }
       translatedCount++;
     }
@@ -208,6 +214,15 @@ function applyTranslations(lang) {
     const key = el.getAttribute("data-i18n-aria");
     if (dict[key]) {
       el.setAttribute("aria-label", dict[key]);
+      translatedCount++;
+    }
+  });
+  
+  // Translate alt attributes
+  document.querySelectorAll("[data-i18n-alt]").forEach(el => {
+    const key = el.getAttribute("data-i18n-alt");
+    if (dict[key]) {
+      el.setAttribute("alt", dict[key]);
       translatedCount++;
     }
   });
@@ -291,7 +306,9 @@ function setupTranslationObserver() {
               if (node.hasAttribute("data-i18n") || 
                   node.hasAttribute("data-i18n-placeholder") || 
                   node.hasAttribute("data-i18n-value") ||
-                  node.querySelector("[data-i18n], [data-i18n-placeholder], [data-i18n-value]")) {
+                  node.hasAttribute("data-i18n-aria") ||
+                  node.hasAttribute("data-i18n-alt") ||
+                  node.querySelector("[data-i18n], [data-i18n-placeholder], [data-i18n-value], [data-i18n-aria], [data-i18n-alt]")) {
                 shouldReapply = true;
                 break;
               }

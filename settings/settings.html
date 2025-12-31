@@ -168,47 +168,47 @@
 <!-- Contact & Address Section -->
 <details class="settings-section" id="settingsContactSection">
 <summary class="settings-section-summary">
-<span class="settings-section-title">Contact & Address</span>
+<span class="settings-section-title" data-i18n="account.contactTitle">Contact & Address</span>
 <svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 </summary>
 <div class="settings-section-content">
 <div class="card">
-<h2>Contact & Address</h2>
-<p class="muted">Update your phone number and business address. This information will be used to autofill invoices and tax forms.</p>
+<h2 data-i18n="account.contactTitle">Contact & Address</h2>
+<p class="muted" data-i18n="account.contactDesc">Update your phone number and business address. This information will be used to autofill invoices and tax forms.</p>
 <div class="divider"></div>
 
 <div class="form-section">
 <form id="contactForm">
 <div class="form-group">
-<label for="profilePhoneNumber">Phone Number *</label>
-<input type="tel" id="profilePhoneNumber" required placeholder="(555) 555-5555" />
+<label for="profilePhoneNumber" data-i18n="signup.phoneNumber">Phone Number *</label>
+<input type="tel" id="profilePhoneNumber" required placeholder="(555) 555-5555" data-i18n-placeholder="signup.phonePlaceholder" />
 </div>
 
 <div class="form-group">
-<label for="profileAddressStreet">Street Address *</label>
-<input type="text" id="profileAddressStreet" required placeholder="123 Main Street" />
+<label for="profileAddressStreet" data-i18n="signup.addressStreet">Street Address *</label>
+<input type="text" id="profileAddressStreet" required placeholder="123 Main Street" data-i18n-placeholder="signup.addressStreetPlaceholder" />
 </div>
 
 <div class="form-group profile-address-grid">
 <div>
-<label for="profileAddressCity">City *</label>
-<input type="text" id="profileAddressCity" required placeholder="City" />
+<label for="profileAddressCity" data-i18n="signup.addressCity">City *</label>
+<input type="text" id="profileAddressCity" required placeholder="City" data-i18n-placeholder="signup.addressCityPlaceholder" />
 </div>
 <div>
-<label for="profileAddressState">State *</label>
+<label for="profileAddressState" data-i18n="signup.addressState">State *</label>
 <select id="profileAddressState" required>
-<option value="">Select</option>
+<option value="" data-i18n="signup.selectState">Select State</option>
 </select>
 </div>
 <div>
-<label for="profileAddressZip">ZIP Code *</label>
-<input type="text" id="profileAddressZip" required placeholder="12345" maxlength="10" />
+<label for="profileAddressZip" data-i18n="signup.addressZip">ZIP Code *</label>
+<input type="text" id="profileAddressZip" required placeholder="12345" data-i18n-placeholder="signup.addressZipPlaceholder" maxlength="10" />
 </div>
 </div>
 
-<button type="submit" class="btn primary" id="contactUpdateBtn">Save Contact & Address</button>
+<button type="submit" class="btn primary" id="contactUpdateBtn" data-i18n="account.saveContact">Save Contact & Address</button>
 <div id="contactMsg" class="form-msg"></div>
 <div id="contactError" class="form-error"></div>
 </form>
@@ -220,26 +220,26 @@
 <!-- Tax Information Section -->
 <details class="settings-section" id="settingsTaxSection">
 <summary class="settings-section-summary">
-<span class="settings-section-title">Tax Information</span>
+<span class="settings-section-title" data-i18n="account.taxTitle">Tax Information</span>
 <svg class="settings-section-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 </summary>
 <div class="settings-section-content">
 <div class="card">
-<h2>Tax Information</h2>
-<p class="muted">Taxpayer Identification Number (TIN / EIN / SSN). Optional. Used to autofill your 1099-NEC payer info.</p>
+<h2 data-i18n="account.taxTitle">Tax Information</h2>
+<p class="muted" data-i18n="account.taxDesc">Taxpayer Identification Number (TIN / EIN / SSN). Optional. Used to autofill your 1099-NEC payer info.</p>
 <div class="divider"></div>
 
 <div class="form-section">
 <form id="taxForm">
 <div class="form-group">
-<label for="profileTaxpayerId">Taxpayer Identification Number (TIN / EIN / SSN)</label>
-<input type="text" id="profileTaxpayerId" placeholder="12-3456789" maxlength="11" />
-<div class="small muted" style="margin-top: 4px;">Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)</div>
+<label for="profileTaxpayerId" data-i18n="account.taxLabel">Taxpayer Identification Number (TIN / EIN / SSN)</label>
+<input type="text" id="profileTaxpayerId" placeholder="12-3456789" data-i18n-placeholder="account.taxPlaceholder" maxlength="11" />
+<div class="small muted" style="margin-top: 4px;" data-i18n="account.taxFormat">Format: XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)</div>
 </div>
 
-<button type="submit" class="btn primary" id="taxUpdateBtn">Save Tax Information</button>
+<button type="submit" class="btn primary" id="taxUpdateBtn" data-i18n="account.saveTax">Save Tax Information</button>
 <div id="taxMsg" class="form-msg"></div>
 <div id="taxError" class="form-error"></div>
 </form>
@@ -267,8 +267,8 @@
 <div class="form-group language-form-group">
 <label data-i18n="account.languageLabel">Language</label>
 <div aria-label="Language preference" class="lang-switch language-switch-container" role="group">
-<button type="button" aria-pressed="true" class="chip" data-lang="en" id="langEnBtn">English</button>
-<button type="button" aria-pressed="false" class="chip" data-lang="es" id="langEsBtn">Español</button>
+            <button type="button" aria-pressed="true" class="chip" data-lang="en" id="langEnBtn" data-i18n="auth.language.en">English</button>
+            <button type="button" aria-pressed="false" class="chip" data-lang="es" id="langEsBtn" data-i18n="auth.language.es">Español</button>
 </div>
 </div>
 <div id="languageMsg" class="form-msg"></div>
