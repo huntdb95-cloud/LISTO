@@ -1,6 +1,9 @@
 // i18n.js - Standalone translation module
 // Works independently of scripts.js to ensure translations always work
 
+// TEMPORARY DEBUG - Remove after verification
+console.info("[LISTO-i18n] loaded:", window.location.pathname);
+
 // Firebase config and Firestore functions (loaded asynchronously)
 let auth = null;
 let db = null;
@@ -160,6 +163,9 @@ function getCurrentLang() {
 
 // Apply translations to the page
 function applyTranslations(lang) {
+  // TEMPORARY DEBUG - Remove after verification
+  console.info("[LISTO-i18n] applying:", lang, "on", window.location.pathname);
+  
   if (!I18N[lang]) {
     console.warn(`[i18n] Language "${lang}" not found, using "en"`);
     lang = "en";
@@ -239,6 +245,9 @@ function applyTranslations(lang) {
   
   // Set up MutationObserver if not already set up
   setupTranslationObserver();
+  
+  // TEMPORARY DEBUG - Remove after verification
+  console.info(`[LISTO-i18n] translated ${translatedCount} elements`);
 }
 
 // Set pressed state on language toggle buttons
@@ -256,10 +265,23 @@ async function setLanguage(lang, { syncRemote = true } = {}) {
     return;
   }
   
-  // Apply translations immediately (don't wait for Firestore)
+  // TEMPORARY DEBUG - Remove after verification
+  console.info("[LISTO-i18n] setLanguage called:", lang);
+  
+  // Step 1: Save to localStorage IMMEDIATELY
+  try {
+    localStorage.setItem(LANG_KEY, lang);
+  } catch (err) {
+    console.warn("[i18n] Could not save language to localStorage:", err);
+  }
+  
+  // Step 2: Apply translations IMMEDIATELY (don't wait for Firestore)
   applyTranslations(lang);
   
-  // Sync to Firestore if authenticated and syncRemote is true
+  // Step 3: Update button states IMMEDIATELY
+  setPressedButtons(lang);
+  
+  // Step 4: Sync to Firestore if authenticated and syncRemote is true (non-blocking)
   if (syncRemote && auth && db && doc && setDoc && serverTimestamp) {
     try {
       const user = auth.currentUser;
@@ -269,11 +291,22 @@ async function setLanguage(lang, { syncRemote = true } = {}) {
           language: lang,
           updatedAt: serverTimestamp()
         }, { merge: true });
+        console.debug("[i18n] Language synced to Firestore");
       }
     } catch (err) {
       console.warn("[i18n] Could not sync language to Firestore:", err);
       // Don't throw - translation is already applied
     }
+  }
+  
+  // Step 5: Ensure sidebar re-translates if it exists
+  // This is especially important for authenticated pages
+  const sidebar = document.querySelector('.app-sidebar');
+  if (sidebar) {
+    // Re-apply translations to catch sidebar content
+    setTimeout(() => {
+      applyTranslations(lang);
+    }, 50);
   }
 }
 
@@ -289,26 +322,27 @@ function setupTranslationObserver() {
     }, 100);
   };
   
-  const observeTargets = [
-    document.getElementById("main"),
-    document.body,
-    document.querySelector(".app-layout"),
-    document.querySelector(".auth-center")
-  ].filter(Boolean);
+  // Always observe document.body to catch all dynamic content (sidebar, modals, etc.)
+  const observeTarget = document.body;
   
-  if (observeTargets.length > 0) {
+  if (observeTarget) {
     translationObserver = new MutationObserver((mutations) => {
       let shouldReapply = false;
       for (const mutation of mutations) {
         if (mutation.addedNodes.length > 0) {
           for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check if node itself has translation attributes
               if (node.hasAttribute("data-i18n") || 
                   node.hasAttribute("data-i18n-placeholder") || 
                   node.hasAttribute("data-i18n-value") ||
                   node.hasAttribute("data-i18n-aria") ||
-                  node.hasAttribute("data-i18n-alt") ||
-                  node.querySelector("[data-i18n], [data-i18n-placeholder], [data-i18n-value], [data-i18n-aria], [data-i18n-alt]")) {
+                  node.hasAttribute("data-i18n-alt")) {
+                shouldReapply = true;
+                break;
+              }
+              // Check if node contains elements with translation attributes
+              if (node.querySelector && node.querySelector("[data-i18n], [data-i18n-placeholder], [data-i18n-value], [data-i18n-aria], [data-i18n-alt]")) {
                 shouldReapply = true;
                 break;
               }
@@ -322,36 +356,64 @@ function setupTranslationObserver() {
       }
     });
     
-    observeTargets.forEach(target => {
-      translationObserver.observe(target, {
-        childList: true,
-        subtree: true
-      });
+    // Watch entire body with subtree for comprehensive coverage
+    translationObserver.observe(observeTarget, {
+      childList: true,
+      subtree: true
     });
   }
 }
 
-// Event delegation for language toggles
+// Event delegation for language toggles - BULLETPROOF version
 function setupLanguageToggles() {
-  // Use capture phase and stopPropagation to handle before other handlers
-  document.addEventListener("click", (e) => {
-    const toggleBtn = e.target.closest("[data-lang]");
-    if (!toggleBtn) return;
+  // Prevent duplicate listeners
+  if (window._listoI18nTogglesSetup) return;
+  window._listoI18nTogglesSetup = true;
+  
+  // Handle click events on language toggle buttons
+  function onLangToggle(e) {
+    // Check for ID-based toggles first (#langEnBtn, #langEsBtn)
+    let toggleBtn = null;
+    let selectedLang = null;
     
-    // Skip only on Account page where account.js handles it
+    if (e.target.id === "langEnBtn" || e.target.closest("#langEnBtn")) {
+      toggleBtn = e.target.id === "langEnBtn" ? e.target : e.target.closest("#langEnBtn");
+      selectedLang = "en";
+    } else if (e.target.id === "langEsBtn" || e.target.closest("#langEsBtn")) {
+      toggleBtn = e.target.id === "langEsBtn" ? e.target : e.target.closest("#langEsBtn");
+      selectedLang = "es";
+    } else {
+      // Check for data-lang attribute
+      toggleBtn = e.target.closest("[data-lang]");
+      if (toggleBtn) {
+        selectedLang = toggleBtn.getAttribute("data-lang");
+      }
+    }
+    
+    if (!toggleBtn || !selectedLang) return;
+    
+    // Skip only on Account page where account.js handles it (but still allow Settings)
     const pageType = document.body?.getAttribute("data-page");
     if (pageType === "account" && (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn")) {
-      return; // Let account.js handle it
+      // On Account page, let account.js handle it (it will call setLanguage)
+      return;
     }
     
-    // Handle toggle
-    const selectedLang = toggleBtn.getAttribute("data-lang");
+    // TEMPORARY DEBUG - Remove after verification
+    console.info("[LISTO-i18n] toggle clicked:", selectedLang, "on", window.location.pathname);
+    
+    // Prevent default and stop propagation to avoid conflicts
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Immediately translate
     if (selectedLang === "en" || selectedLang === "es") {
-      e.preventDefault();
-      e.stopPropagation();
       setLanguage(selectedLang, { syncRemote: true });
     }
-  }, true); // Use capture phase
+  }
+  
+  // Use capture phase to handle before other handlers
+  document.addEventListener("click", onLangToggle, true);
   
   // Also handle checkbox/switch toggles if present
   document.addEventListener("change", (e) => {
@@ -359,6 +421,8 @@ function setupLanguageToggles() {
     if (!toggle) return;
     
     const selectedLang = toggle.checked ? "es" : "en";
+    // TEMPORARY DEBUG
+    console.info("[LISTO-i18n] checkbox toggle:", selectedLang);
     setLanguage(selectedLang, { syncRemote: true });
   }, true);
 }
@@ -394,6 +458,9 @@ if (typeof window !== 'undefined') {
     applyTranslations,
     I18N
   };
+  
+  // Also expose as global function for backward compatibility
+  window.applyTranslations = applyTranslations;
 }
 
 // Initialize when DOM is ready
