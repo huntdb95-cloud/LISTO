@@ -1,10 +1,8 @@
 // scripts.js (ES Module)
-import { firebaseConfig, app, auth as configAuth } from "./config.js";
+import { firebaseConfig, app, auth as configAuth, db, storage } from "./config.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
 import {
-  getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -12,7 +10,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
 import {
-  getFirestore,
   doc,
   getDoc,
   setDoc,
@@ -21,7 +18,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
@@ -1446,7 +1442,7 @@ async function initLanguageForUser(user) {
       
       // For authenticated users, save to Firestore
       // Get current user from auth state (not closure variable)
-      const currentUser = auth?.currentUser;
+      const currentUser = configAuth?.currentUser;
       if (currentUser) {
         try {
           const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
@@ -1465,18 +1461,11 @@ async function initLanguageForUser(user) {
 }
 
 /* ========= Firebase ========= */
-let app, auth, db, storage, analytics;
+// Firebase is already initialized in config.js - use those exports
+// Only analytics needs local initialization (optional)
+let analytics;
 
-async function initFirebase() {
-  if (!firebaseConfig || !firebaseConfig.apiKey) {
-    console.error("Missing Firebase config. Paste it into config.js");
-    return false;
-  }
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-
+async function initAnalytics() {
   // Analytics only works in supported environments (typically HTTPS, non-blocked cookies, etc.)
   try {
     if (await isSupported()) {
@@ -1486,8 +1475,6 @@ async function initFirebase() {
     // If analytics isn't supported (local file://, blocked, etc.), safely ignore.
     analytics = undefined;
   }
-
-  return true;
 }
 
 function getNextUrl() {
@@ -1554,7 +1541,7 @@ function initAuthUI() {
   // Form handlers are also set up here with deduplication to prevent multiple listeners
 
   const loginForm = document.getElementById("loginForm");
-  if (loginForm && auth && !loginFormHandlerAttached) {
+  if (loginForm && configAuth && !loginFormHandlerAttached) {
     loginFormHandlerAttached = true;
     const err = document.getElementById("loginMsg");
     loginForm.addEventListener("submit", async (e) => {
@@ -1563,7 +1550,7 @@ function initAuthUI() {
       const email = document.getElementById("email")?.value?.trim();
       const password = document.getElementById("password")?.value;
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(configAuth, email, password);
         window.location.href = getNextUrl();
       } catch (error) {
         if (err) err.textContent = readableAuthError(error);
@@ -1572,7 +1559,7 @@ function initAuthUI() {
   }
 
   const signupForm = document.getElementById("signupForm");
-  if (signupForm && auth && !signupFormHandlerAttached) {
+  if (signupForm && configAuth && !signupFormHandlerAttached) {
     signupFormHandlerAttached = true;
     const err = document.getElementById("signupError");
     signupForm.addEventListener("submit", async (e) => {
@@ -1581,7 +1568,7 @@ function initAuthUI() {
       const email = document.getElementById("signupEmail")?.value?.trim();
       const password = document.getElementById("signupPassword")?.value;
       try {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(configAuth, email, password);
         // Calculate relative path to dashboard.html from current location
         const pathSegments = window.location.pathname.split("/").filter(p => p && !p.endsWith(".html"));
         const depth = pathSegments.length;
@@ -4639,12 +4626,36 @@ function showLogoutConfirmation() {
     `;
     document.body.appendChild(modal);
     
-    // Set up event listeners
-    const cancelBtn = document.getElementById("logoutCancelBtn");
-    const confirmBtn = document.getElementById("logoutConfirmBtn");
+    // Close on overlay click (only attach once)
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        hideLogoutConfirmation();
+      }
+    });
+  }
+  
+  // Set up button event listeners every time modal is shown
+  // Remove any existing listeners first to avoid duplicates
+  const cancelBtn = document.getElementById("logoutCancelBtn");
+  const confirmBtn = document.getElementById("logoutConfirmBtn");
+  
+  if (cancelBtn && confirmBtn) {
+    // Remove existing listeners if they exist (stored on button elements)
+    if (cancelBtn._cancelHandler) {
+      cancelBtn.removeEventListener("click", cancelBtn._cancelHandler);
+    }
+    if (confirmBtn._confirmHandler) {
+      confirmBtn.removeEventListener("click", confirmBtn._confirmHandler);
+    }
     
-    cancelBtn.addEventListener("click", hideLogoutConfirmation);
-    confirmBtn.addEventListener("click", async () => {
+    // Create and store new handlers
+    const cancelHandler = () => {
+      hideLogoutConfirmation();
+    };
+    cancelBtn._cancelHandler = cancelHandler;
+    cancelBtn.addEventListener("click", cancelHandler);
+    
+    const confirmHandler = async () => {
       // Prevent multiple logout attempts
       if (isLoggingOut) {
         return;
@@ -4658,25 +4669,12 @@ function showLogoutConfirmation() {
       confirmBtn.textContent = "Signing out...";
       
       try {
-        // Sign out from Firebase - get auth instance
-        // Try local auth first, then configAuth, then get from app
-        let authInstance = auth;
-        if (!authInstance && typeof app !== 'undefined') {
-          try {
-            authInstance = getAuth(app);
-          } catch (e) {
-            // If getAuth fails, try configAuth
-            authInstance = configAuth;
-          }
-        } else if (!authInstance) {
-          authInstance = configAuth;
-        }
-        
-        if (!authInstance) {
+        // Sign out from Firebase - use the auth instance from config.js
+        if (!configAuth) {
           throw new Error("Authentication not initialized. Please refresh the page.");
         }
         
-        await signOut(authInstance);
+        await signOut(configAuth);
         
         // Clear any auth-related localStorage
         localStorage.removeItem('user');
@@ -4703,14 +4701,9 @@ function showLogoutConfirmation() {
         hideLogoutConfirmation();
         alert("Failed to sign out. Please try again.");
       }
-    });
-    
-    // Close on overlay click (only attach once)
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) {
-        hideLogoutConfirmation();
-      }
-    });
+    };
+    confirmBtn._confirmHandler = confirmHandler;
+    confirmBtn.addEventListener("click", confirmHandler);
   }
   
   // Set up Escape key handler every time modal is shown (since it removes itself)
@@ -4938,10 +4931,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  const ok = await initFirebase();
-  if (!ok) return;
+  // Initialize analytics (optional, non-blocking)
+  await initAnalytics();
 
-  onAuthStateChanged(auth, async (user) => {
+  onAuthStateChanged(configAuth, async (user) => {
     // Re-check page type in case it's needed
     const currentPage = document.body?.getAttribute("data-page");
     const currentIsAuthPage = currentPage === "login" || currentPage === "signup" || currentPage === "forgot" || window.location.pathname.includes("/forgot/");
@@ -4955,7 +4948,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Handle mobile logout button (mobile only) - visibility only
     // Handlers are attached via global event delegation (see document.addEventListener("click", ...))
-    initMobileLogoutButton(user, auth);
+    initMobileLogoutButton(user, configAuth);
     
     const headerAvatar = document.getElementById("headerAvatar");
     if (headerAvatar) headerAvatar.hidden = !user;
