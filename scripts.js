@@ -1,10 +1,8 @@
 // scripts.js (ES Module)
 import { firebaseConfig, app, auth as configAuth, db, storage } from "./config.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
 import {
-  getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -12,7 +10,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
 import {
-  getFirestore,
   doc,
   getDoc,
   setDoc,
@@ -21,7 +18,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
