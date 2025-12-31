@@ -4626,12 +4626,36 @@ function showLogoutConfirmation() {
     `;
     document.body.appendChild(modal);
     
-    // Set up event listeners
-    const cancelBtn = document.getElementById("logoutCancelBtn");
-    const confirmBtn = document.getElementById("logoutConfirmBtn");
+    // Close on overlay click (only attach once)
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        hideLogoutConfirmation();
+      }
+    });
+  }
+  
+  // Set up button event listeners every time modal is shown
+  // Remove any existing listeners first to avoid duplicates
+  const cancelBtn = document.getElementById("logoutCancelBtn");
+  const confirmBtn = document.getElementById("logoutConfirmBtn");
+  
+  if (cancelBtn && confirmBtn) {
+    // Remove existing listeners if they exist (stored on button elements)
+    if (cancelBtn._cancelHandler) {
+      cancelBtn.removeEventListener("click", cancelBtn._cancelHandler);
+    }
+    if (confirmBtn._confirmHandler) {
+      confirmBtn.removeEventListener("click", confirmBtn._confirmHandler);
+    }
     
-    cancelBtn.addEventListener("click", hideLogoutConfirmation);
-    confirmBtn.addEventListener("click", async () => {
+    // Create and store new handlers
+    const cancelHandler = () => {
+      hideLogoutConfirmation();
+    };
+    cancelBtn._cancelHandler = cancelHandler;
+    cancelBtn.addEventListener("click", cancelHandler);
+    
+    const confirmHandler = async () => {
       // Prevent multiple logout attempts
       if (isLoggingOut) {
         return;
@@ -4677,14 +4701,9 @@ function showLogoutConfirmation() {
         hideLogoutConfirmation();
         alert("Failed to sign out. Please try again.");
       }
-    });
-    
-    // Close on overlay click (only attach once)
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) {
-        hideLogoutConfirmation();
-      }
-    });
+    };
+    confirmBtn._confirmHandler = confirmHandler;
+    confirmBtn.addEventListener("click", confirmHandler);
   }
   
   // Set up Escape key handler every time modal is shown (since it removes itself)
