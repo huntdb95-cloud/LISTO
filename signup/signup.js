@@ -29,6 +29,24 @@ states.forEach(state => {
   addressStateEl.appendChild(option);
 });
 
+// Ensure the "Select State" placeholder option has data-i18n attribute
+// and translate it after population
+if (addressStateEl && addressStateEl.firstElementChild) {
+  const firstOption = addressStateEl.firstElementChild;
+  if (firstOption && firstOption.value === "") {
+    firstOption.setAttribute("data-i18n", "signup.selectState");
+    // Apply translations after a short delay to ensure i18n.js has loaded
+    setTimeout(() => {
+      const lang = localStorage.getItem("listo_lang") || "en";
+      if (typeof window.ListoI18n !== 'undefined' && typeof window.ListoI18n.applyTranslations === 'function') {
+        window.ListoI18n.applyTranslations(lang);
+      } else if (typeof window.applyTranslations === 'function') {
+        window.applyTranslations(lang);
+      }
+    }, 100);
+  }
+}
+
 function setError(text) {
   errorEl.textContent = text || "";
 }
@@ -39,12 +57,15 @@ function cleanName(s) {
 
 function friendlyAuthError(err) {
   const code = err?.code || "";
-  if (code === "auth/invalid-email") return "Please enter a valid email address.";
-  if (code === "auth/email-already-in-use") return "That email is already in use. Try logging in instead.";
-  if (code === "auth/weak-password") return "Password is too weak. Use at least 6 characters.";
-  if (code === "auth/operation-not-allowed") return "Email/password sign-up is not enabled in Firebase Auth.";
-  if (code === "auth/too-many-requests") return "Too many attempts. Please wait a bit and try again.";
-  return err?.message || "Sign up failed. Please try again.";
+  const lang = localStorage.getItem("listo_lang") || "en";
+  const i18n = window.I18N?.[lang] || window.ListoI18n?.I18N?.[lang] || {};
+  
+  if (code === "auth/invalid-email") return i18n["auth.error.invalidEmail"] || "Please enter a valid email address.";
+  if (code === "auth/email-already-in-use") return i18n["auth.error.emailInUse"] || "That email is already in use. Try logging in instead.";
+  if (code === "auth/weak-password") return i18n["auth.error.weakPassword"] || "Password is too weak. Use at least 6 characters.";
+  if (code === "auth/operation-not-allowed") return i18n["auth.error.notAllowed"] || "Email/password sign-up is not enabled in Firebase Auth.";
+  if (code === "auth/too-many-requests") return i18n["auth.error.tooManyRequests"] || "Too many attempts. Please wait a bit and try again.";
+  return err?.message || i18n["auth.error.signupFailed"] || "Sign up failed. Please try again.";
 }
 
 form.addEventListener("submit", async (e) => {
@@ -64,55 +85,59 @@ form.addEventListener("submit", async (e) => {
   const addressState = (addressStateEl?.value || "").trim().toUpperCase();
   const addressZip = (addressZipEl?.value || "").trim();
 
+  // Get current language for error messages
+  const lang = localStorage.getItem("listo_lang") || "en";
+  const i18n = window.I18N?.[lang] || window.ListoI18n?.I18N?.[lang] || {};
+  
   // Validation
   if (!displayName) {
-    setError("Please enter a company / display name.");
+    setError(i18n["signup.error.noDisplayName"] || "Please enter a company / display name.");
     return;
   }
   if (displayName.length > 80) {
-    setError("Display name is too long (max 80 characters).");
+    setError(i18n["signup.error.displayNameTooLong"] || "Display name is too long (max 80 characters).");
     return;
   }
   if (password !== confirmPassword) {
-    setError("Passwords do not match. Please try again.");
+    setError(i18n["signup.error.passwordsNotMatch"] || "Passwords do not match. Please try again.");
     return;
   }
   if (!acceptTerms) {
-    setError("You must accept the Terms and Conditions to create an account.");
+    setError(i18n["signup.error.mustAcceptTerms"] || "You must accept the Terms and Conditions to create an account.");
     return;
   }
   
   // Validate required profile fields
   if (!phoneNumber) {
-    setError("Please enter your phone number.");
+    setError(i18n["signup.error.noPhone"] || "Please enter your phone number.");
     return;
   }
   if (!validatePhone(phoneNumber)) {
-    setError("Please enter a valid phone number (at least 10 digits).");
+    setError(i18n["signup.error.invalidPhone"] || "Please enter a valid phone number (at least 10 digits).");
     return;
   }
   if (!addressStreet) {
-    setError("Please enter your street address.");
+    setError(i18n["signup.error.noStreet"] || "Please enter your street address.");
     return;
   }
   if (!addressCity) {
-    setError("Please enter your city.");
+    setError(i18n["signup.error.noCity"] || "Please enter your city.");
     return;
   }
   if (!addressState) {
-    setError("Please select your state.");
+    setError(i18n["signup.error.noState"] || "Please select your state.");
     return;
   }
   if (!validateState(addressState)) {
-    setError("Please select a valid state.");
+    setError(i18n["signup.error.invalidState"] || "Please select a valid state.");
     return;
   }
   if (!addressZip) {
-    setError("Please enter your ZIP code.");
+    setError(i18n["signup.error.noZip"] || "Please enter your ZIP code.");
     return;
   }
   if (!validateZip(addressZip)) {
-    setError("Please enter a valid ZIP code (5 digits or 5+4 format).");
+    setError(i18n["signup.error.invalidZip"] || "Please enter a valid ZIP code (5 digits or 5+4 format).");
     return;
   }
 

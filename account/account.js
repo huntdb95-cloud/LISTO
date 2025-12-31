@@ -734,12 +734,19 @@ async function handleLanguageChange(lang) {
   
   try {
     clearMessages("language");
-    showMsg("languageMsg", "Updating language preference...");
+    const currentLang = localStorage.getItem("listo_lang") || "en";
+    const i18n = window.I18N?.[currentLang] || window.ListoI18n?.I18N?.[currentLang] || {};
+    showMsg("languageMsg", i18n["settings.languageUpdating"] || "Updating language preference...");
     
     // Use i18n.js if available (it will handle Firestore sync and translation)
     if (typeof window.ListoI18n !== 'undefined' && typeof window.ListoI18n.setLanguage === 'function') {
       await window.ListoI18n.setLanguage(lang, { syncRemote: true });
       // i18n.js already applied translations and saved to Firestore
+      // Ensure sidebar is also re-translated if it exists
+      const sidebar = document.querySelector('.app-sidebar');
+      if (sidebar && typeof window.ListoI18n.applyTranslations === 'function') {
+        window.ListoI18n.applyTranslations(lang);
+      }
     } else {
       // Fallback to manual handling
       // Update Firestore profile
@@ -770,7 +777,10 @@ async function handleLanguageChange(lang) {
     // Update summary cards
     updateSummaryCards();
     
-    showMsg("languageMsg", "Language preference updated successfully!", false);
+    // Get updated language for success message
+    const finalLang = localStorage.getItem("listo_lang") || "en";
+    const finalI18n = window.I18N?.[finalLang] || window.ListoI18n?.I18N?.[finalLang] || {};
+    showMsg("languageMsg", finalI18n["settings.languageUpdated"] || "Language preference updated successfully!", false);
     
   } catch (err) {
     console.error("Language update error:", err);

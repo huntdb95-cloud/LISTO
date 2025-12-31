@@ -15,7 +15,7 @@
   <main class="auth-center">
     <div class="auth-stack">
       <div class="auth-hero">
-        <a href="../index.html" class="auth-logo-wrap" aria-label="Go to home">
+        <a href="../index.html" class="auth-logo-wrap" aria-label="Go to home" data-i18n-aria="common.goToHome">
           <img src="../images/logo.png" alt="Listo" class="auth-logo" />
         </a>
       </div>
@@ -86,7 +86,7 @@
           </div>
 
           <div class="field">
-            <label class="field-label" for="phoneNumber">Phone Number *</label>
+            <label class="field-label" for="phoneNumber" data-i18n="signup.phoneNumber">Phone Number *</label>
             <input
               id="phoneNumber"
               name="phoneNumber"
@@ -94,11 +94,12 @@
               required
               autocomplete="tel"
               placeholder="(555) 555-5555"
+              data-i18n-placeholder="signup.phonePlaceholder"
             />
           </div>
 
           <div class="field">
-            <label class="field-label" for="addressStreet">Street Address *</label>
+            <label class="field-label" for="addressStreet" data-i18n="signup.addressStreet">Street Address *</label>
             <input
               id="addressStreet"
               name="addressStreet"
@@ -106,11 +107,12 @@
               required
               autocomplete="street-address"
               placeholder="123 Main Street"
+              data-i18n-placeholder="signup.addressStreetPlaceholder"
             />
           </div>
 
           <div class="field">
-            <label class="field-label" for="addressCity">City *</label>
+            <label class="field-label" for="addressCity" data-i18n="signup.addressCity">City *</label>
             <input
               id="addressCity"
               name="addressCity"
@@ -118,23 +120,24 @@
               required
               autocomplete="address-level2"
               placeholder="City"
+              data-i18n-placeholder="signup.addressCityPlaceholder"
             />
           </div>
 
           <div class="field">
-            <label class="field-label" for="addressState">State *</label>
+            <label class="field-label" for="addressState" data-i18n="signup.addressState">State *</label>
             <select
               id="addressState"
               name="addressState"
               required
               autocomplete="address-level1"
             >
-              <option value="">Select State</option>
+              <option value="" data-i18n="signup.selectState">Select State</option>
             </select>
           </div>
 
           <div class="field">
-            <label class="field-label" for="addressZip">ZIP Code *</label>
+            <label class="field-label" for="addressZip" data-i18n="signup.addressZip">ZIP Code *</label>
             <input
               id="addressZip"
               name="addressZip"
@@ -142,6 +145,7 @@
               required
               autocomplete="postal-code"
               placeholder="12345"
+              data-i18n-placeholder="signup.addressZipPlaceholder"
               maxlength="10"
             />
           </div>
@@ -173,7 +177,7 @@
         </form>
       </section>
 
-      <div class="auth-footnote">Secure sign-up powered by Firebase</div>
+      <div class="auth-footnote" data-i18n="auth.footnoteSignup">Secure sign-up powered by Firebase</div>
     </div>
   </main>
 
