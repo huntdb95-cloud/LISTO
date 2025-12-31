@@ -4084,6 +4084,13 @@ body[data-page="bookkeeping"] .page-title {
   }
 }
 
+/* Tools page mobile fix: Ensure footer is fully visible above bottom nav */
+@media (max-width: 768px) {
+  body[data-page="tools"] .app-layout > main {
+    padding-bottom: calc(var(--bottom-nav-height, 72px) + 24px);
+  }
+}
+
 /* Payer Info Collapsible Styles - Apply to all screen sizes */
 .payer-info-form {
   transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
