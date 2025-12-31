@@ -736,28 +736,35 @@ async function handleLanguageChange(lang) {
     clearMessages("language");
     showMsg("languageMsg", "Updating language preference...");
     
-    // Update Firestore profile
-    const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
-    await setDoc(profileRef, {
-      language: lang,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-    
-    // Update current profile
-    currentProfile.language = lang;
-    
-    // Update localStorage to ensure consistency
-    localStorage.setItem("listo_lang", lang);
-    
-    // Update button states
-    if ($("langEnBtn") && $("langEsBtn")) {
-      $("langEnBtn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
-      $("langEsBtn").setAttribute("aria-pressed", lang === "es" ? "true" : "false");
-    }
-    
-    // Apply translations immediately
-    if (typeof window.applyTranslations === 'function') {
-      window.applyTranslations(lang);
+    // Use i18n.js if available (it will handle Firestore sync and translation)
+    if (typeof window.ListoI18n !== 'undefined' && typeof window.ListoI18n.setLanguage === 'function') {
+      await window.ListoI18n.setLanguage(lang, { syncRemote: true });
+      // i18n.js already applied translations and saved to Firestore
+    } else {
+      // Fallback to manual handling
+      // Update Firestore profile
+      const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
+      await setDoc(profileRef, {
+        language: lang,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      
+      // Update current profile
+      currentProfile.language = lang;
+      
+      // Update localStorage to ensure consistency
+      localStorage.setItem("listo_lang", lang);
+      
+      // Update button states
+      if ($("langEnBtn") && $("langEsBtn")) {
+        $("langEnBtn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+        $("langEsBtn").setAttribute("aria-pressed", lang === "es" ? "true" : "false");
+      }
+      
+      // Apply translations immediately
+      if (typeof window.applyTranslations === 'function') {
+        window.applyTranslations(lang);
+      }
     }
     
     // Update summary cards

@@ -1329,8 +1329,10 @@ function applyTranslations(lang) {
 }
 
 // Make applyTranslations available globally for account.js
+// Also expose I18N so i18n.js can merge it
 if (typeof window !== 'undefined') {
   window.applyTranslations = applyTranslations;
+  window.I18N = I18N; // Expose for i18n.js to merge
 }
 
 async function loadUserLanguage(user) {
