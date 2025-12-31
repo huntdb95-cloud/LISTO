@@ -1,13 +1,13 @@
 // scripts.js (ES Module)
 import { firebaseConfig, app, auth as configAuth, db, storage } from "./config.js";
 
-import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import {
   doc,
@@ -15,19 +15,19 @@ import {
   setDoc,
   serverTimestamp,
   collection
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import {
   ref,
   uploadBytes,
   getDownloadURL,
   deleteObject
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
 import {
   getFunctions,
   httpsCallable
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-functions.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js";
 
 /* ========= i18n ========= */
 const I18N = {
