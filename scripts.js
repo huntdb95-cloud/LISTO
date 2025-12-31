@@ -4933,7 +4933,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Handle mobile logout button (mobile only) - visibility only
     // Handlers are attached via global event delegation (see document.addEventListener("click", ...))
-    initMobileLogoutButton(user, auth);
+    initMobileLogoutButton(user, configAuth);
     
     const headerAvatar = document.getElementById("headerAvatar");
     if (headerAvatar) headerAvatar.hidden = !user;
