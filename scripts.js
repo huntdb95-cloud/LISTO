@@ -4705,22 +4705,30 @@ function showLogoutConfirmation() {
       }
     });
     
-    // Close on overlay click
+    // Close on overlay click (only attach once)
     modal.addEventListener("click", (e) => {
       if (e.target === modal) {
         hideLogoutConfirmation();
       }
     });
-    
-    // Close on Escape key
-    const escapeHandler = (e) => {
-      if (e.key === "Escape" && modal.classList.contains("show")) {
-        hideLogoutConfirmation();
-        document.removeEventListener("keydown", escapeHandler);
-      }
-    };
-    document.addEventListener("keydown", escapeHandler);
   }
+  
+  // Set up Escape key handler every time modal is shown (since it removes itself)
+  // Remove any existing handler first to avoid duplicates
+  const existingEscapeHandler = modal._escapeHandler;
+  if (existingEscapeHandler) {
+    document.removeEventListener("keydown", existingEscapeHandler);
+  }
+  
+  const escapeHandler = (e) => {
+    if (e.key === "Escape" && modal.classList.contains("show")) {
+      hideLogoutConfirmation();
+      document.removeEventListener("keydown", escapeHandler);
+      modal._escapeHandler = null;
+    }
+  };
+  modal._escapeHandler = escapeHandler; // Store reference for cleanup
+  document.addEventListener("keydown", escapeHandler);
   
   // Show modal
   modal.classList.add("show");
@@ -4736,8 +4744,9 @@ function hideLogoutConfirmation() {
   if (modal) {
     modal.classList.remove("show");
   }
-  // Reset modal open flag when modal is closed
+  // Reset flags when modal is closed (allows future logout attempts)
   logoutModalOpen = false;
+  isLoggingOut = false;
 }
 
 /* ========== Mobile Bottom Navigation ========== */
