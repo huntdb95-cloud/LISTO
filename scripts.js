@@ -1372,8 +1372,10 @@ function initLanguage() {
       const toggleBtn = e.target.closest("[data-lang]");
       if (!toggleBtn) return;
       
-      // Skip if this is a Settings page button (handled by account.js)
-      if (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn") {
+      // Skip only on Account page (handled by account.js)
+      // Settings page buttons should be handled here
+      const pageType = document.body?.getAttribute("data-page");
+      if (pageType === "account" && (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn")) {
         // Let account.js handle it (it will stop propagation)
         return;
       }
@@ -1424,8 +1426,10 @@ async function initLanguageForUser(user) {
       const toggleBtn = e.target.closest("[data-lang]");
       if (!toggleBtn) return;
       
-      // Skip if this is a Settings page button (handled by account.js)
-      if (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn") {
+      // Skip only on Account page (handled by account.js)
+      // Settings page buttons should be handled here
+      const pageType = document.body?.getAttribute("data-page");
+      if (pageType === "account" && (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn")) {
         // Let account.js handle it (it will stop propagation)
         return;
       }
@@ -1438,9 +1442,14 @@ async function initLanguageForUser(user) {
         console.log(`[i18n] Language toggle clicked: ${selectedLang}`);
       }
       
+      // Apply translations immediately
       applyTranslations(selectedLang);
+      setPressedButtons(selectedLang);
       
-      // For authenticated users, save to Firestore
+      // Update localStorage
+      localStorage.setItem(LANG_KEY, selectedLang);
+      
+      // For authenticated users, save to Firestore (non-blocking)
       // Get current user from auth state (not closure variable)
       const currentUser = configAuth?.currentUser;
       if (currentUser) {
@@ -4916,8 +4925,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const toggleBtn = e.target.closest("[data-lang]");
         if (!toggleBtn) return;
         
-        // Skip if this is a Settings page button (handled by account.js)
-        if (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn") {
+        // Skip only on Account page (handled by account.js)
+        // Settings page buttons should be handled here
+        const pageType = document.body?.getAttribute("data-page");
+        if (pageType === "account" && (toggleBtn.id === "langEnBtn" || toggleBtn.id === "langEsBtn")) {
           return;
         }
         
@@ -4926,6 +4937,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         const selectedLang = toggleBtn.getAttribute("data-lang");
         applyTranslations(selectedLang);
+        setPressedButtons(selectedLang);
+        localStorage.setItem(LANG_KEY, selectedLang);
+        
+        // For authenticated users, save to Firestore
+        const currentUser = configAuth?.currentUser;
+        if (currentUser) {
+          try {
+            const profileRef = doc(db, "users", currentUser.uid, "private", "profile");
+            await setDoc(profileRef, {
+              language: selectedLang,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+          } catch (err) {
+            console.warn("Error saving language preference:", err);
+          }
+        }
       });
       languageToggleListenersAttached = true;
     }
