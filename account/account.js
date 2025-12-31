@@ -338,18 +338,27 @@ function setupEventListeners() {
   }
   
   // Language preference buttons (Settings page only)
-  // Stop propagation to prevent global handler from also firing
-  if ($("langEnBtn")) {
-    $("langEnBtn").addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevent global handler from firing
-      handleLanguageChange("en");
-    });
-  }
-  if ($("langEsBtn")) {
-    $("langEsBtn").addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevent global handler from firing
-      handleLanguageChange("es");
-    });
+  // On Settings page, we want i18n.js to handle it, but ensure it calls our handler too
+  // On Account page, we handle it ourselves
+  const pageType = document.body?.getAttribute("data-page");
+  if (pageType === "settings") {
+    // On Settings page, let i18n.js handle it, but ensure translation happens
+    // i18n.js will call setLanguage which applies translations immediately
+    // We don't need separate handlers here
+  } else if (pageType === "account") {
+    // On Account page, handle it ourselves but ensure translation happens
+    if ($("langEnBtn")) {
+      $("langEnBtn").addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent global handler from firing
+        handleLanguageChange("en");
+      });
+    }
+    if ($("langEsBtn")) {
+      $("langEsBtn").addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent global handler from firing
+        handleLanguageChange("es");
+      });
+    }
   }
 }
 
@@ -738,14 +747,17 @@ async function handleLanguageChange(lang) {
     const i18n = window.I18N?.[currentLang] || window.ListoI18n?.I18N?.[currentLang] || {};
     showMsg("languageMsg", i18n["settings.languageUpdating"] || "Updating language preference...");
     
-    // Use i18n.js if available (it will handle Firestore sync and translation)
+    // CRITICAL: Use i18n.js setLanguage which IMMEDIATELY applies translations
     if (typeof window.ListoI18n !== 'undefined' && typeof window.ListoI18n.setLanguage === 'function') {
+      // This will immediately translate the page, save to localStorage, and sync to Firestore
       await window.ListoI18n.setLanguage(lang, { syncRemote: true });
-      // i18n.js already applied translations and saved to Firestore
-      // Ensure sidebar is also re-translated if it exists
+      
+      // Ensure sidebar is also re-translated
       const sidebar = document.querySelector('.app-sidebar');
       if (sidebar && typeof window.ListoI18n.applyTranslations === 'function') {
-        window.ListoI18n.applyTranslations(lang);
+        setTimeout(() => {
+          window.ListoI18n.applyTranslations(lang);
+        }, 50);
       }
     } else {
       // Fallback to manual handling
