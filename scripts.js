@@ -4607,12 +4607,15 @@ function initMobileLogoutButton(user, authInstance) {
 
 /* ========== Logout Confirmation Modal ========== */
 let isLoggingOut = false; // Guard to prevent multiple logout attempts
+let logoutModalOpen = false; // Guard to prevent opening modal multiple times from click + pointerup
 
 function showLogoutConfirmation() {
-  // Prevent multiple logout attempts
-  if (isLoggingOut) {
+  // Prevent multiple logout attempts or modal openings
+  if (isLoggingOut || logoutModalOpen) {
     return;
   }
+  
+  logoutModalOpen = true;
   
   // Create modal if it doesn't exist
   let modal = document.getElementById("logoutConfirmationModal");
@@ -4691,8 +4694,9 @@ function showLogoutConfirmation() {
         window.location.href = loginPath;
       } catch (e) {
         console.error("Logout error:", e);
-        // Reset logout flag on error
+        // Reset flags on error
         isLoggingOut = false;
+        logoutModalOpen = false;
         // Re-enable button on error
         confirmBtn.disabled = false;
         confirmBtn.textContent = originalText;
@@ -4732,6 +4736,8 @@ function hideLogoutConfirmation() {
   if (modal) {
     modal.classList.remove("show");
   }
+  // Reset modal open flag when modal is closed
+  logoutModalOpen = false;
 }
 
 /* ========== Mobile Bottom Navigation ========== */
@@ -4815,23 +4821,30 @@ if (typeof window !== 'undefined') {
 })();
 
 // Global logout handler using event delegation (works even if buttons are re-rendered)
-document.addEventListener("click", async (e) => {
-  // Check if click target is a logout button
+// Use CAPTURE phase so it fires even if other handlers call stopPropagation()
+function handleLogoutEvent(e) {
+  // Check if click/touch target is a logout button
   // All logout buttons have data-action="logout", so use that as primary selector
-  // closest() only accepts a single selector, so check data-action first (covers all cases)
   const logoutBtn = e.target.closest('[data-action="logout"]') || 
                     e.target.closest('#mobileLogoutBtn') || 
                     e.target.closest('#sidebarLogoutBtn') || 
                     e.target.closest('.logout-btn');
   if (!logoutBtn) return;
   
-  // Prevent default and stop propagation
+  // Prevent default and stop propagation to prevent other handlers from interfering
   e.preventDefault();
   e.stopPropagation();
   
   // Show logout confirmation modal
   showLogoutConfirmation();
-}, { passive: false });
+}
+
+// Attach in CAPTURE phase (runs before bubbling phase, so it works even if stopPropagation() is called elsewhere)
+document.addEventListener("click", handleLogoutEvent, { capture: true, passive: false });
+
+// Also listen for pointer events (covers touch on mobile devices)
+// pointerup is more reliable than touchend and works for both touch and mouse
+document.addEventListener("pointerup", handleLogoutEvent, { capture: true, passive: false });
 
 // Initialize language as early as possible (runs immediately when script loads)
 (function initializeLanguageEarly() {
