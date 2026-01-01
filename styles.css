@@ -4085,10 +4085,11 @@ body[data-page="bookkeeping"] .page-title {
 }
 
 /* Tools page mobile fix: Ensure footer is fully visible above bottom nav */
-/* Uses --tools-bottom-nav-h set by tools-footer-fix.js (dynamically measured) */
-@media (max-width: 768px) {
+/* Override global rule with Tools-specific padding that accounts for footer height */
+/* Uses --bottom-nav-height (same as global, set by scripts.js) for consistency */
+@media (max-width: 1023px) {
   body[data-page="tools"] .app-layout > main {
-    padding-bottom: calc(var(--tools-bottom-nav-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom, 0px) + 32px) !important;
   }
 }
 
